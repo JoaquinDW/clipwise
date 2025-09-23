@@ -43,7 +43,7 @@ As calculated by Marc Lou, the great inspiration for this project, the time save
 
 This boilerplate is forever **Free**
 
-But if you want to support the project, you can [buy me a coffee ☕️](https://patreon.com/guillim).
+But if you want to support the project, you can [buy me a coffee ☕️](https://buymeacoffee.com/guillim).
 
 **Costs of Providers**
 
