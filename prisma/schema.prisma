@@ -28,6 +28,8 @@ model Company {
   name        String
   users       User[]    @relation
   transactions PaymentTransaction[]
+  videos      Video[]
+  minutesUsed Int       @default(0) // Track video processing minutes
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt @default(now())
 }
@@ -77,4 +79,118 @@ model PaymentTransaction {
   raw           Json
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt @default(now())
+}
+
+enum VideoSource {
+  UPLOAD
+  YOUTUBE
+}
+
+enum VideoStatus {
+  UPLOADING
+  UPLOADED
+  TRANSCRIBING
+  TRANSCRIBED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum ClipStatus {
+  PENDING
+  GENERATING
+  READY
+  FAILED
+}
+
+enum JobType {
+  TRANSCRIBE
+  DETECT_HIGHLIGHTS
+  GENERATE_CLIPS
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Video {
+  id            String        @id @default(cuid())
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String
+  title         String
+  description   String?
+  source        VideoSource   @default(UPLOAD)
+  sourceUrl     String?       // YouTube URL or original upload URL
+  storageUrl    String?       // URL in storage (Supabase/S3)
+  thumbnailUrl  String?
+  duration      Int?          // Duration in seconds
+  status        VideoStatus   @default(UPLOADING)
+  errorMessage  String?
+  metadata      Json?         // Additional video metadata
+  transcription Transcription?
+  clips         Clip[]
+  jobs          ProcessingJob[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt @default(now())
+
+  @@index([companyId, status])
+  @@index([createdAt])
+}
+
+model Transcription {
+  id          String   @id @default(cuid())
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId     String   @unique
+  text        String   @db.Text // Full transcription text
+  language    String?  // Detected language
+  segments    Json     // Array of {start, end, text} from Whisper
+  words       Json?    // Array of {word, start, end} for word-level timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+
+  @@index([videoId])
+}
+
+model Clip {
+  id            String      @id @default(cuid())
+  video         Video       @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId       String
+  title         String
+  description   String?     @db.Text
+  startTime     Float       // Start time in seconds
+  endTime       Float       // End time in seconds
+  duration      Float       // Clip duration in seconds
+  storageUrl    String?     // URL of processed clip
+  thumbnailUrl  String?
+  captions      Json?       // Generated captions with timestamps
+  score         Float?      // AI-generated virality score
+  status        ClipStatus  @default(PENDING)
+  errorMessage  String?
+  metadata      Json?       // Hook text, highlights, etc.
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt @default(now())
+
+  @@index([videoId, status])
+  @@index([createdAt])
+}
+
+model ProcessingJob {
+  id            String      @id @default(cuid())
+  video         Video       @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId       String
+  type          JobType
+  status        JobStatus   @default(PENDING)
+  progress      Int         @default(0) // 0-100
+  errorMessage  String?     @db.Text
+  result        Json?       // Job result data
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt @default(now())
+
+  @@index([videoId, type])
+  @@index([status])
 }
