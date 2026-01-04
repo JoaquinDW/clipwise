@@ -1,0 +1,308 @@
+{
+  "landing": {
+    "metadata": {
+      "title": "Clipwise - Turn Long Videos Into Viral Shorts",
+      "description": "AI-powered video editor that converts long-form videos into engaging vertical clips for TikTok, Instagram Reels, and YouTube Shorts. Start your 7-day trial today."
+    },
+    "header": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "signIn": "Sign in",
+      "signUp": "Sign up"
+    },
+    "hero": {
+      "badge": "AI-Powered Video Editor",
+      "headline": "Turn Long Videos Into Viral Shorts in Minutes",
+      "subheadline": "AI-powered video editor that transforms your long-form content into engaging vertical clips optimized for TikTok, Instagram Reels, and YouTube Shorts. No editing experience required.",
+      "ctaPrimary": "Start Free Trial",
+      "ctaSecondary": "Watch Demo",
+      "minutesProcessed": "10,000+ videos processed",
+      "avgTime": "Avg. processing time: 5 minutes"
+    },
+    "benefits": {
+      "badge": "Built for creators who want speed",
+      "headline": "Why Creators Love Clipwise",
+      "items": [
+        {
+          "title": "Create viral clips in minutes, not hours",
+          "description": "Our AI analyzes your content and generates ready-to-post clips while you focus on creating."
+        },
+        {
+          "title": "Turn 1 long video into dozens of shorts",
+          "description": "Maximize your content ROI by repurposing every minute of your long-form videos."
+        },
+        {
+          "title": "Optimized for TikTok, Reels & Shorts",
+          "description": "Automatic 9:16 vertical format with platform-specific optimizations."
+        },
+        {
+          "title": "AI finds the best moments automatically",
+          "description": "GPT-powered highlight detection identifies your most engaging content."
+        },
+        {
+          "title": "Add subtitles and branding in one place",
+          "description": "Auto-generated captions with customizable branding for a professional look."
+        }
+      ]
+    },
+    "features": {
+      "badge": "Powerful Features",
+      "headline": "Everything You Need to Create Viral Content",
+      "subheadline": "Professional video editing powered by cutting-edge AI technology",
+      "items": [
+        {
+          "title": "AI Transcription",
+          "description": "Whisper-powered transcription with 95%+ accuracy and word-level timestamps for perfect caption timing."
+        },
+        {
+          "title": "Smart Highlight Detection",
+          "description": "GPT analyzes your content to find the most engaging moments worth sharing on social media."
+        },
+        {
+          "title": "Auto Caption Generation",
+          "description": "Dynamic captions optimized for short-form video platforms with viral-ready formatting."
+        },
+        {
+          "title": "9:16 Vertical Optimization",
+          "description": "Automatically crops and formats clips perfectly for TikTok, Reels, and Shorts."
+        },
+        {
+          "title": "Batch Processing",
+          "description": "Generate up to 10 clips from a single video in minutes, not hours."
+        },
+        {
+          "title": "YouTube Integration",
+          "description": "Paste any YouTube URL and we'll download and process it automatically."
+        }
+      ]
+    },
+    "useCases": {
+      "items": [
+        {
+          "badge": "For Content Creators",
+          "title": "Maximize Your Content ROI",
+          "description": "Repurpose long YouTube videos, podcasts, or streams into 10+ short clips. Save hours of editing time and grow your audience across multiple platforms.",
+          "features": [
+            "Turn 1 video into 10+ clips",
+            "Auto-detect best moments",
+            "Platform-optimized exports"
+          ]
+        },
+        {
+          "badge": "For Marketing Teams",
+          "title": "Scale Your Social Media Presence",
+          "description": "Turn webinars, product demos, and interviews into share-worthy content. Keep your social feeds active without hiring a full-time video editor.",
+          "features": [
+            "Batch process multiple videos",
+            "Team collaboration tools",
+            "Analytics-ready exports"
+          ]
+        },
+        {
+          "badge": "For Agencies",
+          "title": "Deliver More Value to Clients",
+          "description": "Process multiple client videos efficiently with bulk export and custom branding. Scale your video production without scaling your team.",
+          "features": [
+            "Multi-client workflows",
+            "White-label options",
+            "Priority processing"
+          ]
+        }
+      ]
+    },
+    "pricing": {
+      "badge": "Simple Pricing",
+      "headline": "Built for creators",
+      "subheadline": "No confusing plans. No surprises. Pay only for what you need to grow on social media 🚀",
+      "plans": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "icon": "🟢",
+          "tagline": "For individual creators",
+          "price": "$19",
+          "priceAnnual": "$15",
+          "period": "/month",
+          "periodAnnual": "/month billed annually",
+          "features": [
+            "Up to 120 minutes/month",
+            "Auto clips for TikTok, Reels & Shorts",
+            "Auto-generated subtitles",
+            "HD exports",
+            "Email support"
+          ],
+          "cta": "Get started",
+          "note": "Simple plan to start growing",
+          "popular": false
+        },
+        {
+          "id": "pro",
+          "name": "Pro",
+          "icon": "🟣",
+          "tagline": "Most popular",
+          "price": "$29",
+          "priceAnnual": "$24",
+          "period": "/month",
+          "periodAnnual": "/month billed annually",
+          "features": [
+            "Everything in Starter",
+            "Up to 300 minutes/month",
+            "More clips per video",
+            "Custom branding",
+            "Advanced templates",
+            "Priority processing",
+            "Priority support"
+          ],
+          "cta": "Start free trial",
+          "trialNote": "7-day free trial · No watermark · Cancel anytime",
+          "badge": "Most creators choose Pro",
+          "popular": true
+        },
+        {
+          "id": "business",
+          "name": "Teams",
+          "icon": "🔴",
+          "tagline": "For teams & agencies",
+          "price": "From $59",
+          "period": "/month",
+          "features": [
+            "Everything in Pro",
+            "Multiple brands & projects",
+            "Team access",
+            "High-volume processing",
+            "Priority support"
+          ],
+          "cta": "Book a demo",
+          "popular": false
+        }
+      ],
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "items": [
+          {
+            "question": "Can I cancel anytime?",
+            "answer": "Yes. No contracts, no fine print."
+          },
+          {
+            "question": "What happens if I run out of minutes?",
+            "answer": "You can upgrade your plan or purchase additional minutes."
+          },
+          {
+            "question": "Is there an annual discount?",
+            "answer": "Yes. Save up to 25% when paying annually."
+          },
+          {
+            "question": "Does the trial have a watermark?",
+            "answer": "No. We want you to try the real product."
+          }
+        ]
+      },
+      "finalCta": {
+        "headline": "Turn your long videos into viral clips in minutes",
+        "subheadline": "Start today with a free trial",
+        "button": "Start Free Trial"
+      }
+    },
+    "faq": {
+      "badge": "FAQ",
+      "headline": "Frequently Asked Questions",
+      "subheadline": "Everything you need to know about Clipwise",
+      "items": [
+        {
+          "question": "How does the 7-day trial work?",
+          "answer": "Sign up with your credit card and get 7 days of full access to all features. You can process up to 30 minutes of video and generate up to 10 clips. Cancel anytime before the trial ends and you won't be charged."
+        },
+        {
+          "question": "What video formats do you support?",
+          "answer": "We support all major video formats including MP4, MOV, AVI, MKV, and more. You can also paste YouTube URLs and we'll download and process them automatically."
+        },
+        {
+          "question": "How long does video processing take?",
+          "answer": "Most videos are processed in 5-10 minutes depending on length and plan. Pro and Business plans get priority processing for faster turnaround."
+        },
+        {
+          "question": "How accurate are the AI-generated captions?",
+          "answer": "Our Whisper v3 powered transcription achieves 95%+ accuracy with word-level timestamps. You can also edit captions before exporting if needed."
+        },
+        {
+          "question": "Can I edit the clips after generation?",
+          "answer": "Yes! You can adjust clip timing, edit captions, customize branding, and apply templates before exporting your final clips."
+        },
+        {
+          "question": "What's your refund policy?",
+          "answer": "We offer a 7-day money-back guarantee on all paid plans. If you're not satisfied, contact us within 7 days of purchase for a full refund."
+        },
+        {
+          "question": "What's the maximum video length?",
+          "answer": "You can upload videos up to 60 minutes in length. Longer videos may be supported on Enterprise plans - contact us for details."
+        },
+        {
+          "question": "How does usage billing work?",
+          "answer": "We track the total minutes of video you process each month. If you exceed your plan's limit, you can upgrade or purchase additional minutes. Unused minutes don't roll over."
+        }
+      ]
+    },
+    "newsletter": {
+      "headline": "Stay updated",
+      "subheadline": "Get tips and updates about creating viral content",
+      "placeholder": "Your email address",
+      "button": "Subscribe",
+      "privacy": "We care about your data in our privacy policy"
+    },
+    "footer": {
+      "tagline": "Turn long videos into viral shorts in minutes",
+      "products": {
+        "title": "Products",
+        "links": [
+          {
+            "label": "Features",
+            "href": "#features"
+          },
+          {
+            "label": "Pricing",
+            "href": "#pricing"
+          },
+          {
+            "label": "FAQ",
+            "href": "#faq"
+          }
+        ]
+      },
+      "company": {
+        "title": "Company",
+        "links": [
+          {
+            "label": "About",
+            "href": "/about"
+          },
+          {
+            "label": "Blog",
+            "href": "/blog"
+          },
+          {
+            "label": "Contact",
+            "href": "/contact"
+          }
+        ]
+      },
+      "legal": {
+        "title": "Legal",
+        "links": [
+          {
+            "label": "Privacy Policy",
+            "href": "/privacy"
+          },
+          {
+            "label": "Terms of Service",
+            "href": "/terms"
+          }
+        ]
+      },
+      "social": {
+        "title": "Follow us"
+      },
+      "copyright": "All rights reserved.",
+      "credits": "Built with Open PRO template from Cruip"
+    }
+  }
+}

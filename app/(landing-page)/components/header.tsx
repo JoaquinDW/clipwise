@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import MobileMenu from './mobile-menu';
-import Image from 'next/image';
-import Logo from '../public/images/logo.svg';
+import Link from "next/link"
+import MobileMenu from "./mobile-menu"
+import Image from "next/image"
+import Logo from "../public/images/logo.svg"
 
 export default function Header() {
-  const showLogo = true;
+  const showLogo = true
   return (
     <header className="absolute w-full z-30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -12,14 +12,15 @@ export default function Header() {
           {/* Site branding */}
           <div className="shrink-0 mr-4">
             {/* Logo */}
-            {showLogo && (  
-              <Link href="/" className="block" aria-label="Cruip">
-                <Image 
-                  src={Logo} 
-                  alt="Cruip" 
-                  width={120} 
-                  height={40} 
-                  className="h-8 bg-white rounded-full max-w-fit"
+            {showLogo && (
+              <Link href="/" className="block" aria-label="Clipwise">
+                <Image
+                  src={Logo}
+                  alt="Clipwise"
+                  width={80}
+                  height={80}
+                  className="h-20 w-20 rounded-2xl object-contain"
+                  priority
                 ></Image>
               </Link>
             )}
@@ -38,7 +39,10 @@ export default function Header() {
                 </Link>
               </li>
               <li>
-                <Link href="/signup" className="btn-sm text-white bg-purple-600 hover:bg-purple-700 ml-3">
+                <Link
+                  href="/signup"
+                  className="btn-sm text-white bg-purple-600 hover:bg-purple-700 ml-3"
+                >
                   Sign up
                 </Link>
               </li>
@@ -46,9 +50,8 @@ export default function Header() {
           </nav>
 
           <MobileMenu />
-
         </div>
       </div>
     </header>
-  );
+  )
 }

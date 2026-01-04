@@ -7,14 +7,16 @@
 @tailwind utilities; */
 
 h1 {
-@apply text-5xl;
-font-weight: 700
+    @apply text-6xl;
+    font-weight: 800
 }
+
 h2 {
-@apply text-3xl;
+    @apply text-3xl;
 }
+
 h3 {
-@apply text-xl;
+    @apply text-xl;
 }
 
 
@@ -40,62 +42,79 @@ h3 {
 }
 
 /* Hamburger button */
-.hamburger svg > *:nth-child(1),
-.hamburger svg > *:nth-child(2),
-.hamburger svg > *:nth-child(3) {
+.hamburger svg>*:nth-child(1),
+.hamburger svg>*:nth-child(2),
+.hamburger svg>*:nth-child(3) {
     transform-origin: center;
     transform: rotate(0deg);
 }
 
-.hamburger svg > *:nth-child(1) {
+.hamburger svg>*:nth-child(1) {
     transition: y 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19), opacity 0.1s ease-in;
 }
 
-.hamburger svg > *:nth-child(2) {
+.hamburger svg>*:nth-child(2) {
     transition: transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
 
-.hamburger svg > *:nth-child(3) {
+.hamburger svg>*:nth-child(3) {
     transition: y 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19), width 0.1s 0.25s ease-in;
-}        
+}
 
-.hamburger.active svg > *:nth-child(1) {
+.hamburger.active svg>*:nth-child(1) {
     opacity: 0;
     y: 11;
     transform: rotate(225deg);
     transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.1s 0.12s ease-out;
 }
-    
-.hamburger.active svg > *:nth-child(2) {
+
+.hamburger.active svg>*:nth-child(2) {
     transform: rotate(225deg);
     transition: transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
-    
-.hamburger.active svg > *:nth-child(3) {
+
+.hamburger.active svg>*:nth-child(3) {
     y: 11;
     transform: rotate(135deg);
-    transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), width 0.1s ease-out;   
+    transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), width 0.1s ease-out;
 }
 
 /* Pulsing animation */
 @keyframes pulseLoop {
-    0% { opacity: 0; transform: scale(0.1) translateZ(0); }
-    40% { opacity: 1; }
-    60% { opacity: 1; }
-    100% { opacity: 0; transform: scale(2) translateZ(0); }
+    0% {
+        opacity: 0;
+        transform: scale(0.1) translateZ(0);
+    }
+
+    40% {
+        opacity: 1;
+    }
+
+    60% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(2) translateZ(0);
+    }
 }
+
 .pulse {
     transform: scale(0.1);
     opacity: 0;
     transform-origin: center;
-    animation: pulseLoop 8000ms linear infinite;                                   
+    animation: pulseLoop 8000ms linear infinite;
 }
+
 .pulse-1 {
     animation-delay: -2000ms;
 }
+
 .pulse-2 {
     animation-delay: -4000ms;
 }
+
 .pulse-3 {
     animation-delay: -6000ms;
 }
@@ -252,62 +271,79 @@ input[type=range]::-moz-focus-outer {
 }
 
 /* Hamburger button */
-.hamburger svg > *:nth-child(1),
-.hamburger svg > *:nth-child(2),
-.hamburger svg > *:nth-child(3) {
+.hamburger svg>*:nth-child(1),
+.hamburger svg>*:nth-child(2),
+.hamburger svg>*:nth-child(3) {
     transform-origin: center;
     transform: rotate(0deg);
 }
 
-.hamburger svg > *:nth-child(1) {
+.hamburger svg>*:nth-child(1) {
     transition: y 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19), opacity 0.1s ease-in;
 }
 
-.hamburger svg > *:nth-child(2) {
+.hamburger svg>*:nth-child(2) {
     transition: transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
 
-.hamburger svg > *:nth-child(3) {
+.hamburger svg>*:nth-child(3) {
     transition: y 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19), width 0.1s 0.25s ease-in;
-}        
+}
 
-.hamburger.active svg > *:nth-child(1) {
+.hamburger.active svg>*:nth-child(1) {
     opacity: 0;
     y: 11;
     transform: rotate(225deg);
     transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.1s 0.12s ease-out;
 }
-    
-.hamburger.active svg > *:nth-child(2) {
+
+.hamburger.active svg>*:nth-child(2) {
     transform: rotate(225deg);
     transition: transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
-    
-.hamburger.active svg > *:nth-child(3) {
+
+.hamburger.active svg>*:nth-child(3) {
     y: 11;
     transform: rotate(135deg);
-    transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), width 0.1s ease-out;   
+    transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), width 0.1s ease-out;
 }
 
 /* Pulsing animation */
 @keyframes pulseLoop {
-    0% { opacity: 0; transform: scale(0.1) translateZ(0); }
-    40% { opacity: 1; }
-    60% { opacity: 1; }
-    100% { opacity: 0; transform: scale(2) translateZ(0); }
+    0% {
+        opacity: 0;
+        transform: scale(0.1) translateZ(0);
+    }
+
+    40% {
+        opacity: 1;
+    }
+
+    60% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(2) translateZ(0);
+    }
 }
+
 .pulse {
     transform: scale(0.1);
     opacity: 0;
     transform-origin: center;
-    animation: pulseLoop 8000ms linear infinite;                                   
+    animation: pulseLoop 8000ms linear infinite;
 }
+
 .pulse-1 {
     animation-delay: -2000ms;
 }
+
 .pulse-2 {
     animation-delay: -4000ms;
 }
+
 .pulse-3 {
     animation-delay: -6000ms;
 }
@@ -396,7 +432,8 @@ input[type=range]::-moz-focus-outer {
 }
 
 
-.btn,.btn-sm {
+.btn,
+.btn-sm {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -406,7 +443,7 @@ input[type=range]::-moz-focus-outer {
     line-height: 1.5715;
     font-weight: 500;
     transition-property: all;
-    transition-timing-function: cubic-bezier(.4,0,.2,1);
+    transition-timing-function: cubic-bezier(.4, 0, .2, 1);
     transition-duration: .15s
 }
 
@@ -433,4 +470,3 @@ input[type=range]::-moz-focus-outer {
 .rounded-full {
     border-radius: 9999px
 }
-

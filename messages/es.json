@@ -1,0 +1,308 @@
+{
+  "landing": {
+    "metadata": {
+      "title": "Clipwise - Convertí Videos Largos en Shorts Virales",
+      "description": "Editor de video con IA que convierte tus videos largos en clips verticales para TikTok, Instagram Reels y YouTube Shorts. Empezá tu prueba gratis de 7 días."
+    },
+    "header": {
+      "features": "Funciones",
+      "pricing": "Precios",
+      "signIn": "Iniciar sesión",
+      "signUp": "Registrarse"
+    },
+    "hero": {
+      "badge": "Editor de Video con IA",
+      "headline": "Convertí Videos Largos en Shorts Virales en Minutos",
+      "subheadline": "Editor de video con IA que transforma tu contenido largo en clips verticales optimizados para TikTok, Instagram Reels y YouTube Shorts. Sin experiencia en edición requerida.",
+      "ctaPrimary": "Empezar Prueba Gratis",
+      "ctaSecondary": "Ver Demo",
+      "minutesProcessed": "Más de 10,000 videos procesados",
+      "avgTime": "Tiempo promedio: 5 minutos"
+    },
+    "benefits": {
+      "badge": "Diseñado para creadores que quieren velocidad",
+      "headline": "Por Qué Los Creadores Aman Clipwise",
+      "items": [
+        {
+          "title": "Creá clips virales en minutos, no horas",
+          "description": "Nuestra IA analiza tu contenido y genera clips listos para publicar mientras vos te enfocás en crear."
+        },
+        {
+          "title": "Convertí 1 video largo en docenas de shorts",
+          "description": "Maximizá el ROI de tu contenido reutilizando cada minuto de tus videos largos."
+        },
+        {
+          "title": "Optimizado para TikTok, Reels y Shorts",
+          "description": "Formato vertical 9:16 automático con optimizaciones específicas para cada plataforma."
+        },
+        {
+          "title": "La IA encuentra los mejores momentos automáticamente",
+          "description": "Detección de highlights con GPT que identifica tu contenido más atractivo."
+        },
+        {
+          "title": "Agregá subtítulos y branding en un solo lugar",
+          "description": "Subtítulos generados automáticamente con branding personalizable para un look profesional."
+        }
+      ]
+    },
+    "features": {
+      "badge": "Funciones Poderosas",
+      "headline": "Todo Lo Que Necesitás Para Crear Contenido Viral",
+      "subheadline": "Edición de video profesional potenciada por tecnología de IA de última generación",
+      "items": [
+        {
+          "title": "Transcripción con IA",
+          "description": "Transcripción con Whisper con +95% de precisión y timestamps palabra por palabra para subtítulos perfectos."
+        },
+        {
+          "title": "Detección Inteligente de Highlights",
+          "description": "GPT analiza tu contenido para encontrar los momentos más interesantes para compartir en redes."
+        },
+        {
+          "title": "Generación Automática de Subtítulos",
+          "description": "Subtítulos dinámicos optimizados para videos cortos con formato listo para viralizar."
+        },
+        {
+          "title": "Optimización Vertical 9:16",
+          "description": "Recorta y formatea clips automáticamente de forma perfecta para TikTok, Reels y Shorts."
+        },
+        {
+          "title": "Procesamiento en Lote",
+          "description": "Generá hasta 10 clips de un solo video en minutos, no horas."
+        },
+        {
+          "title": "Integración con YouTube",
+          "description": "Pegá cualquier URL de YouTube y lo descargamos y procesamos automáticamente."
+        }
+      ]
+    },
+    "useCases": {
+      "items": [
+        {
+          "badge": "Para Creadores de Contenido",
+          "title": "Maximizá el ROI de Tu Contenido",
+          "description": "Reutilizá videos largos de YouTube, podcasts o streams en más de 10 clips cortos. Ahorrá horas de edición y hacé crecer tu audiencia en múltiples plataformas.",
+          "features": [
+            "Convertí 1 video en más de 10 clips",
+            "Detección automática de mejores momentos",
+            "Exportaciones optimizadas por plataforma"
+          ]
+        },
+        {
+          "badge": "Para Equipos de Marketing",
+          "title": "Escalá Tu Presencia en Redes Sociales",
+          "description": "Convertí webinars, demos de productos y entrevistas en contenido compartible. Mantené tus feeds activos sin contratar un editor full-time.",
+          "features": [
+            "Procesá múltiples videos en lote",
+            "Herramientas de colaboración",
+            "Exportaciones listas para analytics"
+          ]
+        },
+        {
+          "badge": "Para Agencias",
+          "title": "Entregá Más Valor a Tus Clientes",
+          "description": "Procesá múltiples videos de clientes eficientemente con exportación masiva y branding personalizado. Escalá tu producción sin escalar tu equipo.",
+          "features": [
+            "Workflows multi-cliente",
+            "Opciones white-label",
+            "Procesamiento prioritario"
+          ]
+        }
+      ]
+    },
+    "pricing": {
+      "badge": "Pricing Simple",
+      "headline": "Pensado para creadores",
+      "subheadline": "Sin planes confusos. Sin sorpresas. Pagá solo por lo que necesitás para crecer en redes 🚀",
+      "plans": [
+        {
+          "id": "starter",
+          "name": "Starter",
+          "icon": "🟢",
+          "tagline": "Para creadores individuales",
+          "price": "$19",
+          "priceAnnual": "$15",
+          "period": "/mes",
+          "periodAnnual": "/mes pagando anual",
+          "features": [
+            "Hasta 120 minutos/mes",
+            "Clips automáticos para TikTok, Reels & Shorts",
+            "Subtítulos automáticos",
+            "Exportaciones en HD",
+            "Soporte por email"
+          ],
+          "cta": "Empezar ahora",
+          "note": "Plan simple para empezar a crecer",
+          "popular": false
+        },
+        {
+          "id": "pro",
+          "name": "Pro",
+          "icon": "🟣",
+          "tagline": "Más popular",
+          "price": "$29",
+          "priceAnnual": "$24",
+          "period": "/mes",
+          "periodAnnual": "/mes pagando anual",
+          "features": [
+            "Todo lo de Starter",
+            "Hasta 300 minutos/mes",
+            "Más clips por video",
+            "Branding personalizado",
+            "Templates avanzados",
+            "Prioridad en procesamiento",
+            "Soporte prioritario"
+          ],
+          "cta": "Empezar prueba gratis",
+          "trialNote": "7 días gratis · Sin watermark · Cancelá cuando quieras",
+          "badge": "La mayoría elige Pro",
+          "popular": true
+        },
+        {
+          "id": "business",
+          "name": "Teams",
+          "icon": "🔴",
+          "tagline": "Para equipos y agencias",
+          "price": "Desde $59",
+          "period": "/mes",
+          "features": [
+            "Todo lo de Pro",
+            "Múltiples marcas y proyectos",
+            "Acceso para equipos",
+            "Alto volumen de procesamiento",
+            "Soporte prioritario"
+          ],
+          "cta": "Agendar demo",
+          "popular": false
+        }
+      ],
+      "faq": {
+        "title": "Preguntas Frecuentes",
+        "items": [
+          {
+            "question": "¿Puedo cancelar en cualquier momento?",
+            "answer": "Sí. No hay contratos ni letras chicas."
+          },
+          {
+            "question": "¿Qué pasa si me quedo sin minutos?",
+            "answer": "Podés upgradear tu plan o comprar minutos extra."
+          },
+          {
+            "question": "¿Hay descuento anual?",
+            "answer": "Sí. Ahorrás hasta un 25% pagando anual."
+          },
+          {
+            "question": "¿El trial tiene watermark?",
+            "answer": "No. Queremos que pruebes el producto real."
+          }
+        ]
+      },
+      "finalCta": {
+        "headline": "Convertí tus videos largos en clips virales en minutos",
+        "subheadline": "Empezá hoy con el free trial",
+        "button": "Empezar Prueba Gratis"
+      }
+    },
+    "faq": {
+      "badge": "FAQ",
+      "headline": "Preguntas Frecuentes",
+      "subheadline": "Todo lo que necesitás saber sobre Clipwise",
+      "items": [
+        {
+          "question": "¿Cómo funciona la prueba de 7 días?",
+          "answer": "Registrate con tu tarjeta y obtené 7 días de acceso completo a todas las funciones. Podés procesar hasta 30 minutos de video y generar hasta 10 clips. Cancelá en cualquier momento antes de que termine la prueba y no se te cobrará."
+        },
+        {
+          "question": "¿Qué formatos de video soportan?",
+          "answer": "Soportamos todos los formatos principales incluyendo MP4, MOV, AVI, MKV y más. También podés pegar URLs de YouTube y los descargamos y procesamos automáticamente."
+        },
+        {
+          "question": "¿Cuánto tarda el procesamiento de video?",
+          "answer": "La mayoría de los videos se procesan en 5-10 minutos dependiendo de la duración y el plan. Los planes Pro y Business tienen procesamiento prioritario para mayor velocidad."
+        },
+        {
+          "question": "¿Qué tan precisos son los subtítulos generados por IA?",
+          "answer": "Nuestra transcripción con Whisper v3 alcanza más del 95% de precisión con timestamps palabra por palabra. También podés editar los subtítulos antes de exportar si es necesario."
+        },
+        {
+          "question": "¿Puedo editar los clips después de generarlos?",
+          "answer": "¡Sí! Podés ajustar el timing de los clips, editar subtítulos, personalizar branding y aplicar templates antes de exportar tus clips finales."
+        },
+        {
+          "question": "¿Cuál es la política de reembolso?",
+          "answer": "Ofrecemos garantía de devolución de dinero de 7 días en todos los planes pagos. Si no estás satisfecho, contactanos dentro de los 7 días de la compra para un reembolso completo."
+        },
+        {
+          "question": "¿Cuál es la duración máxima de video?",
+          "answer": "Podés subir videos de hasta 60 minutos de duración. Videos más largos pueden ser soportados en planes Enterprise - contactanos para más detalles."
+        },
+        {
+          "question": "¿Cómo funciona la facturación por uso?",
+          "answer": "Rastreamos el total de minutos de video que procesás cada mes. Si excedés el límite de tu plan, podés hacer upgrade o comprar minutos adicionales. Los minutos no utilizados no se acumulan."
+        }
+      ]
+    },
+    "newsletter": {
+      "headline": "Mantente actualizado",
+      "subheadline": "Recibí tips y novedades sobre cómo crear contenido viral",
+      "placeholder": "Tu email",
+      "button": "Suscribirse",
+      "privacy": "Nos importa tu privacidad. Lee nuestra política de privacidad"
+    },
+    "footer": {
+      "tagline": "Convertí videos largos en shorts virales en minutos",
+      "products": {
+        "title": "Productos",
+        "links": [
+          {
+            "label": "Funciones",
+            "href": "#features"
+          },
+          {
+            "label": "Pricing",
+            "href": "#pricing"
+          },
+          {
+            "label": "FAQ",
+            "href": "#faq"
+          }
+        ]
+      },
+      "company": {
+        "title": "Compañía",
+        "links": [
+          {
+            "label": "Acerca de",
+            "href": "/about"
+          },
+          {
+            "label": "Blog",
+            "href": "/blog"
+          },
+          {
+            "label": "Contacto",
+            "href": "/contact"
+          }
+        ]
+      },
+      "legal": {
+        "title": "Legal",
+        "links": [
+          {
+            "label": "Política de Privacidad",
+            "href": "/privacy"
+          },
+          {
+            "label": "Términos de Servicio",
+            "href": "/terms"
+          }
+        ]
+      },
+      "social": {
+        "title": "Seguinos"
+      },
+      "copyright": "Todos los derechos reservados.",
+      "credits": "Construido con la plantilla Open PRO de Cruip"
+    }
+  }
+}

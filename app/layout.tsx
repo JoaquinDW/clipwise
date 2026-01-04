@@ -3,13 +3,14 @@ import { inter } from '@/app/ui/fonts';
 import { Metadata } from 'next';
 import GoogleAnalyticsWrapper from '@/infra/googleAnalytics';
 import GoogleTagManagerWrapper from '@/infra/googleTagManager';
+import { ToastProvider } from '@/app/ui/toast';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Dashboard',
-    default: 'default Dashboard',
+    template: '%s | Clipwise',
+    default: 'Clipwise - AI-Powered Video Clips',
   },
-  description: 'The official Next.js Course Dashboard, built with App Router.',
+  description: 'Transform your long-form videos into viral clips with AI.',
   // metadataBase: new URL('https://mywebsite.com'),
 };
 
@@ -23,7 +24,9 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         <GoogleAnalyticsWrapper />
         <GoogleTagManagerWrapper />
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );
