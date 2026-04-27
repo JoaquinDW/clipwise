@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clipwise — Clips Virales en Minutos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: #0a0a0a; color: #f2ede8; overflow-x: hidden; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseOrb {
+      0%, 100% { transform: scale(1);   opacity: 0.25; }
+      50%       { transform: scale(1.1); opacity: 0.45; }
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    .fu  { animation: fadeUp 0.65s ease forwards; opacity: 0; }
+    .d1  { animation-delay: 0.08s; }
+    .d2  { animation-delay: 0.2s; }
+    .d3  { animation-delay: 0.35s; }
+    .d4  { animation-delay: 0.5s; }
+    .d5  { animation-delay: 0.65s; }
+
+    .grad-text {
+      background: linear-gradient(135deg, #FF3B5C 0%, #FF8C00 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 15px 34px; border-radius: 8px; border: none;
+      background: linear-gradient(135deg, #FF3B5C, #FF8C00);
+      color: #fff; font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 800; cursor: pointer;
+      letter-spacing: 0.02em;
+      box-shadow: 0 0 36px rgba(255,59,92,0.28);
+      transition: box-shadow 0.3s, transform 0.2s;
+      text-decoration: none;
+    }
+    .cta-btn:hover { box-shadow: 0 0 60px rgba(255,59,92,0.5); transform: translateY(-2px); }
+
+    .cta-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 15px 26px; border-radius: 8px;
+      border: 1px solid #2a2a2a; background: transparent;
+      color: #777; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      text-decoration: none;
+    }
+    .cta-ghost:hover { color: #f2ede8; border-color: #555; }
+
+    /* Noise overlay */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="clipwise-sections.jsx"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "heroVariant": "centered",
+      "lang": "es"
+    }/*EDITMODE-END*/;
+
+    // ── Shared: Orb background ───────────────────────────────────────────────
+    function OrbBg() {
+      return (
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", top: "5%", left: "10%", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,59,92,0.11) 0%, transparent 68%)", filter: "blur(32px)", animation: "pulseOrb 9s ease-in-out infinite" }} />
+          <div style={{ position: "absolute", bottom: "0%", right: "8%", width: 550, height: 550, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,140,0,0.09) 0%, transparent 68%)", filter: "blur(32px)", animation: "pulseOrb 11s ease-in-out infinite 4s" }} />
+        </div>
+      );
+    }
+
+    // ── Platform pills ───────────────────────────────────────────────────────
+    function PlatformPills({ center }) {
+      const tags = ["TikTok", "YouTube Shorts", "Instagram Reels", "Twitter/X", "Kick"];
+      return (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: center ? "center" : "flex-start" }}>
+          {tags.map(t => (
+            <span key={t} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#444", border: "1px solid #1e1e1e", padding: "5px 13px", borderRadius: 100, letterSpacing: "0.02em" }}>{t}</span>
+          ))}
+        </div>
+      );
+    }
+
+    // ── Mini editor (used in hero) ───────────────────────────────────────────
+    function MiniEditor() {
+      return (
+        <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 12, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.6)" }}>
+          <div style={{ padding: "10px 16px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: 6 }}>
+            {["#ff5f57","#ffbd2e","#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#333", marginLeft: 8, letterSpacing: "0.04em" }}>clipwise · editor</span>
+            <span style={{ marginLeft: "auto", fontFamily: "'DM Sans', sans-serif", fontSize: 9, color: "#FF3B5C", background: "rgba(255,59,92,0.08)", padding: "2px 8px", borderRadius: 3 }}>4 clips detectados</span>
+          </div>
+          <div style={{ background: "repeating-linear-gradient(45deg,#181818 0,#181818 8px,#111 8px,#111 16px)", aspectRatio: "16/9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 55%, rgba(8,8,8,0.75))" }} />
+            <div style={{ position: "relative", zIndex: 1, width: 48, height: 48, borderRadius: "50%", background: "rgba(255,59,92,0.12)", border: "1.5px solid rgba(255,59,92,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 0, height: 0, borderTop: "9px solid transparent", borderBottom: "9px solid transparent", borderLeft: "16px solid #FF3B5C", marginLeft: 3 }} />
+            </div>
+            <div style={{ position: "absolute", top: 10, left: 14, background: "#FF3B5C", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, padding: "3px 7px", borderRadius: 4 }}>VIRAL · 94%</div>
+            <div style={{ position: "absolute", top: 32, right: 18, background: "rgba(255,140,0,0.9)", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, padding: "3px 7px", borderRadius: 4 }}>CLIP 02 · 87%</div>
+            <div style={{ position: "absolute", bottom: 14, left: 14, background: "rgba(255,59,92,0.9)", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, padding: "3px 7px", borderRadius: 4 }}>CLIP 03 · 91%</div>
+          </div>
+          <div style={{ padding: "12px 14px", background: "#0d0d0d" }}>
+            <div style={{ height: 32, background: "#111", borderRadius: 4, position: "relative", overflow: "hidden", border: "1px solid #1a1a1a" }}>
+              {[{l:"4%",w:"17%",c:"#FF3B5C"},{l:"27%",w:"13%",c:"#FF8C00"},{l:"47%",w:"21%",c:"#FF3B5C"},{l:"75%",w:"14%",c:"#FF8C00"}].map((s,i)=>(
+                <div key={i} style={{ position:"absolute", top:8, left:s.l, width:s.w, height:16, background:s.c, borderRadius:3, opacity: i===0?1:0.55 }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── HERO: CENTERED ───────────────────────────────────────────────────────
+    function HeroCentered({ lang }) {
+      const t = {
+        es: { badge: "✦ IA para creadores de contenido", h1a: "Convierte tu contenido", h1b: "en clips virales", sub: "Nuestra IA detecta los mejores momentos de tus streams y videos largos, los recorta y los optimiza para TikTok, YouTube Shorts y más — automáticamente.", cta: "Empezar gratis", ghost: "Ver demo" },
+        en: { badge: "✦ AI for content creators", h1a: "Turn your content into", h1b: "viral clips", sub: "Our AI detects the best moments from your streams and long videos, trims and optimizes them for TikTok, YouTube Shorts, and more — automatically.", cta: "Start for free", ghost: "Watch demo" },
+      }[lang];
+
+      return (
+        <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "140px 48px 80px", textAlign: "center", overflow: "hidden" }}>
+          <OrbBg />
+          <div style={{ position: "relative", zIndex: 1, maxWidth: 880 }}>
+            <div className="fu d1">
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", color: "#FF3B5C", textTransform: "uppercase", border: "1px solid rgba(255,59,92,0.25)", padding: "5px 16px", borderRadius: 100, display: "inline-block", marginBottom: 28 }}>{t.badge}</span>
+            </div>
+            <h1 className="fu d2" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(50px, 7vw, 92px)", fontWeight: 800, lineHeight: 1.0, color: "#f2ede8", marginBottom: 0, letterSpacing: "-0.03em", textWrap: "balance" }}>
+              {t.h1a}<br /><span className="grad-text">{t.h1b}</span>
+            </h1>
+            <p className="fu d3" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "clamp(15px, 1.8vw, 18px)", lineHeight: 1.68, color: "#666", maxWidth: 560, margin: "28px auto 40px" }}>{t.sub}</p>
+            <div className="fu d4" style={{ display: "flex", gap: 14, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginBottom: 48 }}>
+              <a href="#" className="cta-btn">{t.cta} →</a>
+              <a href="#demo" className="cta-ghost">▶ {t.ghost}</a>
+            </div>
+            <div className="fu d5"><PlatformPills center={true} /></div>
+          </div>
+          <div className="fu d5" style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 780, marginTop: 64 }}>
+            <MiniEditor />
+          </div>
+        </section>
+      );
+    }
+
+    // ── HERO: SPLIT ──────────────────────────────────────────────────────────
+    function HeroSplit({ lang }) {
+      const t = {
+        es: { badge: "✦ Procesamiento IA en tiempo real", h1a: "Tu stream.", h1b: "Sus mejores", h1c: "momentos.", sub: "Sube cualquier video largo y recibe clips optimizados para redes sociales en minutos. Sin edición manual.", cta: "Empezar gratis" },
+        en: { badge: "✦ Real-time AI processing", h1a: "Your stream.", h1b: "Its best", h1c: "moments.", sub: "Upload any long video and receive social-media-ready clips in minutes. No manual editing.", cta: "Start for free" },
+      }[lang];
+
+      const stats = lang === "es"
+        ? [{ v: "94%", l: "Precisión IA" }, { v: "<5min", l: "Tiempo medio" }, { v: "10x", l: "Más alcance" }, { v: "500k+", l: "Clips creados" }]
+        : [{ v: "94%", l: "AI accuracy" }, { v: "<5min", l: "Avg. time" }, { v: "10x", l: "More reach" }, { v: "500k+", l: "Clips created" }];
+
+      return (
+        <section style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", padding: "100px 80px", overflow: "hidden" }}>
+          <OrbBg />
+          <div style={{ position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", maxWidth: 1280, margin: "0 auto", width: "100%" }}>
+            <div>
+              <div className="fu d1">
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", color: "#FF3B5C", textTransform: "uppercase", border: "1px solid rgba(255,59,92,0.25)", padding: "5px 16px", borderRadius: 100, display: "inline-block", marginBottom: 28 }}>{t.badge}</span>
+              </div>
+              <h1 className="fu d2" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(44px, 5.5vw, 84px)", fontWeight: 800, lineHeight: 1.0, color: "#f2ede8", marginBottom: 28, letterSpacing: "-0.03em" }}>
+                {t.h1a}<br />{t.h1b}<br /><span className="grad-text">{t.h1c}</span>
+              </h1>
+              <p className="fu d3" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, lineHeight: 1.65, color: "#666", marginBottom: 40, maxWidth: 420 }}>{t.sub}</p>
+              <div className="fu d4" style={{ marginBottom: 44 }}>
+                <a href="#" className="cta-btn">{t.cta} →</a>
+              </div>
+              <div className="fu d5"><PlatformPills center={false} /></div>
+            </div>
+            <div className="fu d3" style={{ position: "relative" }}>
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 500, height: 400, background: "radial-gradient(circle, rgba(255,59,92,0.08), transparent 70%)", pointerEvents: "none" }} />
+              <MiniEditor />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                {stats.map(s => (
+                  <div key={s.l} style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 10, padding: "16px 20px" }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, background: "linear-gradient(135deg,#FF3B5C,#FF8C00)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1 }}>{s.v}</div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#444", marginTop: 4 }}>{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // ── HERO: EDITORIAL ──────────────────────────────────────────────────────
+    function HeroEditorial({ lang }) {
+      const t = {
+        es: { tag: "IA · CLIPS · VIRAL", h: "Clips que\nse vuelven\nvirales.", sub: "IA que trabaja mientras tú transmites. Detecta, recorta y publica automáticamente.", cta: "Empezar gratis" },
+        en: { tag: "AI · CLIPS · VIRAL", h: "Clips that\ngo\nviral.", sub: "AI that works while you stream. Detect, trim, and publish automatically.", cta: "Start for free" },
+      }[lang];
+
+      const marquee = Array(8).fill(["TikTok","YouTube Shorts","Instagram Reels","Twitch","Kick","Twitter/X"]).flat();
+
+      return (
+        <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", overflow: "hidden" }}>
+          {/* Giant ghost text */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "4vw", pointerEvents: "none", zIndex: 0 }}>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(140px, 22vw, 300px)", fontWeight: 800, letterSpacing: "-0.06em", color: "transparent", WebkitTextStroke: "1.5px rgba(255,255,255,0.04)", whiteSpace: "nowrap", lineHeight: 0.9, userSelect: "none" }}>VIRAL</span>
+          </div>
+          <OrbBg />
+
+          {/* Marquee band */}
+          <div style={{ position: "absolute", top: "58%", left: 0, right: 0, zIndex: 1, padding: "11px 0", borderTop: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a", background: "rgba(7,7,7,0.7)", backdropFilter: "blur(6px)", overflow: "hidden" }}>
+            <div style={{ display: "flex", animation: "ticker 28s linear infinite", width: "max-content" }}>
+              {marquee.map((item, i) => (
+                <span key={i} style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: "#282828", letterSpacing: "0.08em", padding: "0 28px", textTransform: "uppercase", flexShrink: 0 }}>
+                  {item} <span style={{ color: "#FF3B5C" }}>◆</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div style={{ position: "relative", zIndex: 2, padding: "0 80px", maxWidth: 860 }}>
+            <div className="fu d1" style={{ marginBottom: 28 }}>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", color: "#FF3B5C", textTransform: "uppercase" }}>{t.tag}</span>
+            </div>
+            <h1 className="fu d2" style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(64px, 9vw, 120px)", fontWeight: 800, lineHeight: 0.92, color: "#f2ede8", letterSpacing: "-0.04em", whiteSpace: "pre-line", marginBottom: 36 }}>{t.h}</h1>
+            <p className="fu d3" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, lineHeight: 1.62, color: "#666", maxWidth: 380, marginBottom: 44 }}>{t.sub}</p>
+            <div className="fu d4" style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <a href="#" className="cta-btn">{t.cta} →</a>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // ── NAVBAR ───────────────────────────────────────────────────────────────
+    function Navbar({ lang, setLang }) {
+      const [scrolled, setScrolled] = useState(false);
+      useEffect(() => {
+        const h = () => setScrolled(window.scrollY > 50);
+        window.addEventListener("scroll", h);
+        return () => window.removeEventListener("scroll", h);
+      }, []);
+
+      const links = {
+        es: [["Características","#features"],["Demo","#demo"],["Precios","#pricing"],["FAQ","#faq"]],
+        en: [["Features","#features"],["Demo","#demo"],["Pricing","#pricing"],["FAQ","#faq"]],
+      }[lang];
+
+      return (
+        <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 64, padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: scrolled ? "rgba(10,10,10,0.9)" : "transparent", backdropFilter: scrolled ? "blur(20px)" : "none", borderBottom: scrolled ? "1px solid #1a1a1a" : "none", transition: "all 0.4s" }}>
+          <div className="grad-text" style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: "-0.01em", cursor: "default" }}>Clipwise</div>
+          <div style={{ display: "flex", gap: 34 }}>
+            {links.map(([label, href]) => (
+              <a key={label} href={href} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#555", textDecoration: "none", transition: "color 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.color = "#f2ede8"}
+                onMouseLeave={e => e.currentTarget.style.color = "#555"}
+              >{label}</a>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button onClick={() => setLang(lang === "es" ? "en" : "es")} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, padding: "5px 11px", borderRadius: 6, border: "1px solid #242424", background: "transparent", color: "#444", cursor: "pointer", letterSpacing: "0.06em", transition: "all 0.2s" }}
+              onMouseEnter={e => { e.currentTarget.style.color = "#f2ede8"; e.currentTarget.style.borderColor = "#555"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#444"; e.currentTarget.style.borderColor = "#242424"; }}
+            >{lang === "es" ? "EN" : "ES"}</button>
+            <a href="#" className="cta-btn" style={{ padding: "10px 22px", fontSize: 13 }}>
+              {lang === "es" ? "Empezar gratis" : "Start for free"}
+            </a>
+          </div>
+        </nav>
+      );
+    }
+
+    // ── APP ──────────────────────────────────────────────────────────────────
+    function App() {
+      const { useTweaks, TweaksPanel, TweakSection, TweakRadio } = window;
+      const [tweaks, setTweaks] = useTweaks(TWEAK_DEFAULTS);
+      const [lang, setLang] = useState(tweaks.lang || "es");
+
+      const heroMap = { centered: HeroCentered, split: HeroSplit, editorial: HeroEditorial };
+      const Hero = heroMap[tweaks.heroVariant] || HeroCentered;
+
+      function handleLang(l) {
+        setLang(l);
+        setTweaks({ lang: l });
+      }
+
+      return (
+        <>
+          <Navbar lang={lang} setLang={handleLang} />
+          <Hero lang={lang} />
+          <FeaturesSection lang={lang} />
+          <DemoSection lang={lang} />
+          <PricingSection lang={lang} />
+          <FAQSection lang={lang} />
+          <FooterSection lang={lang} />
+          <TweaksPanel>
+            <TweakSection title="Hero Variant">
+              <TweakRadio id="heroVariant" options={[
+                { value: "centered",  label: "Centered — clásico centrado" },
+                { value: "split",     label: "Split — texto + mockup" },
+                { value: "editorial", label: "Editorial — tipografía bold" },
+              ]} />
+            </TweakSection>
+            <TweakSection title="Language">
+              <TweakRadio id="lang" options={[
+                { value: "es", label: "Español" },
+                { value: "en", label: "English" },
+              ]} />
+            </TweakSection>
+          </TweaksPanel>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

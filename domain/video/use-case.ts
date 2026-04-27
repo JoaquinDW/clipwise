@@ -19,6 +19,7 @@ export class CreateVideo {
     description?: string;
     source: VideoSource;
     sourceUrl?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<Video> {
     return await this.repository.create({
       companyId: params.companyId,
@@ -27,6 +28,7 @@ export class CreateVideo {
       source: params.source,
       sourceUrl: params.sourceUrl,
       status: 'UPLOADING',
+      metadata: params.metadata,
     });
   }
 }

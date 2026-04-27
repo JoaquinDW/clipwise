@@ -1,4 +1,3 @@
-import { lusitana } from '@/app/ui/fonts';
 import { auth } from '@/auth';
 import {
   VideoCameraIcon,
@@ -12,12 +11,17 @@ import Link from 'next/link';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { VideoStatus } from '@prisma/client';
 
+const darkStatusClass: Record<string, string> = {
+  READY: 'bg-[rgba(34,197,94,0.15)] text-green-400 border border-green-900/50',
+  FAILED: 'bg-[rgba(239,68,68,0.15)] text-red-400 border border-red-900/50',
+};
+const defaultStatusClass = 'bg-[rgba(251,191,36,0.12)] text-yellow-400 border border-yellow-900/50';
+
 export default async function Page() {
   const session = await auth();
   const name = session?.user?.name || session?.user?.email;
   const userId = session?.user?.id;
 
-  // Fetch user's company and video statistics
   const user = await prismaClientGlobal.user.findUnique({
     where: { id: userId },
     include: { company: true },
@@ -27,9 +31,7 @@ export default async function Page() {
 
   const videos = await prismaClientGlobal.video.findMany({
     where: { companyId: company?.id },
-    include: {
-      clips: true,
-    },
+    include: { clips: true },
     orderBy: { createdAt: 'desc' },
     take: 3,
   });
@@ -41,93 +43,88 @@ export default async function Page() {
     readyVideos: videos.filter(v => v.status === VideoStatus.READY).length,
   };
 
-  const recentVideos = videos.slice(0, 3);
-
   return (
     <main>
       <div className="mb-8">
-        <h1 className={`${lusitana.className} mb-2 text-2xl md:text-3xl font-bold text-gray-900`}>
+        <h1
+          className="mb-2 text-2xl md:text-3xl font-bold"
+          style={{ fontFamily: 'var(--font-syne), sans-serif', color: '#f2ede8' }}
+        >
           Welcome back, {name?.split(' ')[0] || name}
         </h1>
-        <p className="text-gray-600">
+        <p style={{ color: '#555' }}>
           Transform your long-form videos into viral clips with AI
         </p>
       </div>
 
       {/* Quick Action CTA */}
-      <Link
-        href="/dashboard/videos/new"
-        className="mb-8 block"
-      >
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg">
+      <Link href="/dashboard/videos/new" className="mb-8 block">
+        <div
+          className="rounded-xl p-6 transition-all"
+          style={{
+            background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)',
+            boxShadow: '0 0 36px rgba(255,59,92,0.28)',
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold mb-1">Create Your First Clip</h2>
-              <p className="text-blue-100">Upload a video or paste a YouTube link to get started</p>
+              <h2 className="text-xl font-semibold mb-1 text-white" style={{ fontFamily: 'var(--font-syne), sans-serif' }}>
+                Create Your First Clip
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.8)' }}>
+                Upload a video or paste a YouTube link to get started
+              </p>
             </div>
-            <PlusIcon className="h-10 w-10" />
+            <PlusIcon className="h-10 w-10 text-white opacity-80" />
           </div>
         </div>
       </Link>
 
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Total Videos</p>
-            <VideoCameraIcon className="h-5 w-5 text-blue-500" />
+        {[
+          { label: 'Total Videos', value: stats.totalVideos, sub: `${stats.readyVideos} ready`, Icon: VideoCameraIcon },
+          { label: 'Clips Generated', value: stats.totalClips, sub: 'AI-powered clips', Icon: SparklesIcon },
+          { label: 'Minutes Used', value: stats.minutesUsed.toFixed(1), sub: 'Processing time', Icon: ClockIcon },
+          {
+            label: 'Success Rate',
+            value: `${stats.totalVideos > 0 ? Math.round((stats.readyVideos / stats.totalVideos) * 100) : 0}%`,
+            sub: 'Videos processed',
+            Icon: SparklesIcon,
+          },
+        ].map(({ label, value, sub, Icon }) => (
+          <div key={label} className="dash-card p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium" style={{ color: '#555' }}>{label}</p>
+              <Icon className="h-5 w-5" style={{ color: '#FF3B5C' }} />
+            </div>
+            <p className="text-3xl font-bold" style={{ color: '#f2ede8', fontFamily: 'var(--font-syne), sans-serif' }}>
+              {value}
+            </p>
+            <p className="text-xs mt-1" style={{ color: '#444' }}>{sub}</p>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.totalVideos}</p>
-          <p className="text-xs text-gray-500 mt-1">{stats.readyVideos} ready</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Clips Generated</p>
-            <SparklesIcon className="h-5 w-5 text-purple-500" />
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.totalClips}</p>
-          <p className="text-xs text-gray-500 mt-1">AI-powered clips</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Minutes Used</p>
-            <ClockIcon className="h-5 w-5 text-green-500" />
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.minutesUsed.toFixed(1)}</p>
-          <p className="text-xs text-gray-500 mt-1">Processing time</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Success Rate</p>
-            <SparklesIcon className="h-5 w-5 text-yellow-500" />
-          </div>
-          <p className="text-3xl font-bold text-gray-900">
-            {stats.totalVideos > 0 ? Math.round((stats.readyVideos / stats.totalVideos) * 100) : 0}%
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Videos processed</p>
-        </div>
+        ))}
       </div>
 
       {/* Recent Videos */}
-      {recentVideos.length > 0 && (
+      {videos.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Videos</h2>
-            <Link
-              href="/dashboard/videos"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            <h2
+              className="text-lg font-semibold"
+              style={{ fontFamily: 'var(--font-syne), sans-serif', color: '#f2ede8' }}
             >
+              Recent Videos
+            </h2>
+            <Link href="/dashboard/videos" className="text-sm font-medium" style={{ color: '#FF3B5C' }}>
               View all →
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {recentVideos.map((video) => (
+            {videos.map((video) => (
               <Link key={video.id} href={`/dashboard/videos/${video.id}`}>
-                <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-100 overflow-hidden">
-                  <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                <div className="dash-card overflow-hidden">
+                  <div className="aspect-video bg-[#1a1a1a] flex items-center justify-center">
                     {video.thumbnailUrl ? (
                       <img
                         src={video.thumbnailUrl}
@@ -135,20 +132,20 @@ export default async function Page() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <VideoCameraIcon className="h-12 w-12 text-gray-400" />
+                      <VideoCameraIcon className="h-12 w-12" style={{ color: '#333' }} />
                     )}
                   </div>
                   <div className="p-4">
-                    <h3 className="font-medium text-gray-900 truncate mb-1">
+                    <h3 className="font-medium truncate mb-1" style={{ color: '#f2ede8' }}>
                       {video.title}
                     </h3>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs" style={{ color: '#555' }}>
                       <span>{video.clips.length} clips</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        video.status === VideoStatus.READY ? 'bg-green-100 text-green-700' :
-                        video.status === VideoStatus.FAILED ? 'bg-red-100 text-red-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          darkStatusClass[video.status] ?? defaultStatusClass
+                        }`}
+                      >
                         {video.status}
                       </span>
                     </div>
@@ -162,35 +159,26 @@ export default async function Page() {
 
       {/* Quick Links */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h2>
+        <h2
+          className="text-lg font-semibold mb-4"
+          style={{ fontFamily: 'var(--font-syne), sans-serif', color: '#f2ede8' }}
+        >
+          Quick Access
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link href="/dashboard/videos">
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border border-gray-100 flex flex-col items-center text-center">
-              <VideoCameraIcon className="h-8 w-8 text-blue-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">My Videos</p>
-            </div>
-          </Link>
-
-          <Link href="/dashboard/videos/new">
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border border-gray-100 flex flex-col items-center text-center">
-              <PlusIcon className="h-8 w-8 text-green-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Upload Video</p>
-            </div>
-          </Link>
-
-          <Link href="/billing">
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border border-gray-100 flex flex-col items-center text-center">
-              <BanknotesIcon className="h-8 w-8 text-purple-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Billing</p>
-            </div>
-          </Link>
-
-          <Link href="/account">
-            <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow border border-gray-100 flex flex-col items-center text-center">
-              <UserCircleIcon className="h-8 w-8 text-orange-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Account</p>
-            </div>
-          </Link>
+          {[
+            { href: '/dashboard/videos', Icon: VideoCameraIcon, label: 'My Videos' },
+            { href: '/dashboard/videos/new', Icon: PlusIcon, label: 'Upload Video' },
+            { href: '/billing', Icon: BanknotesIcon, label: 'Billing' },
+            { href: '/account', Icon: UserCircleIcon, label: 'Account' },
+          ].map(({ href, Icon, label }) => (
+            <Link key={label} href={href}>
+              <div className="dash-card p-6 flex flex-col items-center text-center">
+                <Icon className="h-8 w-8 mb-2" style={{ color: '#FF3B5C' }} />
+                <p className="text-sm font-medium" style={{ color: '#f2ede8' }}>{label}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </main>

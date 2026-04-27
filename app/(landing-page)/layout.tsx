@@ -1,25 +1,25 @@
 import './style.css';
-import { Inter, Architects_Daughter } from 'next/font/google';
+import { Syne, DM_Sans } from 'next/font/google';
 import Header from './components/header';
 import Footer from './components/footer';
 
-
-const inter = Inter({
+const syne = Syne({
   subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap'
+  variable: '--font-syne',
+  weight: ['400', '700', '800'],
+  display: 'swap',
 });
 
-const architects_daughter = Architects_Daughter({
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  variable: '--font-architects-daughter',
-  weight: '400',
-  display: 'swap'
+  variable: '--font-dm-sans',
+  weight: ['300', '400', '500'],
+  display: 'swap',
 });
 
 export const metadata = {
-  title: 'Landing Page',
-  description: 'Landing page for your project',
+  title: 'Clipwise — Clips Virales en Minutos',
+  description: 'Nuestra IA detecta los mejores momentos de tus streams y videos largos, los recorta y los optimiza para TikTok, YouTube Shorts y más — automáticamente.',
 };
 
 export default function RootLayout({
@@ -30,13 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className={`${inter.variable} ${architects_daughter.variable} flex flex-col min-h-screen overflow-hidden font-inter antialiased bg-gray-950 text-gray-200 tracking-tight`}>
-          <Header />
+        <div className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`} style={{ background: '#0a0a0a', color: '#f2ede8' }}>
+          <Header lang="en" />
           {children}
-          <Footer />
+          <Footer lang="en" />
         </div>
       </body>
     </html>
   );
 }
- 

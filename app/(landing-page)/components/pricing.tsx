@@ -1,66 +1,144 @@
-export default function Pricing() {
+'use client';
+
+import Link from 'next/link';
+import type { Lang } from './use-lang';
+
+const i18n = {
+  es: {
+    badge: '✦ Precios simples',
+    headline: 'Elige tu',
+    gradPart: 'plan',
+    sub: '7 días de prueba gratis. Sin tarjeta de crédito al inicio.',
+    popularLabel: 'Más popular',
+    plans: [
+      {
+        name: 'Starter',
+        price: '$29',
+        period: '/mes',
+        desc: 'Para creadores que están empezando.',
+        features: ['30 minutos de video/mes', 'Hasta 5 clips por video', 'Resolución 1080p', 'Descarga directa MP4', 'Soporte por email'],
+        cta: 'Empezar gratis',
+        popular: false,
+      },
+      {
+        name: 'Pro',
+        price: '$79',
+        period: '/mes',
+        desc: 'Para creadores en crecimiento constante.',
+        features: ['120 minutos de video/mes', 'Hasta 10 clips por video', 'Resolución 4K', 'Captions personalizables', 'Soporte prioritario', 'Analytics de viralidad'],
+        cta: 'Empezar con Pro',
+        popular: true,
+      },
+      {
+        name: 'Agency',
+        price: '$199',
+        period: '/mes',
+        desc: 'Para agencias y equipos de contenido.',
+        features: ['500 minutos de video/mes', 'Clips ilimitados por video', 'Resolución 4K + HDR', 'API access', 'Gestor de cuentas dedicado', 'Analytics avanzados', 'White-label disponible'],
+        cta: 'Contactar ventas',
+        popular: false,
+      },
+    ],
+  },
+  en: {
+    badge: '✦ Simple pricing',
+    headline: 'Choose your',
+    gradPart: 'plan',
+    sub: '7-day free trial. No credit card required to start.',
+    popularLabel: 'Most popular',
+    plans: [
+      {
+        name: 'Starter',
+        price: '$29',
+        period: '/mo',
+        desc: 'For creators just getting started.',
+        features: ['30 video minutes/month', 'Up to 5 clips per video', '1080p resolution', 'Direct MP4 download', 'Email support'],
+        cta: 'Start for free',
+        popular: false,
+      },
+      {
+        name: 'Pro',
+        price: '$79',
+        period: '/mo',
+        desc: 'For creators growing consistently.',
+        features: ['120 video minutes/month', 'Up to 10 clips per video', '4K resolution', 'Customizable captions', 'Priority support', 'Virality analytics'],
+        cta: 'Start with Pro',
+        popular: true,
+      },
+      {
+        name: 'Agency',
+        price: '$199',
+        period: '/mo',
+        desc: 'For agencies and content teams.',
+        features: ['500 video minutes/month', 'Unlimited clips per video', '4K + HDR resolution', 'API access', 'Dedicated account manager', 'Advanced analytics', 'White-label available'],
+        cta: 'Contact sales',
+        popular: false,
+      },
+    ],
+  },
+};
+
+function Check() {
   return (
-    <section>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="py-12 md:py-20 border-t border-gray-800">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M2.5 7L6 10.5L11.5 3.5" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
-          {/* Section header */}
-          <div className="max-w-3xl mx-auto text-center pb-12 md:pb-20">
-            <h2 className="h2 mb-4">Pricing</h2>
-          </div>
+export default function Pricing({ lang }: { lang: Lang }) {
+  const t = i18n[lang];
 
-          {/* Pricing */}
-          <div className="max-w-sm mx-auto grid gap-8 lg:grid-cols-3 lg:gap-6 items-start lg:max-w-none">
-            <div className="md:flex flex-col h-full p-6 rounded-xl sm:hidden" data-aos="fade-up">
-            </div>
-            {/* 1st testimonial */}
-            <div className="flex flex-col h-full p-6 bg-gray-800 rounded-xl" data-aos="fade-up">
-              <div className="items-center">
-                <div className="max-w-xl md:max-w-none md:w-full mx-auto md:col-span-5 lg:col-span-6 mb-8 md:mb-0 md:order-1" data-aos="fade-up">
+  return (
+    <section id="pricing" style={{ padding: '100px 80px', borderTop: '1px solid #111' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+          <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
+            {t.badge}
+          </span>
+          <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
+            {t.headline} <span className="grad-text">{t.gradPart}</span>
+          </h2>
+          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#555' }}>{t.sub}</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'start' }}>
+          {t.plans.map(plan => (
+            <div
+              key={plan.name}
+              style={{
+                background: plan.popular ? 'linear-gradient(180deg, rgba(255,59,92,0.06) 0%, #111 40%)' : '#111',
+                border: plan.popular ? '1px solid rgba(255,59,92,0.3)' : '1px solid #1a1a1a',
+                borderRadius: 16,
+                padding: '32px 28px',
+                position: 'relative',
+              }}
+            >
+              {plan.popular && (
+                <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)', color: '#fff', fontFamily: 'var(--font-syne), sans-serif', fontSize: 11, fontWeight: 800, padding: '4px 14px', borderRadius: 100, whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>
+                  {t.popularLabel}
                 </div>
-                {/* Content */}
-                <div className="max-w-xl md:max-w-none md:w-full mx-auto md:col-span-7 lg:col-span-6" data-aos="fade-right">
-                  <div className="p-2">
-                    <div className="font-architects-daughter text-6xl text-purple-600 mb-2 w-fit m-auto font-bold">50$</div>
-                    <p className="text-xl text-gray-400 mb-4">Everything mentionned above included, summed up below :</p>
-                    <ul className="text-lg text-gray-400 -mb-2 text-white">
-                      <li className="flex items-center mb-2">
-                        <svg className="w-3 h-3 fill-current text-green-500 mr-2 shrink-0" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
-                        </svg>
-                        <span>Argument 1</span>
-                      </li>
-                      <li className="flex items-center mb-2">
-                        <svg className="w-3 h-3 fill-current text-green-500 mr-2 shrink-0" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
-                        </svg>
-                        <span>Argument 2</span>
-                      </li>
-                      <li className="flex items-center mb-2">
-                        <svg className="w-3 h-3 fill-current text-green-500 mr-2 shrink-0" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
-                        </svg>
-                        <span>Argument 3</span>
-                      </li>
-                      <li className="flex items-center">
-                        <svg className="w-3 h-3 fill-current text-green-500 mr-2 shrink-0" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
-                        </svg>
-                        <span>Argument 4</span>
-                      </li>
-                    </ul>
-                  </div>
+              )}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#555', marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{plan.name}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 44, fontWeight: 800, background: 'linear-gradient(135deg,#FF3B5C,#FF8C00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>{plan.price}</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#444' }}>{plan.period}</span>
                 </div>
+                <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', lineHeight: 1.5 }}>{plan.desc}</p>
               </div>
-              
-              <div className="text-gray-700 font-medium mt-4 pt-5 border-t border-gray-700 m-auto w-fit">
-                <a className="btn text-white bg-purple-600 hover:bg-purple-700 w-full mb-4 sm:w-auto sm:mb-0" href="#0">Get Started</a>
-              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {plan.features.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Check />
+                    <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888' }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/login" className={plan.popular ? 'cta-btn' : 'cta-ghost'} style={{ width: '100%', justifyContent: 'center', display: 'inline-flex' }}>
+                {plan.cta}
+              </Link>
             </div>
-          </div>
-
-
-
+          ))}
         </div>
       </div>
     </section>

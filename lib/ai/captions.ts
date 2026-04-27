@@ -9,6 +9,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { defaultModels, checkAIConfiguration } from './providers';
 import { TranscriptionSegment, WordTimestamp } from './transcribe';
+import { getCaptionStyle, type CaptionStyleName } from './caption-styles';
 
 /**
  * Schema for a single word in a caption with highlight timing
@@ -61,6 +62,7 @@ export async function generateCaptions(
     emphasizeKeywords?: boolean; // Emphasize important words (default: true)
     includeHook?: boolean; // Generate opening hook overlay (default: true)
     language?: string; // Language of the video (e.g., 'en', 'es', 'fr')
+    stylePreset?: CaptionStyleName; // Caption style preset (default: 'basic')
   }
 ): Promise<CaptionsResult> {
   checkAIConfiguration();
@@ -70,7 +72,11 @@ export async function generateCaptions(
     emphasizeKeywords = true,
     includeHook = true,
     language = 'en',
+    stylePreset = 'basic',
   } = options || {};
+
+  // Get the caption style preset
+  const preset = getCaptionStyle(stylePreset);
 
   // Build the prompt with word-level data
   const transcriptionText = words
@@ -111,7 +117,16 @@ export async function generateCaptions(
     }
 
     console.log(`✅ Caption validation passed - all words from original transcription`);
-    return result.object;
+
+    // Override AI-generated style with user's selected preset
+    return {
+      ...result.object,
+      style: {
+        fontSize: preset.fontSize,
+        color: preset.color,
+        highlightColor: preset.highlightColor,
+      },
+    };
   } catch (error) {
     console.error('Error generating captions:', error);
     throw new Error(
@@ -253,14 +268,23 @@ Remember: ONLY use words from the transcription above. NO additions, NO changes,
  * words can be highlighted as they're spoken, similar to TikTok/Reels captions.
  *
  * @param captionsResult - Complete caption result with styling
+ * @param stylePreset - Optional caption style preset name to get font and position
  * @returns ASS subtitle file content
  */
-export function captionsToASS(captionsResult: CaptionsResult): string {
+export function captionsToASS(
+  captionsResult: CaptionsResult,
+  stylePreset?: CaptionStyleName
+): string {
   const { captions, style } = captionsResult;
 
+  // Get preset for font and position settings
+  const preset = getCaptionStyle(stylePreset);
+
   // ASS file header with script info and styles
-  // MarginV for bottom positioning: smaller value = closer to bottom
-  // For 1920px height, we want captions at ~1440px (3/4), so MarginV = 480px from bottom
+  // Use preset for font, weight, and position
+  // MarginV from preset (e.g., 480 for bottom, 540 for center)
+  const isBold = preset.fontWeight === 'bold' ? -1 : 0; // ASS uses -1 for bold, 0 for normal
+
   const header = `[Script Info]
 Title: Clipwise Captions
 ScriptType: v4.00+
@@ -271,8 +295,8 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,${style.fontSize},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,2,1,2,10,10,480,1
-Style: Highlight,Arial,${style.fontSize},${hexToASSColor(style.highlightColor)},${hexToASSColor(style.highlightColor)},&H00000000,${hexToASSColor(style.highlightColor, 0.8)},1,0,0,0,100,100,0,0,1,2,1,2,10,10,480,1
+Style: Default,${preset.font},${style.fontSize},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,${isBold},0,0,0,100,100,0,0,1,2,1,2,10,10,${preset.marginV},1
+Style: Highlight,${preset.font},${style.fontSize},${hexToASSColor(style.highlightColor)},${hexToASSColor(style.highlightColor)},&H00000000,${hexToASSColor(style.highlightColor, 0.8)},${isBold},0,0,0,100,100,0,0,1,2,1,2,10,10,${preset.marginV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

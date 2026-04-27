@@ -187,13 +187,29 @@ The video processing system uses a modular architecture with clear separation of
 **Processing Pipeline**:
 1. Upload → Storage (Supabase/S3)
 2. Transcription → Whisper API with segments
-3. Highlight Detection → AI analysis with virality scoring
-4. Clip Generation → FFmpeg processing (extract → crop to 9:16 → burn captions)
+3. Highlight Detection → AI analysis with virality scoring + smart crop strategy selection
+4. Clip Generation → FFmpeg processing (extract → **smart AI crop to 9:16** → burn captions)
 5. Storage → Save clips and thumbnails
+
+**Smart AI Cropping (V2 Engine)**:
+The system uses GPT to analyze transcription content and automatically select the optimal vertical crop strategy for each clip:
+- **track_speaker**: Smooth face tracking for talking heads (zoompan filter with "heavy tripod" stabilization)
+- **track_action**: Dynamic tracking for demonstrations and movement (faster zoompan response)
+- **blur_sides**: Cinematic blurred letterbox for group shots/panels (preserves full width)
+- **wide_shot**: Static center crop for landscapes/screen recordings (fallback)
+
+AI determines the strategy based on transcription clues:
+- Number of people speaking ("I" vs "we" vs multiple voices)
+- Activity level ("I'm going to show you..." = track_action)
+- Scene type (interview = track_speaker, panel = blur_sides)
+- Subject position (left/center/right based on content type)
+
+Crop strategy is stored in `Clip.metadata.cropStrategy` with reasoning for analytics.
 
 **Key Design Decisions**:
 - **Vercel AI SDK** for provider flexibility - Easy to swap OpenAI ↔ Anthropic
 - **Structured outputs** with Zod schemas for reliable AI responses
+- **AI-driven crop strategies** using GPT analysis (no computer vision dependencies needed)
 - **Temporary file handling** in OS temp directory for FFmpeg processing
 - **Domain-driven design** consistent with existing codebase patterns
 - **Status-based workflows** for tracking video processing stages

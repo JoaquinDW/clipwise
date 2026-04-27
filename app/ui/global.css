@@ -2,6 +2,157 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dashboard dark theme utilities ────────────────────────────────────────── */
+
+:root {
+  --dash-bg: #0c0d10;
+  --dash-surface: #15161a;
+  --dash-surface-strong: #1b1d22;
+  --dash-border: #2a2d35;
+  --dash-text: #f6f4f0;
+  --dash-text-secondary: #cdc6bb;
+  --dash-text-muted: #a29b90;
+}
+
+.grad-text {
+  background: linear-gradient(135deg, #FF3B5C 0%, #FF8C00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dash-card {
+  background: var(--dash-surface);
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 16px 32px rgba(0, 0, 0, 0.16);
+}
+
+.dash-card:hover {
+  border-color: rgba(255, 59, 92, 0.35);
+}
+
+.dash-text-primary {
+  color: var(--dash-text);
+}
+
+.dash-text-secondary {
+  color: var(--dash-text-secondary);
+}
+
+.dash-text-muted {
+  color: var(--dash-text-muted);
+}
+
+.dash-input {
+  background: var(--dash-surface-strong);
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text);
+  border-radius: 8px;
+  transition: border-color 0.2s;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.dash-input::placeholder {
+  color: var(--dash-text-muted);
+}
+
+.dash-input:focus {
+  outline: none;
+}
+
+.dash-input:focus-visible {
+  outline: none;
+  border-color: rgba(255, 59, 92, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 59, 92, 0.1);
+}
+
+.dash-btn-gradient {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FF3B5C, #FF8C00);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 0 24px rgba(255, 59, 92, 0.28);
+  transition: box-shadow 0.3s, transform 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dash-btn-gradient:hover {
+  box-shadow: 0 0 48px rgba(255, 59, 92, 0.5);
+  transform: translateY(-1px);
+}
+
+.dash-btn-gradient:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .dash-btn-gradient,
+  .dash-btn-gradient:hover {
+    transform: none;
+    transition: none;
+  }
+
+  .dash-card {
+    transition: none;
+  }
+}
+
+.dash-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text-muted);
+  border-radius: 8px;
+  transition: color 0.2s, border-color 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dash-btn-ghost:hover {
+  color: var(--dash-text);
+  border-color: var(--dash-text-muted);
+}
+
+.dash-nav-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  width: 100%;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--dash-text-muted);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.dash-nav-footer-btn:hover {
+  color: var(--dash-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;

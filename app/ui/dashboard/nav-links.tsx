@@ -9,8 +9,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 
-// Map of links to display in the side navigation.
-// Depending on the size of the application, this would be stored in a database.
 const links = [
   { name: 'Home', href: '/dashboard', icon: HomeIcon },
   { name: 'Videos', href: '/dashboard/videos', icon: VideoCameraIcon },
@@ -24,20 +22,22 @@ export default function NavLinks() {
     <>
       {links.map((link) => {
         const LinkIcon = link.icon;
-        const isActive = pathname === link.href ||
+        const isActive =
+          pathname === link.href ||
           (link.href !== '/dashboard' && pathname.startsWith(link.href));
         return (
           <Link
             key={link.name}
             href={link.href}
             className={clsx(
-              'flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3',
+              'flex h-[44px] grow items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors md:flex-none md:justify-start',
               {
-                'bg-sky-100 text-blue-600': isActive,
+                'border-l-2 border-[#FF3B5C] bg-[rgba(255,59,92,0.08)] text-[#f2ede8]': isActive,
+                'text-[#555] hover:text-[#f2ede8] hover:bg-[rgba(255,255,255,0.04)]': !isActive,
               },
             )}
           >
-            <LinkIcon className="w-6" />
+            <LinkIcon className="w-5 flex-none" aria-hidden="true" />
             <p className="hidden md:block">{link.name}</p>
           </Link>
         );

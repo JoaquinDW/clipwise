@@ -88,6 +88,7 @@ class SupabaseStorage {
     videos: 'videos',
     clips: 'clips',
     thumbnails: 'thumbnails',
+    audio: 'audio',
   };
 
   constructor(config: { url: string; key: string }) {
@@ -181,6 +182,25 @@ class SupabaseStorage {
       path: data.path,
       size: file.size,
     };
+  }
+
+  async uploadAudio(
+    file: File | Blob,
+    companyId: string,
+    videoId: string
+  ): Promise<UploadResult> {
+    const fileName = `${companyId}/${videoId}/audio.m4a`;
+    const { data, error } = await this.client.storage
+      .from(this.buckets.audio)
+      .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+    if (error) throw new Error(`Failed to upload audio: ${error.message}`);
+
+    const { data: { publicUrl } } = this.client.storage
+      .from(this.buckets.audio)
+      .getPublicUrl(fileName);
+
+    return { url: publicUrl, path: data.path, size: file.size };
   }
 
   async downloadVideo(path: string): Promise<Blob> {

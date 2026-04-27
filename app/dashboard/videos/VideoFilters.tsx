@@ -22,36 +22,36 @@ export default function VideoFilters({
       <div className="flex gap-3">
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            <MagnifyingGlassIcon className="h-5 w-5" style={{ color: '#444' }} />
           </div>
           <input
             type="text"
             placeholder="Search videos by title..."
             onChange={(e) => onSearchChange(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="dash-input pl-10"
+            style={{ paddingLeft: 40 }}
           />
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="dash-btn-ghost inline-flex items-center gap-2 px-4 py-2 text-sm font-medium"
         >
-          <FunnelIcon className="h-5 w-5 mr-2" />
+          <FunnelIcon className="h-5 w-5" />
           Filters
         </button>
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="dash-card p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#777' }}>
                 Status
               </label>
               <select
                 onChange={(e) => onStatusFilter(e.target.value)}
-                className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                className="dash-input"
               >
                 <option value="">All statuses</option>
                 <option value="READY">Ready</option>
@@ -61,15 +61,13 @@ export default function VideoFilters({
                 <option value="FAILED">Failed</option>
               </select>
             </div>
-
-            {/* Sort By */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: '#777' }}>
                 Sort by
               </label>
               <select
                 onChange={(e) => onSortChange(e.target.value)}
-                className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                className="dash-input"
               >
                 <option value="createdAt-desc">Newest first</option>
                 <option value="createdAt-asc">Oldest first</option>

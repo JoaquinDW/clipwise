@@ -1,21 +1,17 @@
 import Hero from './components/hero';
 import Features from './components/features';
-import Zigzag from './components/zigzag';
-import Testimonials from './components/testimonials';
-import Newsletter from './components/newsletter';
-import Faq from './components/faq';
+import Demo from './components/demo';
 import Pricing from './components/pricing';
+import Faq from './components/faq';
 
 export default function Home() {
   return (
     <>
-      <Hero />
-      <Features />
-      <Zigzag />
-      <Testimonials />
-      <Faq />
-      <Pricing />
-      <Newsletter />
+      <Hero lang="en" />
+      <Features lang="en" />
+      <Demo lang="en" />
+      <Pricing lang="en" />
+      <Faq lang="en" />
     </>
   );
 }

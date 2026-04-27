@@ -1,5 +1,4 @@
 import NavLinks from "@/app/ui/dashboard/nav-links"
-import AcmeLogo from "@/app/ui/acme-logo"
 import { PlusIcon, PowerIcon } from "@heroicons/react/24/outline"
 import { signOut, auth } from "@/auth"
 import Link from "next/link"
@@ -8,22 +7,31 @@ export default async function SideNav() {
   const user = await auth()
   const name = user?.user?.name || user?.user?.email
   return (
-    <div className="flex mt-2 h-full flex-col px-3 py-4 md:px-2">
-      <span className="mb-2 flex h-10 items-end justify-start rounded-md p-2">
-        <div className="w-32 text-black md:w-40">
-          <AcmeLogo />
-        </div>
-      </span>
-      <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-        <NavLinks />
-        <div className="hidden h-auto w-full grow rounded-md bg-gray-50 md:block"></div>
-        <Link
-          className="flex h-[48px] w-full grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3"
-          href="mailto:contact@example.com"
+    <div
+      className="flex h-full flex-col px-3 py-4 md:px-2 border-r"
+      style={{ background: '#0d0d0d', borderColor: '#1a1a1a' }}
+    >
+      <Link href="/dashboard" className="mb-6 flex items-center gap-2 px-2 py-2">
+        <span
+          className="grad-text"
+          style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' }}
         >
-          <PlusIcon className="w-6" />
-          <div className="hidden md:block">Feedback</div>
+          Clipwise
+        </span>
+      </Link>
+
+      <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-1">
+        <NavLinks />
+        <div className="hidden h-auto w-full grow md:block" />
+
+        <Link
+          href="mailto:contact@example.com"
+          className="dash-nav-footer-btn"
+        >
+          <PlusIcon className="w-5 flex-none" aria-hidden="true" />
+          <span className="hidden md:block">Feedback</span>
         </Link>
+
         <form
           action={async () => {
             "use server"
@@ -32,11 +40,12 @@ export default async function SideNav() {
         >
           {!!user && (
             <button
-              className="flex h-[48px] w-full grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3"
+              className="dash-nav-footer-btn"
+              aria-label="Sign Out"
               title={name ?? undefined}
             >
-              <PowerIcon className="w-6" />
-              <div className="hidden md:block">Sign Out</div>
+              <PowerIcon className="w-5 flex-none" aria-hidden="true" />
+              <span className="hidden md:block" aria-hidden="true">Sign Out</span>
             </button>
           )}
         </form>

@@ -89,6 +89,8 @@ enum VideoSource {
 enum VideoStatus {
   UPLOADING
   UPLOADED
+  INGESTING
+  INGESTED
   TRANSCRIBING
   TRANSCRIBED
   PROCESSING
@@ -125,6 +127,7 @@ model Video {
   source        VideoSource   @default(UPLOAD)
   sourceUrl     String?       // YouTube URL or original upload URL
   storageUrl    String?       // URL in storage (Supabase/S3)
+  audioUrl      String?       // URL of extracted audio (Supabase)
   thumbnailUrl  String?
   duration      Int?          // Duration in seconds
   status        VideoStatus   @default(UPLOADING)
@@ -133,6 +136,7 @@ model Video {
   transcription Transcription?
   clips         Clip[]
   jobs          ProcessingJob[]
+  audioChunks   AudioChunk[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt @default(now())
 
@@ -193,4 +197,20 @@ model ProcessingJob {
 
   @@index([videoId, type])
   @@index([status])
+}
+
+model AudioChunk {
+  id          String   @id @default(cuid())
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId     String
+  index       Int
+  startTime   Float
+  endTime     Float
+  storageUrl  String?
+  transcript  Json?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
+
+  @@index([videoId, status])
 }

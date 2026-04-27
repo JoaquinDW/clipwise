@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getAllCaptionStyles, type CaptionStyleName } from '@/lib/ai/caption-styles';
 
 type UploadMode = 'file' | 'youtube';
 
@@ -10,7 +11,6 @@ export default function NewVideoPage() {
   const router = useRouter();
   const [mode, setMode] = useState<UploadMode>('file');
   const [uploading, setUploading] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -19,75 +19,44 @@ export default function NewVideoPage() {
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [captionStyle, setCaptionStyle] = useState<CaptionStyleName>('basic');
 
-  // Drag and drop handlers
+  const captionStyles = getAllCaptionStyles();
+
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]);
   }, []);
 
   const handleFileSelect = (selectedFile: File) => {
-    // Validate file type
-    const validTypes = [
-      'video/mp4',
-      'video/quicktime',
-      'video/x-msvideo',
-      'video/x-matroska',
-    ];
-
+    const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
     if (!validTypes.includes(selectedFile.type)) {
       setError('Invalid file type. Please upload MP4, MOV, AVI, or MKV.');
       return;
     }
-
-    // Validate file size (500MB)
-    const maxSize = 500 * 1024 * 1024;
-    if (selectedFile.size > maxSize) {
+    if (selectedFile.size > 500 * 1024 * 1024) {
       setError('File too large. Maximum size is 500MB.');
       return;
     }
-
     setFile(selectedFile);
     setError(null);
-
-    // Set default title from filename if not set
-    if (!title) {
-      setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
-    }
+    if (!title) setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (mode === 'file' && !file) {
-      setError('Please select a video file');
-      return;
-    }
-
-    if (mode === 'youtube' && !youtubeUrl) {
-      setError('Please enter a YouTube URL');
-      return;
-    }
-
-    if (!title.trim()) {
-      setError('Please enter a title');
-      return;
-    }
+    if (mode === 'file' && !file) { setError('Please select a video file'); return; }
+    if (mode === 'youtube' && !youtubeUrl) { setError('Please enter a YouTube URL'); return; }
+    if (!title.trim()) { setError('Please enter a title'); return; }
 
     setUploading(true);
     setError(null);
@@ -97,345 +66,295 @@ export default function NewVideoPage() {
       let videoId: string;
 
       if (mode === 'file') {
-        // File upload
         const formData = new FormData();
         formData.append('file', file!);
         formData.append('title', title);
         if (description) formData.append('description', description);
+        formData.append('captionStyle', captionStyle);
 
-        const uploadResponse = await fetch('/api/videos/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          throw new Error(errorData.error || 'Upload failed');
-        }
-
-        const data = await uploadResponse.json();
-        videoId = data.videoId;
+        const res = await fetch('/api/videos/upload', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
+        videoId = (await res.json()).videoId;
         setProgress(30);
       } else {
-        // YouTube URL
-        const youtubeResponse = await fetch('/api/videos/youtube', {
+        const res = await fetch('/api/videos/youtube', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: youtubeUrl,
-            title,
-            description,
-          }),
+          body: JSON.stringify({ url: youtubeUrl, title, description, captionStyle }),
         });
-
-        if (!youtubeResponse.ok) {
-          const errorData = await youtubeResponse.json();
-          throw new Error(errorData.error || 'YouTube download failed');
-        }
-
-        const data = await youtubeResponse.json();
-        videoId = data.videoId;
+        if (!res.ok) throw new Error((await res.json()).error || 'YouTube download failed');
+        videoId = (await res.json()).videoId;
         setProgress(30);
       }
 
       setUploading(false);
-      setProcessing(true);
-
-      // Process video (transcribe + detect highlights + generate clips)
-      const processResponse = await fetch(`/api/videos/${videoId}/process`, {
-        method: 'POST',
-      });
-
-      if (!processResponse.ok) {
-        const errorData = await processResponse.json();
-        throw new Error(errorData.error || 'Processing failed');
-      }
-
       setProgress(100);
-
-      // Redirect to video detail page
       router.push(`/dashboard/videos/${videoId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       setUploading(false);
-      setProcessing(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/dashboard/videos"
-            className="text-sm text-blue-600 hover:text-blue-700 flex items-center mb-4"
+            className="text-sm flex items-center mb-4 transition-colors"
+            style={{ color: '#555' }}
           >
-            <svg
-              className="w-4 h-4 mr-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Videos
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Upload Video</h1>
-          <p className="mt-2 text-gray-600">
+          <h1
+            className="text-3xl font-bold"
+            style={{ fontFamily: 'var(--font-syne), sans-serif', color: '#f2ede8' }}
+          >
+            Upload Video
+          </h1>
+          <p className="mt-2" style={{ color: '#555' }}>
             Upload from your computer or paste a YouTube URL
           </p>
         </div>
 
         {/* Mode Tabs */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setMode('file')}
-                className={`${
-                  mode === 'file'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                📁 Upload File
-              </button>
-              <button
-                onClick={() => setMode('youtube')}
-                className={`${
-                  mode === 'youtube'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                🎥 YouTube URL
-              </button>
+          <div style={{ borderBottom: '1px solid #1a1a1a' }}>
+            <nav role="tablist" className="-mb-px flex space-x-8">
+              {(['file', 'youtube'] as UploadMode[]).map((m) => (
+                <button
+                  key={m}
+                  role="tab"
+                  aria-selected={mode === m}
+                  onClick={() => setMode(m)}
+                  className="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                  style={
+                    mode === m
+                      ? { borderColor: '#FF3B5C', color: '#FF3B5C' }
+                      : { borderColor: 'transparent', color: '#555' }
+                  }
+                >
+                  {m === 'file' ? '📁 Upload File' : '🎥 YouTube URL'}
+                </button>
+              ))}
             </nav>
           </div>
         </div>
 
         {/* Upload Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* File Upload Mode */}
+
+          {/* File Upload Zone */}
           {mode === 'file' && (
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
-              className={`relative border-2 border-dashed rounded-lg p-12 text-center ${
+              className="relative border-2 border-dashed rounded-xl p-12 text-center transition-colors"
+              style={
                 dragActive
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
+                  ? { borderColor: '#FF3B5C', background: 'rgba(255,59,92,0.05)' }
+                  : { borderColor: '#2a2a2a' }
+              }
             >
               <input
                 type="file"
+                name="video-file"
                 accept="video/*"
-                onChange={(e) =>
-                  e.target.files && handleFileSelect(e.target.files[0])
-                }
+                aria-label="Upload video file"
+                onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={uploading || processing}
+                disabled={uploading}
               />
 
               {file ? (
                 <div className="space-y-2">
-                  <svg
-                    className="mx-auto h-12 w-12 text-green-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
+                  <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <p className="text-lg font-medium text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+                  <p className="text-lg font-medium" style={{ color: '#f2ede8' }}>{file.name}</p>
+                  <p className="text-sm" style={{ color: '#555' }}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   <button
                     type="button"
                     onClick={() => setFile(null)}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    className="text-sm transition-colors"
+                    style={{ color: '#FF3B5C' }}
                   >
                     Change file
                   </button>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                  <svg className="mx-auto h-12 w-12" style={{ color: '#333' }} stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium text-blue-600 hover:text-blue-700">
-                      Click to upload
-                    </span>{' '}
-                    or drag and drop
+                  <div className="text-sm" style={{ color: '#555' }}>
+                    <span className="font-medium" style={{ color: '#FF3B5C' }}>Click to upload</span>{' '}or drag and drop
                   </div>
-                  <p className="text-xs text-gray-500">
-                    MP4, MOV, AVI, or MKV up to 500MB
-                  </p>
+                  <p className="text-xs" style={{ color: '#444' }}>MP4, MOV, AVI, or MKV up to 500MB</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* YouTube URL Mode */}
+          {/* YouTube URL */}
           {mode === 'youtube' && (
             <div>
-              <label
-                htmlFor="youtube-url"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="youtube-url" className="block text-sm font-medium mb-2" style={{ color: '#777' }}>
                 YouTube URL *
               </label>
               <input
                 type="url"
                 id="youtube-url"
+                name="youtube-url"
+                autoComplete="url"
+                spellCheck={false}
                 value={youtubeUrl}
                 onChange={(e) => setYoutubeUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
-                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                disabled={uploading || processing}
+                placeholder="https://www.youtube.com/watch?v=…"
+                className="dash-input"
+                disabled={uploading}
                 required={mode === 'youtube'}
               />
-              <p className="mt-2 text-xs text-gray-500">
-                Paste the full URL of a YouTube video
-              </p>
+              <p className="mt-2 text-xs" style={{ color: '#444' }}>Paste the full URL of a YouTube video</p>
             </div>
           )}
 
-          {/* Error Display */}
+          {/* Error */}
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-red-400"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-red-800">{error}</p>
-                </div>
+            <div
+              className="rounded-xl p-4"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}
+            >
+              <div className="flex items-start gap-3">
+                <svg className="h-5 w-5 flex-none text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm" style={{ color: '#fca5a5' }}>{error}</p>
               </div>
             </div>
           )}
 
           {/* Title */}
           <div>
-            <label
-              htmlFor="title"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="title" className="block text-sm font-medium mb-1" style={{ color: '#777' }}>
               Title *
             </label>
             <input
               type="text"
               id="title"
+              name="title"
+              autoComplete="off"
+              spellCheck={false}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="My awesome video"
-              disabled={uploading || processing}
+              className="dash-input"
+              disabled={uploading}
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="description" className="block text-sm font-medium mb-1" style={{ color: '#777' }}>
               Description (optional)
             </label>
             <textarea
               id="description"
+              name="description"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Tell us about your video..."
-              disabled={uploading || processing}
+              placeholder="Tell us about your video…"
+              className="dash-input"
+              style={{ resize: 'vertical' }}
+              disabled={uploading}
             />
           </div>
 
+          {/* Caption Style */}
+          <div>
+            <label className="block text-sm font-medium mb-3" style={{ color: '#777' }}>
+              Caption Style
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {captionStyles.map(({ key, preset }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setCaptionStyle(key)}
+                  disabled={uploading}
+                  className={`relative rounded-xl border-2 p-4 text-left transition-all ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  style={
+                    captionStyle === key
+                      ? { borderColor: '#FF3B5C', background: 'rgba(255,59,92,0.08)' }
+                      : { borderColor: '#1a1a1a', background: '#111' }
+                  }
+                >
+                  {captionStyle === key && (
+                    <div className="absolute top-2 right-2">
+                      <svg className="h-5 w-5" style={{ color: '#FF3B5C' }} fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="mb-3">
+                    <h3 className="text-sm font-semibold" style={{ color: '#f2ede8' }}>{preset.name}</h3>
+                    <p className="text-xs mt-1" style={{ color: '#555' }}>{preset.description}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] rounded p-2 flex items-center justify-center h-16">
+                    <span style={{ fontFamily: preset.font, fontSize: '14px', color: preset.color, fontWeight: preset.fontWeight, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                      <span style={{ backgroundColor: preset.highlightColor, padding: '2px 4px', borderRadius: '2px' }}>Example</span>{' '}Text
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs" style={{ color: '#444' }}>
+              Choose how captions will appear on your video clips
+            </p>
+          </div>
+
           {/* Progress */}
-          {(uploading || processing) && (
-            <div className="bg-blue-50 rounded-lg p-4">
+          {uploading && (
+            <div className="rounded-xl p-4" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-900">
-                  {uploading && mode === 'file' && 'Uploading video...'}
-                  {uploading && mode === 'youtube' && 'Downloading from YouTube...'}
-                  {processing && 'Processing with AI...'}
+                <span className="text-sm font-medium" style={{ color: '#f2ede8' }}>
+                  {mode === 'file' ? 'Uploading video…' : 'Submitting YouTube URL…'}
                 </span>
-                <span className="text-sm font-medium text-blue-900">
-                  {progress}%
-                </span>
+                <span className="text-sm font-medium" style={{ color: '#FF3B5C' }}>{progress}%</span>
               </div>
-              <div className="w-full bg-blue-200 rounded-full h-2">
+              <div className="w-full rounded-full h-1.5" style={{ background: '#1a1a1a' }}>
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
+                  className="h-1.5 rounded-full"
+                  style={{ background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)', width: `${progress}%`, transition: 'width 0.3s ease' }}
                 />
               </div>
-              {processing && (
-                <p className="mt-2 text-xs text-blue-700">
-                  This may take a few minutes. We're transcribing, detecting
-                  highlights, and generating clips...
-                </p>
-              )}
+              <p className="mt-2 text-xs" style={{ color: '#555' }}>
+                Processing will continue in the background — you&apos;ll be redirected automatically.
+              </p>
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-3">
-            <Link
-              href="/dashboard/videos"
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
+          {/* Submit */}
+          <div className="flex justify-end gap-3">
+            <Link href="/dashboard/videos" className="dash-btn-ghost px-4 py-2 text-sm font-medium">
               Cancel
             </Link>
             <button
               type="submit"
-              disabled={
-                (mode === 'file' && !file) ||
-                (mode === 'youtube' && !youtubeUrl) ||
-                uploading ||
-                processing
-              }
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              disabled={(mode === 'file' && !file) || (mode === 'youtube' && !youtubeUrl) || uploading}
+              className="dash-btn-gradient px-5 py-2 text-sm"
             >
-              {uploading || processing ? 'Processing...' : 'Upload & Process'}
+              {uploading ? 'Processing…' : 'Upload & Process'}
             </button>
           </div>
         </form>

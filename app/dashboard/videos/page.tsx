@@ -25,9 +25,14 @@ export default async function VideosPage() {
   const getVideos = new GetCompanyVideos();
   const videos = await getVideos.execute(user.companyId);
 
-  // Serialize dates for client component
+  // Serialize Video entity (class with private props + getters) for client component
   const serializedVideos = videos.map((video) => ({
-    ...video,
+    id: video.id,
+    title: video.title,
+    description: video.description ?? null,
+    status: video.status,
+    thumbnailUrl: video.thumbnailUrl ?? null,
+    duration: video.duration ?? null,
     createdAt: video.createdAt,
     updatedAt: video.updatedAt,
   }));
@@ -38,16 +43,21 @@ export default async function VideosPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Videos</h1>
-            <p className="mt-2 text-gray-600">
+            <h1
+              className="text-3xl font-bold"
+              style={{ fontFamily: 'var(--font-syne), sans-serif', color: '#f2ede8' }}
+            >
+              My Videos
+            </h1>
+            <p className="mt-2" style={{ color: '#555' }}>
               Upload videos and generate viral clips with AI
             </p>
           </div>
           <Link
             href="/dashboard/videos/new"
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            className="dash-btn-gradient px-4 py-2 text-sm gap-2"
           >
-            <PlusIcon className="w-5 h-5 mr-2" />
+            <PlusIcon className="w-5 h-5" />
             Upload Video
           </Link>
         </div>

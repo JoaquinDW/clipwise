@@ -1,295 +1,179 @@
-import { auth } from '@/auth';
-import { prismaClientGlobal } from '@/infra/prisma';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import VideoActions from './VideoActions';
+import { prismaClientGlobal } from "@/infra/prisma"
+import Link from "next/link"
+import { notFound } from "next/navigation"
+import VideoActions from "./VideoActions"
+import VideoStatusPoller from "./VideoStatusPoller"
+import ClipsSection from "./ClipsSection"
 
 export default async function VideoDetailPage({
   params,
+  searchParams,
 }: {
-  params: { id: string };
+  params: { id: string }
+  searchParams: { clip?: string }
 }) {
-  const { id } = params;
+  const { id } = params
 
-  // Get video with all relations
   const video = await prismaClientGlobal.video.findUnique({
     where: { id },
     include: {
       transcription: true,
-      clips: {
-        orderBy: { score: 'desc' },
-      },
+      clips: { orderBy: { score: "desc" } },
     },
-  });
+  })
 
-  if (!video) {
-    notFound();
+  if (!video) notFound()
+
+  const isProcessing = !["READY", "FAILED"].includes(video.status)
+
+  const processingLabel: Record<string, string> = {
+    UPLOADING: "Waiting to start…",
+    UPLOADED: "Queued for processing…",
+    INGESTING: "Extracting audio from video…",
+    INGESTED: "Audio ready, starting transcription…",
+    TRANSCRIBING: "Transcribing audio…",
+    TRANSCRIBED: "Detecting highlights with AI…",
+    PROCESSING: `Generating clips (${video.clips.filter((c) => c.status === "READY").length}/${video.clips.length} ready)…`,
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/dashboard/videos"
-            className="text-sm text-blue-600 hover:text-blue-700 flex items-center mb-4"
-          >
+    <div className="-m-6 flex flex-col min-h-full">
+      <VideoStatusPoller videoId={video.id} currentStatus={video.status} />
+
+      {/* Sticky header */}
+      <header
+        className="sticky top-0 z-40 flex-none flex items-center gap-3 px-4 h-14 border-b"
+        style={{
+          background: "#0e0f11",
+          borderColor: "rgba(255,255,255,0.06)",
+        }}
+      >
+        {/* Back */}
+        <Link
+          href="/dashboard/videos"
+          className="flex-none flex items-center gap-1 text-xs transition-colors"
+          style={{ color: "var(--dash-text-muted)" }}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </Link>
+
+        <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>
+
+        {/* Title */}
+        <h1
+          className="text-sm font-semibold truncate flex-1 min-w-0"
+          style={{ fontFamily: "var(--font-syne), sans-serif", color: "#f2ede8" }}
+        >
+          {video.title}
+        </h1>
+
+        {/* Status badge */}
+        <StatusBadge status={video.status} />
+
+        {/* Processing spinner */}
+        {isProcessing && (
+          <div className="flex items-center gap-2 flex-none">
             <svg
-              className="w-4 h-4 mr-1"
+              className="animate-spin h-3.5 w-3.5 flex-none"
               fill="none"
-              stroke="currentColor"
               viewBox="0 0 24 24"
+              style={{ color: "#FF3B5C" }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
             </svg>
-            Back to Videos
-          </Link>
-
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{video.title}</h1>
-              {video.description && (
-                <p className="mt-2 text-gray-600">{video.description}</p>
-              )}
-              <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500">
-                <span>
-                  {video.duration
-                    ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}`
-                    : 'Unknown duration'}
-                </span>
-                <span>•</span>
-                <span>{new Date(video.createdAt).toLocaleDateString()}</span>
-                <span>•</span>
-                <StatusBadge status={video.status} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Error Display */}
-        {video.status === 'FAILED' && video.errorMessage && (
-          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Processing failed
-                </h3>
-                <div className="mt-2 text-sm text-red-700">
-                  {video.errorMessage}
-                </div>
-              </div>
-            </div>
+            <span className="text-xs hidden sm:block" style={{ color: "var(--dash-text-muted)" }}>
+              {processingLabel[video.status] ?? "Processing…"}
+            </span>
           </div>
         )}
 
-        {/* Video Actions */}
-        <VideoActions
-          videoId={video.id}
-          status={video.status}
-          hasTranscription={!!video.transcription}
-        />
+        {/* Error message */}
+        {video.status === "FAILED" && video.errorMessage && (
+          <span className="text-xs text-red-400 flex-none hidden sm:block truncate max-w-48">
+            {video.errorMessage}
+          </span>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content - Clips */}
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Generated Clips ({video.clips.length})
-              </h2>
-
-              {video.clips.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  {video.status === 'READY'
-                    ? 'No clips generated'
-                    : 'Clips are being generated...'}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {video.clips.map((clip, index) => (
-                    <div
-                      key={clip.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {clip.title}
-                          </h3>
-                          {clip.description && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              {clip.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Score: {clip.score}/100
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="text-sm text-gray-500">
-                          <span>
-                            {clip.startTime.toFixed(1)}s - {clip.endTime.toFixed(1)}s
-                          </span>
-                          <span className="mx-2">•</span>
-                          <span>{clip.duration.toFixed(1)}s</span>
-                        </div>
-
-                        {clip.status === 'READY' && clip.storageUrl && (
-                          <a
-                            href={clip.storageUrl}
-                            download
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                          >
-                            <svg
-                              className="w-4 h-4 mr-1"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                              />
-                            </svg>
-                            Download
-                          </a>
-                        )}
-                        {clip.status === 'GENERATING' && (
-                          <span className="text-sm text-gray-500">
-                            Generating...
-                          </span>
-                        )}
-                        {clip.status === 'FAILED' && (
-                          <span className="text-sm text-red-600">Failed</span>
-                        )}
-                      </div>
-
-                      {/* Metadata */}
-                      {clip.metadata && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          {(clip.metadata as any).hookText && (
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Hook:</span>{' '}
-                              {(clip.metadata as any).hookText}
-                            </p>
-                          )}
-                          {(clip.metadata as any).tags && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {(clip.metadata as any).tags.map(
-                                (tag: string, i: number) => (
-                                  <span
-                                    key={i}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
-                                  >
-                                    #{tag}
-                                  </span>
-                                )
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar - Transcription */}
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Transcription
-              </h2>
-
-              {video.transcription ? (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">Language:</span>{' '}
-                    {video.transcription.language?.toUpperCase() || 'Unknown'}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">Segments:</span>{' '}
-                    {Array.isArray(video.transcription.segments)
-                      ? video.transcription.segments.length
-                      : 0}
-                  </div>
-                  <div className="pt-3 border-t border-gray-200">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {video.transcription.text}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  {video.status === 'TRANSCRIBING'
-                    ? 'Transcribing...'
-                    : 'No transcription available'}
-                </p>
-              )}
-            </div>
-          </div>
+        {/* Action buttons */}
+        <div className="flex-none">
+          <VideoActions
+            videoId={video.id}
+            status={video.status}
+            hasTranscription={!!video.transcription}
+            variant="header"
+          />
         </div>
+      </header>
+
+      {/* Main content — 2 columns */}
+      <div className="flex flex-1" style={{ height: "calc(100vh - 3.5rem - 4rem)" }}>
+        <ClipsSection
+          clips={video.clips.map((c) => ({
+            id: c.id,
+            title: c.title ?? "",
+            description: c.description ?? null,
+            storageUrl: c.storageUrl ?? null,
+            thumbnailUrl: c.thumbnailUrl ?? null,
+            score: c.score ?? 0,
+            status: c.status,
+            startTime: c.startTime ?? 0,
+            endTime: c.endTime ?? 0,
+            duration: c.duration ?? 0,
+            metadata: c.metadata,
+          }))}
+          initialClipId={searchParams.clip ?? null}
+          videoClipsCount={video.clips.length}
+          videoStatus={video.status}
+          transcription={video.transcription
+            ? {
+              text: video.transcription.text,
+              language: video.transcription.language,
+              segments: Array.isArray(video.transcription.segments)
+                ? video.transcription.segments
+                : null,
+            }
+            : null
+          }
+        />
       </div>
     </div>
-  );
+  )
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const styles = {
-    UPLOADING: 'bg-yellow-100 text-yellow-800',
-    UPLOADED: 'bg-blue-100 text-blue-800',
-    TRANSCRIBING: 'bg-purple-100 text-purple-800',
-    TRANSCRIBED: 'bg-indigo-100 text-indigo-800',
-    PROCESSING: 'bg-orange-100 text-orange-800',
-    READY: 'bg-green-100 text-green-800',
-    FAILED: 'bg-red-100 text-red-800',
-  };
+  const styles: Record<string, string> = {
+    UPLOADING: "bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50",
+    UPLOADED: "bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50",
+    INGESTING: "bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50",
+    INGESTED: "bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50",
+    TRANSCRIBING: "bg-[rgba(168,85,247,0.15)] text-purple-400 border border-purple-900/50",
+    TRANSCRIBED: "bg-[rgba(168,85,247,0.15)] text-purple-400 border border-purple-900/50",
+    PROCESSING: "bg-[rgba(251,191,36,0.12)] text-yellow-400 border border-yellow-900/50",
+    READY: "bg-[rgba(34,197,94,0.15)] text-green-400 border border-green-900/50",
+    FAILED: "bg-[rgba(239,68,68,0.15)] text-red-400 border border-red-900/50",
+  }
 
-  const labels = {
-    UPLOADING: 'Uploading',
-    UPLOADED: 'Uploaded',
-    TRANSCRIBING: 'Transcribing',
-    TRANSCRIBED: 'Transcribed',
-    PROCESSING: 'Processing',
-    READY: 'Ready',
-    FAILED: 'Failed',
-  };
+  const labels: Record<string, string> = {
+    UPLOADING: "Uploading",
+    UPLOADED: "Uploaded",
+    INGESTING: "Extracting audio",
+    INGESTED: "Audio ready",
+    TRANSCRIBING: "Transcribing",
+    TRANSCRIBED: "Transcribed",
+    PROCESSING: "Processing",
+    READY: "Ready",
+    FAILED: "Failed",
+  }
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800'
-      }`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-none ${styles[status] ?? "bg-[rgba(255,255,255,0.08)] text-[var(--dash-text-secondary)] border border-[rgba(255,255,255,0.08)]"}`}
     >
-      {labels[status as keyof typeof labels] || status}
+      {labels[status] ?? status}
     </span>
-  );
+  )
 }

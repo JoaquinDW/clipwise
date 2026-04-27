@@ -9,9 +9,9 @@ export const authConfig = {
   // debug: process.env.NODE_ENV !== "production" ? true : false,
   callbacks: {
     authorized({ auth, request }) {
-      // if visiting landing page, it's ok
-      if (request.nextUrl.pathname === '/') return true
-      // Logged in users are authenticated, otherwise redirect to login page
+      const { pathname } = request.nextUrl;
+      if (pathname === '/' || pathname === '/es' || pathname === '/en') return true;
+      if (pathname === '/login' || pathname.startsWith('/login/')) return true;
       return (auth && !!auth.user) ? true : false;
     },
     async jwt({ token, account, user, trigger }) {

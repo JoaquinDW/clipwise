@@ -1,21 +1,23 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Inter, Architects_Daughter } from 'next/font/google';
-import Header from './components/header';
-import Footer from './components/footer';
+import { Syne, DM_Sans } from 'next/font/google';
+import Header from '../(landing-page)/components/header';
+import Footer from '../(landing-page)/components/footer';
+import type { Lang } from '../(landing-page)/components/use-lang';
 import '../(landing-page)/style.css';
 
-const inter = Inter({
+const syne = Syne({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-syne',
+  weight: ['400', '700', '800'],
   display: 'swap',
 });
 
-const architects_daughter = Architects_Daughter({
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  variable: '--font-architects-daughter',
-  weight: '400',
+  variable: '--font-dm-sans',
+  weight: ['300', '400', '500'],
   display: 'swap',
 });
 
@@ -56,11 +58,12 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <div
-            className={`${inter.variable} ${architects_daughter.variable} flex flex-col min-h-screen overflow-hidden font-inter antialiased bg-gray-950 text-gray-200 tracking-tight`}
+            className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`}
+            style={{ background: '#0a0a0a', color: '#f2ede8' }}
           >
-            <Header />
+            <Header lang={locale as Lang} />
             {children}
-            <Footer />
+            <Footer lang={locale as Lang} />
           </div>
         </NextIntlClientProvider>
       </body>

@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { transcribeVideo, WordTimestamp } from '@/lib/ai/transcribe';
 import { detectHighlights } from '@/lib/ai/highlights';
-import { generateCaptions } from '@/lib/ai/captions';
-import { createClip } from '@/lib/video/processor';
+import { generateCaptions, captionsToASS } from '@/lib/ai/captions';
+import { createClip, createClipSmart } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
 import { writeFile, readFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import type { CaptionStyleName } from '@/lib/ai/caption-styles';
 
 export async function POST(
   request: NextRequest,
@@ -33,6 +34,10 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Get caption style from video metadata (default to 'basic' if not set)
+    const captionStyle = (video.metadata as any)?.captionStyle as CaptionStyleName | undefined;
+    console.log(`🎨 Using caption style: ${captionStyle || 'basic (default)'}`);
 
     // 2. Transcribe video
     console.log(`🎤 Step 1: Transcribing with Whisper...`);
@@ -95,7 +100,7 @@ export async function POST(
       );
 
       try {
-        // Create clip record
+        // Create clip record with crop strategy metadata
         const clip = await prismaClientGlobal.clip.create({
           data: {
             videoId: video.id,
@@ -109,6 +114,14 @@ export async function POST(
             metadata: {
               hookText: highlight.hookText,
               tags: highlight.tags,
+              cropStrategy: {
+                method: highlight.cropStrategy.method,
+                subjectPosition: highlight.cropStrategy.subjectPosition,
+                sceneType: highlight.cropStrategy.sceneType,
+                reasoning: highlight.cropStrategy.reasoning,
+              },
+              layoutType: highlight.layoutType ?? 'standard',
+              layoutRegions: highlight.layoutRegions ?? null,
             },
           },
         });
@@ -134,6 +147,7 @@ export async function POST(
           emphasizeKeywords: true,
           includeHook: true,
           language: transcription.language, // Pass detected language to keep captions in original language
+          stylePreset: captionStyle, // Apply user-selected caption style
         });
 
         // Download original video to temp file
@@ -143,18 +157,27 @@ export async function POST(
         const inputPath = join(tmpdir(), `input-${clip.id}.mp4`);
         await writeFile(inputPath, Buffer.from(videoBuffer));
 
-        // Process clip with word-by-word captions
-        console.log(`    ✂️  Processing clip with FFmpeg (word-by-word captions)...`);
+        // Process clip with smart cropping and word-by-word captions
+        console.log(`    ✂️  Processing clip with FFmpeg...`);
+        const layoutType = highlight.layoutType ?? 'standard';
+        console.log(`    🎬 Layout: ${layoutType} | Crop: ${highlight.cropStrategy.method} (${highlight.cropStrategy.reasoning})`);
         const outputPath = join(tmpdir(), `clip-${clip.id}.mp4`);
-        await createClip(
+        await createClipSmart(
           inputPath,
           highlight.startTime,
           highlight.endTime,
-          captions, // Pass entire CaptionsResult for ASS rendering
+          captions,
           outputPath,
           {
-            cropToVertical: true,
+            cropStrategy: {
+              method: highlight.cropStrategy.method,
+              subjectPosition: highlight.cropStrategy.subjectPosition,
+              compositeLayout: layoutType !== 'standard' && layoutType !== 'talking_head'
+                ? { layoutType, layoutRegions: highlight.layoutRegions }
+                : undefined,
+            },
             burnCaptions: true,
+            stylePreset: captionStyle,
           }
         );
 
