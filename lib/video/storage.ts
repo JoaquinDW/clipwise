@@ -203,6 +203,35 @@ class SupabaseStorage {
     return { url: publicUrl, path: data.path, size: file.size };
   }
 
+  async uploadProxy(
+    file: File | Blob,
+    companyId: string,
+    videoId: string,
+    clipId: string
+  ): Promise<UploadResult> {
+    const fileName = `${companyId}/${videoId}/proxy-${clipId}.mp4`;
+    const { data, error } = await this.client.storage
+      .from(this.buckets.clips)
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload proxy: ${error.message}`);
+    }
+
+    const {
+      data: { publicUrl },
+    } = this.client.storage.from(this.buckets.clips).getPublicUrl(fileName);
+
+    return {
+      url: publicUrl,
+      path: data.path,
+      size: file.size,
+    };
+  }
+
   async downloadVideo(path: string): Promise<Blob> {
     const { data, error } = await this.client.storage
       .from(this.buckets.videos)
@@ -272,6 +301,15 @@ class S3Storage {
     companyId: string,
     videoId: string,
     clipId?: string
+  ): Promise<UploadResult> {
+    throw new Error('S3 storage not yet implemented');
+  }
+
+  async uploadProxy(
+    file: File | Blob,
+    companyId: string,
+    videoId: string,
+    clipId: string
   ): Promise<UploadResult> {
     throw new Error('S3 storage not yet implemented');
   }

@@ -11,6 +11,8 @@ export default async function Page({
   const user = await auth()
   const success = searchParams["success"]
   const canceled = searchParams["canceled"]
+  const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID?.trim()
+  const stripePortalUrl = process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL?.trim()
 
   const redCross = (
     <svg
@@ -88,14 +90,19 @@ export default async function Page({
             Upgrade Plan
           </h2>
           <p className="text-sm text-[var(--dash-text-secondary)]">
-            Subscribe or contact us to learn more. Replace the price ID with
-            your Stripe product before going live.
+            Subscribe or contact us to learn more.
           </p>
-          <SubscribeComponent
-            priceId="price_1Q6U4ZP9VWutz4pQA1UC2ilX"
-            price="10"
-            description="Basic Plan"
-          />
+          {stripePriceId ? (
+            <SubscribeComponent
+              priceId={stripePriceId}
+              price="10"
+              description="Basic Plan"
+            />
+          ) : (
+            <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
+              Set NEXT_PUBLIC_STRIPE_PRICE_ID to enable checkout.
+            </div>
+          )}
         </div>
       </section>
 
@@ -107,16 +114,19 @@ export default async function Page({
           For users with an active subscription, open the Stripe portal to
           manage payment methods or cancel the plan.
         </p>
-        <Link
-          className="dash-btn-gradient px-4 py-2 text-sm w-fit"
-          href={
-            process.env.NEXT_PUBLIC_STRIPE_PORTAL_URL! ||
-            "https://docs.stripe.com/no-code/customer-portal"
-          }
-          target="_blank"
-        >
-          Manage monthly plan
-        </Link>
+        {stripePortalUrl ? (
+          <Link
+            className="dash-btn-gradient px-4 py-2 text-sm w-fit"
+            href={stripePortalUrl}
+            target="_blank"
+          >
+            Manage monthly plan
+          </Link>
+        ) : (
+          <p className="text-sm text-[var(--dash-text-secondary)]">
+            Set NEXT_PUBLIC_STRIPE_PORTAL_URL to enable the customer portal.
+          </p>
+        )}
       </section>
     </main>
   )

@@ -107,28 +107,154 @@ Si querés lo más similar a local: preferí usar la URL TCP en todas las partes
 
 ---
 
-## Worker: Dockerfile ejemplo (node + ffmpeg)
+## Worker: Dockerfile y despliegue (node + ffmpeg)
 
-Archivo: `docker/worker/Dockerfile` (ejemplo)
+En el repo añadimos un `Dockerfile` para los workers en `docker/worker/Dockerfile` que instala `ffmpeg`, dependencias y ejecuta el script `worker` definido en `package.json`.
+
+Contenido recomendado (ya agregado en el repo):
 
 ```dockerfile
 FROM node:20-bullseye-slim
 
-# ffmpeg
+# Install ffmpeg and ca-certificates
 RUN apt-get update && apt-get install -y ffmpeg ca-certificates --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
 
+# Install PNPM and project dependencies (include dev deps so tsx is available)
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Copy project files
 COPY . .
-RUN pnpm build
+
+# Generate prisma client if present (no-op if not configured)
+RUN pnpm prisma generate || true
 
 ENV NODE_ENV=production
-CMD ["node", "./dist/scripts/worker.js"]
+
+# Run the worker entry (uses the `worker` script from package.json)
+CMD ["pnpm", "run", "worker"]
 ```
 
-Ajustá `CMD` al entrypoint real de tu worker (por ej. `pnpm tsx --transpile-only scripts/worker.ts` en dev).
+Este `Dockerfile` replica el comportamiento de desarrollo (usa `tsx` vía el script `worker`) para que el contenedor corra exactamente el mismo entrypoint que usás localmente (`pnpm run worker`).
+
+---
+
+## Despliegue paso a paso (snippets y comandos)
+
+Estos "snippets" son pequeños fragmentos de configuración o comandos que podés copiar/pegar en la CLI o en la UI del servicio.
+
+1. Provisionar servicios
+
+- Crear proyecto en Vercel y conectar el repositorio.
+- Crear proyecto en Supabase y configurar `DATABASE_URL`, buckets y keys.
+- Crear instancia Redis en Upstash y copiar la `REDIS_URL` (TCP `rediss://...`).
+
+2. Configurar variables en Vercel (UI o CLI)
+
+Opción UI: en el dashboard de Vercel -> Settings -> Environment Variables -> Add.
+
+Ejemplos a agregar (production):
+
+```
+REDIS_URL=rediss://:mypassword@us1-xxxxx.upstash.io:6379
+DATABASE_URL=postgres://...
+SUPABASE_SERVICE_ROLE_KEY=...
+OPENAI_API_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_ADMIN_USER_ID=...
+STRIPE_SECRET_KEY=...
+```
+
+Opción CLI (Vercel CLI):
+
+```bash
+# instalar vercel CLI si no la tenés
+npm i -g vercel
+
+# desde la raíz del repo, agregar una variable (ejemplo):
+vercel env add REDIS_URL production
+# te va a pedir pegar la URL; repetí para cada variable
+```
+
+3. Desplegar frontend en Vercel
+
+Desde la UI o con `vercel` (o via GitHub PRs) Vercel buildará el `next build` definido en `package.json`.
+
+4. Construir y desplegar el worker (opciones)
+
+- Opción A — Deploy desde repo (Render / Fly):
+  - Conectá tu repo desde Render.
+  - En el dashboard creá un nuevo service: tipo `Worker` o `Background Worker`.
+  - Usá `docker/worker/Dockerfile` como DockerfilePath (o dejá que Render construya la imagen desde el repo).
+  - Configurá las mismas env vars en Render (REDIS_URL, DATABASE_URL, etc.).
+
+  Ejemplo de `render.yaml` (ejemplo para mostrar la configuración que podés pegar en Render o usar como referencia):
+
+  ```yaml
+  services:
+    - type: worker
+      name: clipwise-worker
+      env: docker
+      repo: https://github.com/<owner>/<repo>
+      branch: main
+      plan: starter
+      dockerfilePath: docker/worker/Dockerfile
+      buildCommand: pnpm install && pnpm prisma generate
+      startCommand: pnpm run worker
+  ```
+
+- Opción B — Build local y push de imagen (GHCR / Docker Hub) + deploy por imagen:
+
+  ```bash
+  # build
+  docker build -t ghcr.io/<owner>/clipwise-worker:latest -f docker/worker/Dockerfile .
+
+  # push (ejemplo GHCR)
+  docker push ghcr.io/<owner>/clipwise-worker:latest
+  ```
+
+  Luego, en Render / Fly podés desplegar usando la imagen `ghcr.io/<owner>/clipwise-worker:latest` y configurar las env vars.
+
+5. Probar e iterar
+
+- Hacé un deploy de prueba y lanzá un job desde la UI de la app o con curl a tu API que encola `ingest`.
+- Verificá logs del worker en Render/Fly para confirmar que la conexión a Redis (Upstash) funciona y que BullMQ recibe jobs.
+- Si hay problemas de conexiones desde Vercel (serverless) a Upstash por límites de TCP, usá la alternativa `UPSTASH_REST_URL` desde Vercel o implementá un pequeño HTTP enqueue proxy en el worker.
+
+6. Comandos útiles locales (paridad con producción)
+
+```bash
+# levantar redis local (dev)
+docker run -p 6379:6379 --name redis -d redis:7
+
+# correr next en dev
+pnpm dev
+
+# correr worker local (usa tsx como en package.json)
+pnpm run worker
+
+# probar encolar manualmente (node script o curl a tu API)
+node -e "require('./lib/queue/queue').enqueueIngest({ videoId: 'v1', sourceUrl: 'https://youtu.be/..', source: 'YOUTUBE' })"
+```
+
+7. Troubleshooting rápido
+
+- BullMQ no recibe jobs: revisar `REDIS_URL`, comprobar que el worker y el API usan la misma cola `QUEUE_NAME`.
+- TLS / certificados: si usás `rediss://` ioredis habilita TLS automáticamente; si tenés errores, probá la conexión local con `redis-cli` o `ioredis` desde un script corto.
+- Límites Upstash: en planes gratuitos el número de conexiones persistentes puede ser limitado — preferir REST para serverless o aumentar plan.
+
+---
+
+Si querés, creo también:
+
+- `docker/worker/.dockerignore` (ligero)
+- Un `render.yaml` real en la raíz
+- Un `scripts/deploy-render.sh` con comandos para push automático a GHCR y un recordatorio de variables
+
+Decime qué prefieres y lo creo automáticamente.
 
 ---
 

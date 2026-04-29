@@ -1,0 +1,413 @@
+PRD — Quick Creative Editor (V1.5)
+Feature Name
+
+Quick Creative Editor
+
+Resumen
+
+Editor liviano integrado al flujo de AI clipping que permite:
+
+ajustar timings del clip,
+previsualizar cambios instantáneamente,
+personalizar captions,
+y exportar un clip listo para publicar.
+
+La feature NO busca reemplazar editores profesionales.
+
+Objetivo:
+dar control creativo rápido sin romper la simplicidad del producto.
+
+Objetivo del producto
+
+Convertir:
+
+AI-generated clips
+
+en:
+
+publish-ready short-form content
+
+con menos de 1 minuto de edición manual.
+
+Problema que resuelve
+
+Los clips automáticos suelen fallar en detalles:
+
+hook empieza tarde,
+final abrupto,
+captions no gustan,
+texto tapa cara,
+estilo visual no encaja,
+clip no parece “nativo” de TikTok/Reels.
+
+El usuario necesita:
+
+pequeños ajustes,
+no edición profesional completa.
+Objetivos de negocio
+Primarios
+aumentar export rate,
+aumentar satisfacción con clips,
+aumentar perceived quality,
+mejorar shareability.
+Secundarios
+aumentar retención,
+aumentar tiempo en producto,
+mejorar diferenciación frente a competitors.
+Principios de diseño
+1. Fast-first
+
+Toda interacción debe sentirse instantánea.
+
+2. Lightweight editing
+
+No competir con CapCut.
+
+3. Presets over complexity
+
+Mejor:
+
+presets,
+toggles,
+sliders simples,
+
+que controles infinitos.
+
+4. AI-first
+
+La IA sigue haciendo:
+
+selección,
+timing base,
+captions,
+composición inicial.
+
+El usuario solo refina.
+
+Alcance V1.5
+Incluye
+1. Timeline draggable
+Features
+drag handles para inicio y final,
+scrubbing,
+playhead,
+zoom básico opcional.
+Constraints
+máximo ±15s desde timestamps originales,
+duración máxima configurable.
+2. Instant preview
+El usuario puede:
+reproducir clip,
+ver captions,
+ver cambios en vivo.
+Importante
+
+Preview:
+
+NO renderiza video real,
+usa overlays HTML/CSS.
+3. Proxy-based editing
+El editor usa:
+proxy MP4 liviano,
+NO el original.
+Objetivo
+
+Abrir editor rápido y mantener UX fluida.
+
+4. Caption style presets
+Presets iniciales
+Classic
+limpio,
+subtítulos tradicionales.
+Bold
+texto grande,
+palabras destacadas.
+Minimal
+discreto,
+elegante.
+Viral
+estilo TikTok/Shorts.
+Podcast
+captions centrados.
+5. Caption position
+Opciones
+Top
+Center
+Bottom
+Consideraciones
+
+Safe areas para:
+
+TikTok,
+Reels,
+Shorts.
+6. Caption size
+Opciones
+Small
+Medium
+Large
+
+No libre.
+
+7. Live captions preview
+
+El usuario debe ver:
+
+tamaño,
+posición,
+estilo,
+spacing,
+highlight behavior,
+
+instantáneamente.
+
+8. Safe area overlays
+
+Mostrar visualmente:
+
+zonas tapadas por UI social.
+9. Re-export clip
+
+Generar nueva versión con:
+
+nuevos timings,
+nuevo estilo,
+nueva configuración captions.
+10. Version persistence
+
+Guardar:
+
+original AI clip,
+variantes editadas.
+Fuera de alcance (NO V1.5)
+NO incluir
+multicapa,
+transitions,
+stickers,
+emojis,
+manual subtitle editing palabra por palabra,
+custom font uploads,
+crop manual libre,
+animations complejas,
+overlays arbitrarios,
+music tracks,
+effects pipeline,
+timeline profesional.
+UX
+Layout principal
+ --------------------------------
+|                                |
+|         VIDEO PREVIEW          |
+|                                |
+|  captions overlay live preview |
+|                                |
+ --------------------------------
+
+|------- timeline -------|
+
+[start]========clip========[end]
+
+[ Play ]
+
+Caption Style:
+[Classic] [Bold] [Minimal]
+
+Position:
+(Top) (Center) (Bottom)
+
+Size:
+---o------
+
+[Export]
+UX goals
+El usuario debe poder:
+entender todo sin tutorial,
+corregir clip en <60 segundos,
+sentir fluidez total.
+Arquitectura técnica
+Frontend responsibilities
+Renderiza
+proxy video,
+timeline,
+captions overlay,
+live preview,
+drag interactions.
+NO renderiza
+export final,
+burned captions,
+encoding real.
+Backend responsibilities
+Renderiza
+clip final,
+subtitles burned-in,
+export definitivo.
+Genera
+proxy video,
+thumbnail strip,
+captions JSON,
+metadata timeline.
+Pipeline técnico
+1. AI genera clip
+
+Output:
+
+{
+  "clip_start": 1315,
+  "clip_end": 1365
+}
+2. Backend genera editor assets
+Assets
+Proxy video
+
+Ejemplo:
+
+480p,
+bitrate bajo.
+Thumbnail strip
+
+Frames cada X segundos.
+
+Captions JSON
+[
+  {
+    "start": 1.2,
+    "end": 2.4,
+    "text": "this changes everything"
+  }
+]
+3. Frontend monta editor
+
+Usa:
+
+proxy,
+overlays,
+captions HTML.
+4. Usuario modifica settings
+
+Estado local:
+
+{
+  "start": 1312,
+  "end": 1369,
+  "caption_style": "viral",
+  "caption_position": "center",
+  "caption_size": "large"
+}
+5. Export
+
+Frontend manda config.
+
+6. Backend renderiza final
+
+ffmpeg:
+
+corta original,
+aplica subtitles,
+exporta MP4 final.
+Modelo de datos
+Clip Variant
+{
+  "id": "variant_01",
+  "parent_clip_id": "clip_01",
+  "start_time": 1312,
+  "end_time": 1369,
+  "caption_style": "viral",
+  "caption_position": "center",
+  "caption_size": "large",
+  "status": "rendering"
+}
+Performance targets
+Editor load
+
+Objetivo:
+
+<2 segundos
+Timeline interaction
+
+Objetivo:
+
+<50ms
+Preview update
+
+Objetivo:
+
+instantáneo perceptualmente.
+Export render
+
+Objetivo:
+
+<30 segundos.
+Stack sugerido
+Frontend
+Next.js
+React
+Tailwind
+Zustand
+HTML5 video
+Timeline
+
+Custom lightweight timeline.
+
+NO editor complejo.
+
+Preview layer
+
+HTML/CSS overlays.
+
+NO canvas inicialmente.
+
+Backend
+Node.js
+ffmpeg
+BullMQ
+Redis
+Subtitles rendering
+Render final
+
+ASS subtitles + libass.
+
+Proxy generation
+Ejemplo
+ffmpeg -i input.mp4 \
+-vf scale=854:480 \
+-c:v libx264 \
+-crf 32 \
+preset veryfast \
+proxy.mp4
+Riesgos
+Riesgo 1 — timeline complexity creep
+
+Mitigación:
+
+mantener editor single-track.
+Riesgo 2 — laggy preview
+
+Mitigación:
+
+proxy videos,
+overlays HTML,
+no re-render frontend.
+Riesgo 3 — users wanting CapCut
+
+Mitigación:
+
+posicionamiento claro:
+“Quick Creative Editor”.
+Métricas de éxito
+Product metrics
+export rate
+clips edited %
+average edits per clip
+export completion %
+UX metrics
+time to export
+editor abandonment
+replay frequency
+preview interaction count
+Definición de éxito
+
+La feature es exitosa si:
+
+el usuario puede ajustar y estilizar un clip en menos de 1 minuto,
+el editor se siente instantáneo,
+y los clips exportados requieren menos edición externa.

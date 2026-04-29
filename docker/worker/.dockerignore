@@ -1,0 +1,13 @@
+node_modules
+dist
+.next
+.turbo
+.venv
+.env
+.env.local
+.cache
+.git
+.github
+.vscode
+coverage
+docker/worker/node_modules

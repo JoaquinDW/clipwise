@@ -1,12 +1,12 @@
 import { Worker, Job } from 'bullmq';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { readFile, unlink, writeFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { generateCaptions } from '@/lib/ai/captions';
-import { createClipSmart } from '@/lib/video/processor';
+import { createClipSmart, generateProxy } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
 import { createRedisConnection, QUEUE_NAME, type ClipJobData } from '../queue';
 import type { WordTimestamp } from '@/lib/ai/transcribe';
@@ -36,6 +36,7 @@ export async function processClip(job: Job<ClipJobData>) {
 
   const segmentPath = join(tmpdir(), `segment-${clipId}.mp4`);
   const outputPath = join(tmpdir(), `clip-out-${clipId}.mp4`);
+  const proxyPath = join(tmpdir(), `proxy-${clipId}.mp4`);
 
   try {
     // 1. Download only the clip segment
@@ -69,8 +70,10 @@ export async function processClip(job: Job<ClipJobData>) {
       .map((w) => ({ word: w.word, start: w.start - clip.startTime, end: w.end - clip.startTime }));
 
     // 3. Generate captions
-    const metadata = clip.metadata as any;
+    const metadata = clip.metadata as Record<string, unknown> | null;
     const captionStyle = (metadata?.captionStyle ?? undefined) as CaptionStyleName | undefined;
+    const captionPosition = (metadata?.captionPosition ?? undefined) as 'top' | 'center' | 'bottom' | undefined;
+    const captionSize = (metadata?.captionSize ?? undefined) as 'small' | 'medium' | 'large' | undefined;
     const language = video.transcription.language ?? undefined;
 
     const captions = await generateCaptions(clipWords, {
@@ -81,9 +84,14 @@ export async function processClip(job: Job<ClipJobData>) {
       stylePreset: captionStyle,
     });
 
+    // Apply per-clip caption position override to all segments
+    if (captionPosition) {
+      captions.captions = captions.captions.map((seg) => ({ ...seg, position: captionPosition }));
+    }
+
     // 4. Process clip with smart cropping and burned captions
-    const layoutType = metadata?.layoutType ?? 'standard';
-    const cropStrategy = metadata?.cropStrategy ?? { method: 'wide_shot' };
+    const layoutType = (metadata?.layoutType ?? 'standard') as string;
+    const cropStrategy = (metadata?.cropStrategy ?? { method: 'wide_shot' }) as { method: string; subjectPosition?: string };
 
     await createClipSmart(
       segmentPath,
@@ -93,23 +101,44 @@ export async function processClip(job: Job<ClipJobData>) {
       outputPath,
       {
         cropStrategy: {
-          method: cropStrategy.method,
-          subjectPosition: cropStrategy.subjectPosition,
+          method: cropStrategy.method as any,
+          subjectPosition: (cropStrategy.subjectPosition ?? 'center') as any,
           compositeLayout:
             layoutType !== 'standard' && layoutType !== 'talking_head'
-              ? { layoutType, layoutRegions: metadata?.layoutRegions }
+              ? { layoutType: layoutType as any, layoutRegions: metadata?.layoutRegions as any }
               : undefined,
         },
         burnCaptions: true,
         stylePreset: captionStyle,
+        captionPosition,
+        captionSize,
       }
     );
 
     // 5. Upload clip
     const storage = getStorageClient();
     const clipBuffer = await readFile(outputPath);
-    const clipFile = new File([new Blob([clipBuffer])], `clip-${clipId}.mp4`, { type: 'video/mp4' });
+    const clipFile = new File([clipBuffer.buffer as ArrayBuffer], `clip-${clipId}.mp4`, { type: 'video/mp4' });
     const uploadResult = await storage.uploadClip(clipFile, video.companyId, videoId, clipId);
+
+    // 5b. Generate and upload proxy video
+    let proxyUrl: string | undefined;
+    try {
+      await generateProxy(outputPath, proxyPath);
+      const proxyBuffer = await readFile(proxyPath);
+      const proxyFile = new File([proxyBuffer.buffer as ArrayBuffer], `proxy-${clipId}.mp4`, { type: 'video/mp4' });
+      const proxyResult = await storage.uploadProxy(proxyFile, video.companyId, videoId, clipId);
+      proxyUrl = proxyResult.url;
+      console.log(`[clip] Proxy uploaded for clip ${clipId}: ${proxyUrl}`);
+    } catch (proxyErr) {
+      // Proxy failure is non-fatal — editor falls back to storageUrl
+      console.warn(`[clip] Proxy generation failed (non-fatal) for ${clipId}:`, proxyErr);
+    } finally {
+      await unlink(proxyPath).catch(() => {});
+    }
+
+    // Explicit cleanup of outputPath now that proxy is done
+    await unlink(outputPath).catch(() => {});
 
     // 6. Save clip record
     await prismaClientGlobal.clip.update({
@@ -118,6 +147,10 @@ export async function processClip(job: Job<ClipJobData>) {
         storageUrl: uploadResult.url,
         status: 'READY',
         captions: captions as any,
+        metadata: {
+          ...(metadata ?? {}),
+          ...(proxyUrl ? { proxyUrl } : {}),
+        },
       },
     });
 
@@ -137,6 +170,7 @@ export async function processClip(job: Job<ClipJobData>) {
     }
   } finally {
     await unlink(segmentPath).catch(() => {});
+    // outputPath is cleaned up explicitly above; this is a safety net
     await unlink(outputPath).catch(() => {});
   }
 }

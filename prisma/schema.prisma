@@ -174,6 +174,9 @@ model Clip {
   status        ClipStatus  @default(PENDING)
   errorMessage  String?
   metadata      Json?       // Hook text, highlights, etc.
+  parentClipId  String?     // Set on user-edited copies; null = original AI clip
+  originalStart Float?      // startTime of parent clip, for ±15s validation
+  originalEnd   Float?      // endTime of parent clip, for ±15s validation
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt @default(now())
 

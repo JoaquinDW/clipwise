@@ -1,46 +1,50 @@
-'use client';
-import axios from 'axios';
-import { Button } from './button';
-import { stripeInstance } from '@/infra/stripe';
+"use client"
+import axios from "axios"
+import { useState } from "react"
+import { Button } from "./button"
+import { stripeInstance } from "@/infra/stripe"
 
 type props = {
-  priceId: string;
-  price: string;
-  description:string;
-};
+  priceId: string
+  price: string
+  description: string
+}
 
-const SubscribeComponent= ({ priceId }: props) => {
+const SubscribeComponent = ({ priceId }: props) => {
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const handleSubmit = async () => {
-    const stripe = stripeInstance.getStripe();
-    if (!stripe) {
-      return;
+    if (!priceId) {
+      return
     }
-    if (priceId === 'price_1Q6U4ZP9VWutz4pQA1UC2ilX') {
-      console.log('You need to change the priceId to make this button work, you are currently using the default priceId');
+
+    setIsSubmitting(true)
+    const stripe = await stripeInstance.getStripe()
+    if (!stripe) {
+      setIsSubmitting(false)
       return
     }
     try {
-      const response = await axios.post('/api/payment/checkout_sessions', {
-        priceId: priceId
-      });
-      const data = response.data;
-      if (!data.ok) throw new Error('Something went wrong');
+      const response = await axios.post("/api/payment/checkout_sessions", {
+        priceId: priceId,
+      })
+      const data = response.data
+      if (!data.ok) throw new Error("Something went wrong")
       await stripe.redirectToCheckout({
-        sessionId: data.result.id
-      });
+        sessionId: data.result.id,
+      })
     } catch (error) {
-      console.log(error);
+      console.log(error)
+    } finally {
+      setIsSubmitting(false)
     }
-  };
+  }
   return (
     <div>
       {/* Click Below button to get {description} */}
-      <Button   
-        onClick={handleSubmit}
-      >
-        Upgrade
+      <Button onClick={handleSubmit} disabled={!priceId || isSubmitting}>
+        {isSubmitting ? "Redirecting..." : "Upgrade"}
       </Button>
     </div>
-  );
-};
-export default SubscribeComponent;
+  )
+}
+export default SubscribeComponent

@@ -16,6 +16,12 @@ interface Clip {
   endTime: number
   duration: number
   metadata: unknown
+  parentClipId?: string | null
+  captions: import("@/lib/ai/captions").CaptionsResult | null
+  proxyUrl: string | null
+  captionStyle: string | null
+  captionPosition: "top" | "center" | "bottom" | null
+  captionSize: "small" | "medium" | "large" | null
 }
 
 interface Transcription {

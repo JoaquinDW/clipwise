@@ -1,20 +1,41 @@
-import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { providersList } from './providerDetector';
+import { loadStripe, Stripe } from "@stripe/stripe-js"
+import { providersList } from "./providerDetector"
 
 class StripeWrapper {
-  stripe: Stripe | null;
+  stripe: Stripe | null
+  stripePromise: Promise<Stripe | null> | null
   constructor() {
-    this.stripe = null;
+    this.stripe = null
+    this.stripePromise = null
     if (providersList.stripe.isAvailable) {
-      this.initialize();
+      this.initialize()
     }
   }
-  private async initialize(){
-    this.stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
-  }
-  public getStripe(){
-    return this.stripe;
-  }
-} 
+  private async initialize() {
+    if (!this.stripePromise) {
+      this.stripePromise = loadStripe(
+        process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!,
+      )
+    }
 
-export const stripeInstance = new StripeWrapper();
+    this.stripe = await this.stripePromise
+    return this.stripe
+  }
+  public async getStripe() {
+    if (this.stripe) {
+      return this.stripe
+    }
+
+    if (!this.stripePromise && providersList.stripe.isAvailable) {
+      return this.initialize()
+    }
+
+    if (this.stripePromise) {
+      this.stripe = await this.stripePromise
+    }
+
+    return this.stripe
+  }
+}
+
+export const stripeInstance = new StripeWrapper()

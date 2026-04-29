@@ -19,7 +19,7 @@ export default function NewVideoPage() {
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [captionStyle, setCaptionStyle] = useState<CaptionStyleName>('basic');
+  const [captionStyle, setCaptionStyle] = useState<CaptionStyleName>('classic');
 
   const captionStyles = getAllCaptionStyles();
 

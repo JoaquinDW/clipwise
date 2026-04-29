@@ -1,0 +1,367 @@
+PRD — Mini Clip Editor (V1)
+Feature
+
+Mini editor liviano para ajustar clips generados automáticamente por IA.
+
+El usuario podrá:
+
+modificar inicio y final del clip,
+previsualizar cambios,
+y exportar nuevamente el clip corregido.
+
+La feature NO busca competir con editores profesionales.
+
+Objetivo:
+permitir micro-ajustes rápidos que aumenten calidad percibida y reduzcan frustración.
+
+Objetivo del producto
+
+Resolver problemas típicos del clipping automático:
+
+hook empieza tarde,
+punchline queda cortado,
+sobra silencio,
+falta contexto,
+corte se siente abrupto.
+
+La IA genera el 90%.
+El usuario corrige el 10%.
+
+Objetivos de negocio
+Primarios
+aumentar satisfacción con clips generados,
+aumentar tasa de exportación,
+reducir abandono por clips “casi buenos”,
+mejorar percepción de calidad de IA.
+Secundarios
+aumentar retención,
+disminuir requests de soporte,
+diferenciar producto frente a competitors más rígidos.
+Alcance V1
+Incluye
+Timeline simple
+
+Visualización básica del rango del clip.
+
+Ajuste de inicio
+
+Mover el timestamp inicial:
+
+hacia atrás,
+hacia adelante.
+Ajuste de final
+
+Mover timestamp final:
+
+hacia atrás,
+hacia adelante.
+Preview del clip
+
+Reproducción inmediata del rango ajustado.
+
+Re-exportar clip
+
+Generar nueva versión del clip usando nuevos timestamps.
+
+Persistencia de versiones
+
+Guardar:
+
+clip original IA,
+clip editado por usuario.
+Fuera de alcance (NO V1)
+No incluir
+multicapa,
+drag/drop assets,
+overlays manuales,
+transiciones,
+trimming frame-perfect,
+edición de subtítulos palabra por palabra,
+efectos,
+música,
+filtros,
+crop manual,
+zooms,
+keyframes,
+edición tipo CapCut.
+User Stories
+Story 1
+
+Como usuario,
+quiero mover el inicio del clip,
+para incluir más contexto antes del momento importante.
+
+Story 2
+
+Como usuario,
+quiero extender el final,
+para evitar que el remate quede cortado.
+
+Story 3
+
+Como usuario,
+quiero ver el preview inmediatamente,
+para validar si el clip quedó bien.
+
+Story 4
+
+Como usuario,
+quiero exportar una nueva versión,
+para publicar el clip corregido.
+
+UX
+Pantalla
+
+Cada clip tendrá:
+
+[ video preview ]
+
+|---- timeline ----|
+
+[start handle]====clip====[end handle]
+
+[-2s] [-1s] [+1s] [+2s]
+
+[Preview]
+[Save Changes]
+Interacciones
+Arrastrar handles
+
+El usuario puede:
+
+mover inicio,
+mover final.
+Botones rápidos
+
+Opcional V1:
+
+“+2s inicio”
+“-2s inicio”
+“+2s final”
+“-2s final”
+
+Muy útiles en mobile.
+
+Preview instantáneo
+
+El player:
+
+salta al nuevo inicio,
+reproduce hasta nuevo final.
+
+Sin esperar render backend.
+
+Constraints UX
+Límites de edición
+
+Máximo ajuste:
+
+±15 segundos respecto al clip original.
+
+Motivo:
+
+evitar uso como editor completo,
+mantener costos controlados.
+Duración máxima
+
+Clip final:
+
+mínimo: 10s
+máximo: 90s
+Arquitectura técnica
+Frontend
+
+Responsabilidades:
+
+render preview,
+timeline UI,
+manejo de timestamps,
+reproducción local.
+
+NO renderiza video final.
+
+Backend
+
+Responsabilidades:
+
+recibir nuevos timestamps,
+cortar nuevo segmento,
+reprocesar subtitles,
+exportar nuevo clip.
+Flujo técnico
+1. Usuario abre clip
+
+Frontend recibe:
+
+{
+  "clip_id": "clip_01",
+  "video_url": "...",
+  "start": 1320,
+  "end": 1360
+}
+2. Usuario ajusta timestamps
+
+Frontend actualiza estado local:
+
+{
+  "new_start": 1315,
+  "new_end": 1365
+}
+3. Preview local
+
+HTML5 video:
+
+usa seek,
+reproduce rango simulado.
+4. Usuario guarda
+
+POST:
+
+{
+  "clip_id": "clip_01",
+  "start": 1315,
+  "end": 1365
+}
+5. Backend crea render job
+
+Nuevo estado:
+
+rendering_adjusted_clip
+6. Worker ejecuta ffmpeg
+
+Ejemplo:
+
+ffmpeg -ss START -to END -i input.mp4 \
+-c:v libx264 \
+-c:a aac \
+output.mp4
+7. Se genera nuevo asset
+
+Guardar:
+
+nuevo mp4,
+nueva preview,
+nuevos subtitles.
+Modelo de datos
+Edited Clip
+{
+  "id": "clip_edit_01",
+  "parent_clip_id": "clip_01",
+  "start_time": 1315,
+  "end_time": 1365,
+  "status": "rendering",
+  "created_by": "user_123"
+}
+Estados posibles
+idle
+editing
+saving
+rendering
+ready
+failed
+Performance targets
+Preview
+interacción timeline: <50ms
+seek preview: <150ms
+Render backend
+
+Objetivo:
+
+clip ajustado listo en <20 segundos
+
+Para clips cortos.
+
+Stack sugerido
+Frontend
+Next.js
+React
+HTML5 video
+Tailwind
+Zustand o React state
+Timeline
+
+V1:
+
+custom simple timeline
+
+NO usar editor complejo todavía.
+
+Backend
+Node.js
+ffmpeg
+BullMQ
+Redis
+Riesgos
+Riesgo 1 — timeline complejo
+
+Mitigación:
+
+mantener timeline extremadamente simple.
+Riesgo 2 — render lento
+
+Mitigación:
+
+clips cortos,
+workers paralelos,
+ffmpeg optimizado.
+Riesgo 3 — usuarios quieren editor completo
+
+Mitigación:
+
+posicionar feature como:
+“quick adjust”.
+Métricas de éxito
+Product metrics
+% clips editados
+export rate post-edit
+tiempo promedio en editor
+re-render success rate
+UX metrics
+cantidad promedio de ajustes
+abandono del editor
+retries por clip
+Roadmap futuro (NO V1)
+V1.5
+waveform
+thumbnails timeline
+subtitle editing básico
+V2
+crop vertical manual
+speaker tracking preview
+subtitle styling
+V3
+editor avanzado
+multiclip timeline
+templates
+branded exports
+Decisiones importantes
+Decisión 1
+
+NO renderizar en browser.
+
+Motivo:
+
+performance,
+compatibilidad,
+simplicidad.
+Decisión 2
+
+NO construir editor completo.
+
+Motivo:
+
+distrae del core product,
+aumenta muchísimo complejidad.
+Decisión 3
+
+El editor existe para:
+
+corregir,
+no para crear desde cero.
+Definición de éxito
+
+La feature es exitosa si:
+
+el usuario puede corregir un clip en menos de 30 segundos,
+el flujo se siente instantáneo,
+y aumenta la cantidad de clips exportados/publicados.

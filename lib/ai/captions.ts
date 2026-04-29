@@ -261,6 +261,20 @@ WRONG output (DO NOT DO THIS):
 Remember: ONLY use words from the transcription above. NO additions, NO changes, NO translations.`;
 }
 
+// ASS alignment values for caption position
+const POSITION_TO_ASS_ALIGNMENT: Record<'top' | 'center' | 'bottom', number> = {
+  top: 8,    // top-center
+  center: 5, // center-center
+  bottom: 2, // bottom-center
+};
+
+// ASS marginV values for caption position (PlayResY: 1920 space)
+const POSITION_TO_ASS_MARGIN_V: Record<'top' | 'center' | 'bottom', number> = {
+  top: 60,
+  center: 540,
+  bottom: 480,
+};
+
 /**
  * Convert captions to ASS format with word-by-word karaoke highlighting
  *
@@ -269,20 +283,25 @@ Remember: ONLY use words from the transcription above. NO additions, NO changes,
  *
  * @param captionsResult - Complete caption result with styling
  * @param stylePreset - Optional caption style preset name to get font and position
+ * @param opts - Optional overrides for font size and position
  * @returns ASS subtitle file content
  */
 export function captionsToASS(
   captionsResult: CaptionsResult,
-  stylePreset?: CaptionStyleName
+  stylePreset?: CaptionStyleName,
+  opts?: { fontSizeOverride?: number; positionOverride?: 'top' | 'center' | 'bottom' }
 ): string {
   const { captions, style } = captionsResult;
 
   // Get preset for font and position settings
   const preset = getCaptionStyle(stylePreset);
 
+  const fontSize = opts?.fontSizeOverride ?? style.fontSize;
+  const position = opts?.positionOverride ?? preset.position;
+  const alignment = POSITION_TO_ASS_ALIGNMENT[position];
+  const marginV = POSITION_TO_ASS_MARGIN_V[position];
+
   // ASS file header with script info and styles
-  // Use preset for font, weight, and position
-  // MarginV from preset (e.g., 480 for bottom, 540 for center)
   const isBold = preset.fontWeight === 'bold' ? -1 : 0; // ASS uses -1 for bold, 0 for normal
 
   const header = `[Script Info]
@@ -295,8 +314,8 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${preset.font},${style.fontSize},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,${isBold},0,0,0,100,100,0,0,1,2,1,2,10,10,${preset.marginV},1
-Style: Highlight,${preset.font},${style.fontSize},${hexToASSColor(style.highlightColor)},${hexToASSColor(style.highlightColor)},&H00000000,${hexToASSColor(style.highlightColor, 0.8)},${isBold},0,0,0,100,100,0,0,1,2,1,2,10,10,${preset.marginV},1
+Style: Default,${preset.font},${fontSize},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,${isBold},0,0,0,100,100,0,0,1,2,1,${alignment},10,10,${marginV},1
+Style: Highlight,${preset.font},${fontSize},${hexToASSColor(style.highlightColor)},${hexToASSColor(style.highlightColor)},&H00000000,${hexToASSColor(style.highlightColor, 0.8)},${isBold},0,0,0,100,100,0,0,1,2,1,${alignment},10,10,${marginV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

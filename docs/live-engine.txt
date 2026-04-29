@@ -1,0 +1,340 @@
+PRD — Live Preview Engine
+Feature Name
+
+Live Preview Engine
+
+Resumen
+
+Sistema de preview interactivo que permite visualizar cambios de edición en tiempo real SIN re-renderizar video.
+
+El engine simula:
+
+trims,
+captions,
+estilos,
+posiciones,
+tamaños,
+safe areas,
+
+directamente en el navegador usando:
+
+playback control,
+overlays HTML/CSS,
+estado UI local.
+
+El render final real ocurre únicamente al exportar.
+
+Problema
+
+Actualmente, cualquier cambio visual que requiera:
+
+render backend,
+ffmpeg,
+generación de nuevo MP4,
+
+introduce:
+
+latencia,
+costo,
+mala UX,
+fricción creativa.
+
+La experiencia ideal requiere:
+
+feedback instantáneo,
+edición fluida,
+interacción continua.
+Objetivo
+
+Hacer que el usuario sienta:
+
+“estoy editando el video en tiempo real”
+
+sin renderizar realmente durante la edición.
+
+Objetivos del producto
+Primarios
+eliminar espera entre cambios,
+aumentar sensación de fluidez,
+aumentar interacción con editor,
+aumentar export rate.
+Secundarios
+reducir renders innecesarios,
+reducir costo backend,
+habilitar futuras features creativas.
+Principio central
+El preview es una simulación visual
+
+NO:
+
+un render,
+un nuevo mp4,
+un encode real.
+Alcance
+Incluye
+1. Real-time trim simulation
+El usuario puede:
+mover inicio,
+mover final,
+scrubbear timeline.
+El video NO se corta realmente
+
+El player:
+
+controla playback,
+seekea timestamps,
+pausa automáticamente al final.
+2. Live captions preview
+Captions renderizados como overlays HTML/CSS
+
+NO burned-in durante edición.
+
+Cambios instantáneos
+estilo,
+tamaño,
+posición,
+highlight,
+spacing,
+padding.
+3. Caption style switching
+El usuario puede cambiar presets
+
+Ejemplos:
+
+Classic
+Viral
+Bold
+Minimal
+Podcast
+Resultado instantáneo
+
+Sin render backend.
+
+4. Caption positioning
+Opciones
+Top
+Center
+Bottom
+5. Caption sizing
+Opciones
+Small
+Medium
+Large
+6. Safe area overlays
+Mostrar overlays visuales
+
+Para:
+
+TikTok,
+Reels,
+Shorts.
+7. Timeline synchronization
+El timeline debe mantenerse sincronizado con:
+currentTime,
+trims,
+captions activas.
+8. Proxy video playback
+El preview usa:
+proxy MP4 liviano,
+NO el original.
+Fuera de alcance
+NO incluir
+live backend rendering,
+real-time ffmpeg,
+multicapa,
+transitions,
+arbitrary overlays,
+frame-perfect editing,
+custom subtitle editing.
+UX Goals
+El editor debe sentirse:
+instantáneo,
+fluido,
+moderno,
+responsive.
+Tiempo máximo aceptable
+Cambios visuales
+
+Objetivo:
+
+<16ms
+
+(1 frame UI)
+
+Cambio de captions
+
+Objetivo:
+
+instantáneo perceptualmente
+Arquitectura técnica
+Frontend responsibilities
+Maneja
+playback,
+trim simulation,
+captions rendering,
+overlays,
+timeline sync,
+estado UI.
+NO renderiza video final
+Backend responsibilities
+Genera
+proxy MP4,
+captions JSON,
+thumbnails,
+export final.
+Data flow
+Input inicial
+{
+  "proxy_video_url": "...",
+  "captions": [],
+  "clip_start": 1315,
+  "clip_end": 1365
+}
+Estado local editor
+{
+  "visible_start": 1312,
+  "visible_end": 1369,
+  "caption_style": "viral",
+  "caption_position": "center",
+  "caption_size": "large"
+}
+Simulated trimming
+Inicio reproducción
+video.currentTime = visibleStart
+Fin reproducción
+if (video.currentTime >= visibleEnd) {
+  video.pause()
+}
+Captions engine
+Selección caption activa
+const activeCaption = captions.find(
+  c =>
+    currentTime >= c.start &&
+    currentTime <= c.end
+)
+Render visual
+<div className={captionPreset}>
+  {activeCaption.text}
+</div>
+Caption styles system
+Arquitectura
+
+Cada preset:
+
+clase CSS,
+configuración visual,
+animaciones opcionales.
+Ejemplo
+const presets = {
+  viral: {
+    fontSize: "56px",
+    fontWeight: 800,
+    textTransform: "uppercase"
+  }
+}
+Preview rendering strategy
+Composición visual
+video
++
+captions overlay
++
+safe areas
++
+timeline state
++
+interaction layer
+Sin render destructivo
+
+El preview:
+
+NO genera archivos,
+NO encodea,
+NO usa ffmpeg.
+Export pipeline
+Solo al exportar
+
+Frontend manda:
+
+{
+  "clip_start": 1312,
+  "clip_end": 1369,
+  "caption_style": "viral",
+  "caption_position": "center",
+  "caption_size": "large"
+}
+Backend renderiza final
+
+ffmpeg:
+
+corta original,
+aplica subtitles,
+exporta mp4 real.
+Performance requirements
+Editor load
+
+Objetivo:
+
+<2s
+Timeline drag latency
+
+Objetivo:
+
+<16ms
+Caption update latency
+
+Objetivo:
+
+instantáneo perceptualmente
+Stack recomendado
+Frontend
+React
+Next.js
+Tailwind
+Zustand
+HTML5 video
+Rendering layer
+overlays HTML/CSS
+NO canvas inicialmente
+Backend
+Node.js
+ffmpeg
+Redis/BullMQ
+Riesgos
+Riesgo 1 — preview desincronizado
+Mitigación
+usar timestamps absolutos,
+loop playback preciso,
+throttling correcto.
+Riesgo 2 — demasiada lógica frontend
+Mitigación
+separar:
+playback engine,
+captions engine,
+timeline engine.
+Riesgo 3 — users expecting real render quality
+Mitigación
+
+Mostrar:
+
+Preview mode
+
+sutilmente si hace falta.
+
+Métricas de éxito
+UX metrics
+tiempo promedio de edición,
+cantidad de cambios por sesión,
+export completion rate,
+editor abandonment rate.
+Technical metrics
+FPS durante edición,
+drag latency,
+playback sync accuracy,
+memory usage.
+Definición de éxito
+
+La feature es exitosa si:
+
+el editor se siente instantáneo,
+el usuario nunca espera renders durante edición,
+y el export ocurre únicamente una vez al final.

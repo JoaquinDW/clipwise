@@ -112,19 +112,28 @@ export default async function VideoDetailPage({
       {/* Main content — 2 columns */}
       <div className="flex flex-1" style={{ height: "calc(100vh - 3.5rem - 4rem)" }}>
         <ClipsSection
-          clips={video.clips.map((c) => ({
-            id: c.id,
-            title: c.title ?? "",
-            description: c.description ?? null,
-            storageUrl: c.storageUrl ?? null,
-            thumbnailUrl: c.thumbnailUrl ?? null,
-            score: c.score ?? 0,
-            status: c.status,
-            startTime: c.startTime ?? 0,
-            endTime: c.endTime ?? 0,
-            duration: c.duration ?? 0,
-            metadata: c.metadata,
-          }))}
+          clips={video.clips.map((c) => {
+            const meta = c.metadata as Record<string, unknown> | null
+            return {
+              id: c.id,
+              title: c.title ?? "",
+              description: c.description ?? null,
+              storageUrl: c.storageUrl ?? null,
+              thumbnailUrl: c.thumbnailUrl ?? null,
+              score: c.score ?? 0,
+              status: c.status,
+              startTime: c.startTime ?? 0,
+              endTime: c.endTime ?? 0,
+              duration: c.duration ?? 0,
+              metadata: c.metadata,
+              parentClipId: c.parentClipId ?? null,
+              captions: (c.captions ?? null) as import("@/lib/ai/captions").CaptionsResult | null,
+              proxyUrl: (meta?.proxyUrl as string) ?? null,
+              captionStyle: (meta?.captionStyle as string) ?? null,
+              captionPosition: (meta?.captionPosition as "top" | "center" | "bottom") ?? null,
+              captionSize: (meta?.captionSize as "small" | "medium" | "large") ?? null,
+            }
+          })}
           initialClipId={searchParams.clip ?? null}
           videoClipsCount={video.clips.length}
           videoStatus={video.status}

@@ -10,7 +10,7 @@ A Next.js Starter Kit to build your idea with all you need to `earn $ in 1 hour`
 - 👁️ [Landing page](https://nextjsboilerplate-blue.vercel.app/)
 - 🔑 [Google SSO](https://nextjsboilerplate-blue.vercel.app/login) (NextAuth)
 - 💰 Stripe for payments
-- 📂 Postgres with Prisma 
+- 📂 Postgres with Prisma
 - 📈 Google Analytics
 - 📱 Responsive
 - 📧 Mailgun
@@ -51,18 +51,19 @@ Running this project should costs `0 $`. The idea is you can test 10 products wi
 
 That's why I only selected providers (see [tech stack](#tech-stack) below) with a good free tier (at the time I selected them of course).
 
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=guillim/nextjs-boilerplate&type=Date)](https://www.star-history.com/#guillim/nextjs-boilerplate&Date)
 
-
 ## Get Started
-Setup your environment : 
+
+Setup your environment :
 _Copy the file [.env.example](./.env.example) to [.env](.env) and fill in the variables_
 
 #### Development
+
 Install dependencies and run the project :
+
 ```bash
 pnpm install
 npx prisma migrate dev --name init
@@ -72,11 +73,14 @@ pnpm run dev
 open [http://localhost:3000/](http://localhost:3000/) to see the result
 
 #### Production
+
 For production, we recommend using vercel (see below)
+
 ```bash
 pnpm run build
 pnpm run start
 ```
+
 ## Tech Stack
 
 It's all Typescript
@@ -86,7 +90,6 @@ It's documented to guide you through the process of customizing it.
 It's React for the frontend, with TailwindCSS for the design.
 It's easy to be host on [Vercel](https://vercel.com/), but you can change it.
 It will be automatically deployed on git push, no worries about that, focus on code.
-
 
 - Hosting : Vercel
 
@@ -109,22 +112,27 @@ Feel free to customize it as you want in the folder `(landing-page)`.
 
 - 🔑 Auth
 
-Google Auth is already set up. To use it. please follow this [guide](https://authjs.dev/getting-started/authentication/oauth) TLDR, it begins with creating a project on the [Google Cloud Platform](https://console.cloud.google.com/apis/credentials).  
+Google Auth is already set up. To use it. please follow this [guide](https://authjs.dev/getting-started/authentication/oauth) TLDR, it begins with creating a project on the [Google Cloud Platform](https://console.cloud.google.com/apis/credentials).
+
+Important: in your Google OAuth client, add the exact redirect URI used by this app:
+
+- Local: `http://localhost:3000/api/auth/callback/google`
+- Production: `https://your-domain.com/api/auth/callback/google`
+
+If your app origin differs, set `AUTH_URL` in `.env` to that exact origin so NextAuth builds the same callback URL.
 
 We recommend reading [NextAuth](https://next-auth.js.org/getting-started/introduction) for other easy ways to authenticate users (google, twitter, github...)
 
 ![Landing Page](public/sso.png)
-
 
 Impersonation: For better support, you can log in as any user. Simply add your own user ID to **.env** `NEXT_PUBLIC_ADMIN_USER_ID=` and visit [/login/impersonate](/login/impersonate)
 
 - 💰 Payment : Stripe
 
 We use Stripe for payments. Please create an account here [Stripe](https://stripe.com/).
-To make things simpler, Stripe is related to a company, not a user here. So, for every user, a company is automatically created. 
+To make things simpler, Stripe is related to a company, not a user here. So, for every user, a company is automatically created.
 
 For setup, read this [Stripe Tutorial](https://medium.com/@rakeshdhariwal61/integrating-stripe-payment-gateway-in-next-js-14-a-step-by-step-guide-1bd17d164c2c). Use [the Stripe test card](https://docs.stripe.com/testing) for testing.
-
 
 ![billing section](public/billing-screenshot.png)
 
@@ -132,12 +140,14 @@ For setup, read this [Stripe Tutorial](https://medium.com/@rakeshdhariwal61/inte
 <summary>One click button</summary>
 
 How to integrate Stripe button ? You simply need to add this to make the payment work (just change for the correct priceId):
+
 ```react
-<SubscribeComponent 
-        priceId="price_1Q6U4ZP9VWutz4pQA1UC2ilX" 
-        price="10" 
+<SubscribeComponent
+        priceId="price_1Q6U4ZP9VWutz4pQA1UC2ilX"
+        price="10"
         description="Basic Plan" />
 ```
+
 This is already included in the [billing](/billing) page
 
 </details>
@@ -145,7 +155,7 @@ This is already included in the [billing](/billing) page
 <details>
 <summary>Customer Portal</summary>
 
-Don't worry about handling invoices and managing subscriptions. Stripe has a [customer portal](https://stripe.com/docs/billing/subscriptions/customer-portal) doing that for you. 
+Don't worry about handling invoices and managing subscriptions. Stripe has a [customer portal](https://stripe.com/docs/billing/subscriptions/customer-portal) doing that for you.
 
 You users can connect directly with their email, it looks like this: [https://billing.stripe.com](https://billing.stripe.com/p/session/test_YWNjdF8xR3kxaUZBbHF2S3B4SkN1LF9SOEN5QTN0aGVrNFpWTHExWWNMaW1EWnE5Y29tOE1o0100dW7QNfxX)
 
@@ -157,28 +167,28 @@ This is already included in the [billing](/billing) page
 - 📈 Google Analytics
 
 We use Google Analytics to track the users. Please create an account here [Google Analytics](https://analytics.google.com/). Then add your id in the [.env](./.env) file
+
 ```markdown
 # Google Analytics
+
 NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-xxxxxxx
 ```
 
 - ✉️ Email : Mailgun
-Mailgun offers 100 free emails per day which is the biggest free plan we found during our research. Create an account [here](https://signup.mailgun.com/new/signup?plan_name=dev_free&currency=USD). 
-    - Create an API key in the [API key section](https://app.mailgun.com/settings/api_security)
-    - Then add it to the [.env](./.env) file
-    - then adapt this piece of code to your needs, but make sure you change 'mail.mydomain.com' to your mail domain as setup in mailgun:
+  Mailgun offers 100 free emails per day which is the biggest free plan we found during our research. Create an account [here](https://signup.mailgun.com/new/signup?plan_name=dev_free&currency=USD). - Create an API key in the [API key section](https://app.mailgun.com/settings/api_security) - Then add it to the [.env](./.env) file - then adapt this piece of code to your needs, but make sure you change 'mail.mydomain.com' to your mail domain as setup in mailgun:
+
 ```ts
 // On your pages/api routes:
-import { mailgunClientGlobal } from '@/infra/mailgun';
+import { mailgunClientGlobal } from "@/infra/mailgun"
 const mg = await mailgunClientGlobal
-await mg.mailgun?.messages.create(
-  'mail.mydomain.com',
-  {...mg.getDefaultValues(), 
-    from: 'Excited User <mailgun@mail.mydomain.com>',
-    to: ['contact@mydomain.uk'] }
-);
+await mg.mailgun?.messages.create("mail.mydomain.com", {
+  ...mg.getDefaultValues(),
+  from: "Excited User <mailgun@mail.mydomain.com>",
+  to: ["contact@mydomain.uk"],
+})
 ```
-Note : If your mail server in not in europe, you may comment out one line here : [mailgun.ts](./infra/mailgun.ts) 
+
+Note : If your mail server in not in europe, you may comment out one line here : [mailgun.ts](./infra/mailgun.ts)
 `url: 'https://api.eu.mailgun.net'` since it's specific for EU servers.
 
 - IDE : VScode
@@ -190,11 +200,11 @@ ESlint is automatic on save to get a better developer experience.
 
 To host your code on Github, please follow this [guide](https://help.github.com/en/github/getting-started-with-github/create-a-repo).
 
-
 ### Thanks
 
 It's based on the Next.js (App Router) starter template.
 For customisation, see the [course](https://nextjs.org/learn) on the Next.js Website.
 
 ### License
+
 MIT

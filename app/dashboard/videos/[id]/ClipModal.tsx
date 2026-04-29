@@ -16,6 +16,7 @@ interface Clip {
   endTime: number
   duration: number
   metadata: unknown
+  parentClipId?: string | null
 }
 
 interface ClipModalProps {
@@ -168,6 +169,18 @@ export default function ClipModal({
                   #{index + 1}
                 </span>
                 <ScoreBadge score={clip.score} />
+                {clip.parentClipId && (
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded flex-none"
+                    style={{
+                      background: "rgba(99,102,241,0.15)",
+                      color: "#818cf8",
+                      border: "1px solid rgba(99,102,241,0.3)",
+                    }}
+                  >
+                    Edited
+                  </span>
+                )}
                 {isActive && (
                   <span
                     className="text-[10px] font-medium ml-auto flex-none"

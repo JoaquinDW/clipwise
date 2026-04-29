@@ -384,21 +384,32 @@ function buildTrackActionFilter(
   `.trim().replace(/\n\s+/g, '');
 }
 
+const CAPTION_SIZE_MULTIPLIERS = { small: 0.75, medium: 1.0, large: 1.3 } as const;
+
 /**
  * Burn captions into video with word-by-word karaoke highlighting
  *
- * Uses ASS (Advanced SubStation Alpha) format for precise word-level highlighting
- * Position is at 3/4 screen height (MarginV=200) as specified
+ * Uses ASS (Advanced SubStation Alpha) format for precise word-level highlighting.
  */
 export async function burnCaptions(
   inputPath: string,
   captionsResult: CaptionsResult,
   outputPath: string,
-  stylePreset?: string
+  stylePreset?: string,
+  opts?: {
+    captionPosition?: 'top' | 'center' | 'bottom';
+    captionSize?: 'small' | 'medium' | 'large';
+  }
 ): Promise<void> {
+  const sizeMultiplier = CAPTION_SIZE_MULTIPLIERS[opts?.captionSize ?? 'medium'];
+  const fontSizeOverride = Math.round(captionsResult.style.fontSize * sizeMultiplier);
+
   // Create ASS file for captions with word-by-word highlighting
   const assPath = path.join(os.tmpdir(), `captions-${Date.now()}.ass`);
-  const assContent = captionsToASS(captionsResult, stylePreset as any);
+  const assContent = captionsToASS(captionsResult, stylePreset as any, {
+    fontSizeOverride,
+    positionOverride: opts?.captionPosition,
+  });
   await fs.writeFile(assPath, assContent, 'utf-8');
 
   // Log ASS content for debugging
@@ -706,9 +717,11 @@ export async function createClipSmart(
     cropStrategy: SmartCropOptions;
     burnCaptions?: boolean;
     stylePreset?: string;
+    captionPosition?: 'top' | 'center' | 'bottom';
+    captionSize?: 'small' | 'medium' | 'large';
   }
 ): Promise<void> {
-  const { cropStrategy, burnCaptions: shouldBurnCaptions = true, stylePreset } = options;
+  const { cropStrategy, burnCaptions: shouldBurnCaptions = true, stylePreset, captionPosition, captionSize } = options;
 
   const tempDir = os.tmpdir();
   const timestamp = Date.now();
@@ -728,7 +741,7 @@ export async function createClipSmart(
     // Step 3: Burn captions with word-by-word highlighting (optional)
     if (shouldBurnCaptions && captionsResult) {
       console.log(`  💬 Burning captions with word-level timing...`);
-      await burnCaptions(croppedPath, captionsResult, outputPath, stylePreset);
+      await burnCaptions(croppedPath, captionsResult, outputPath, stylePreset, { captionPosition, captionSize });
       await fs.unlink(croppedPath); // Clean up
     } else {
       // Just move the file to output
@@ -753,4 +766,27 @@ export async function createClipSmart(
 
     throw error;
   }
+}
+
+/**
+ * Generate a lightweight proxy video for fast editor loading
+ * 480p, low bitrate, veryfast preset — not intended for publishing
+ */
+export async function generateProxy(inputPath: string, outputPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .videoFilters('scale=854:480')
+      .videoCodec('libx264')
+      .addOption('-crf', '32')
+      .addOption('-preset', 'veryfast')
+      .audioCodec('aac')
+      .audioBitrate('64k')
+      .output(outputPath)
+      .on('end', () => {
+        console.log(`  📦 Proxy generated: ${outputPath}`);
+        resolve();
+      })
+      .on('error', (err) => reject(new Error(`Proxy generation failed: ${err.message}`)))
+      .run();
+  });
 }
