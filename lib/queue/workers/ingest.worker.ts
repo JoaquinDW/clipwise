@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Worker, Job } from 'bullmq';
 import { exec } from 'child_process';
 import { promisify } from 'util';

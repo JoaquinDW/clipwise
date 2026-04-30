@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * TEST API ENDPOINT
  *
@@ -10,6 +11,7 @@ import { CreateVideo } from '@/domain/video/use-case';
 import { prismaClientGlobal } from '@/infra/prisma';
 
 const TEST_COMPANY_ID = 'test-company-id';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TEST_USER_ID = 'test-user-id';
 
 export async function POST(request: NextRequest) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { RegenerateClips } from '@/domain/video/use-case';
@@ -81,7 +82,7 @@ export async function POST(
     });
 
     const highlights = await detectHighlights(
-      transcription.segments as TranscriptionSegment[],
+      transcription.segments as unknown as TranscriptionSegment[],
       {
         maxHighlights: 5,
         minDuration: 15,

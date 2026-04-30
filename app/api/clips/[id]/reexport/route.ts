@@ -84,6 +84,7 @@ export async function POST(
 
     const baseMetadata = (clip.metadata as Record<string, unknown>) ?? {};
     // Strip the proxyUrl from parent — the new clip will get its own proxy after rendering
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { proxyUrl: _proxyUrl, ...inheritedMetadata } = baseMetadata;
 
     const newClip = await prismaClientGlobal.clip.create({

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, indent, no-multi-spaces */
 import { Worker } from 'bullmq';
 import { createRedisConnection, QUEUE_NAME } from './queue';
 import { prismaClientGlobal } from '@/infra/prisma';

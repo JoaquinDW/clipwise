@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 export type CaptionStyleName = 'classic' | 'bold' | 'minimal' | 'viral' | 'podcast';
 
 // Legacy names from before V1.5 — map to new names for backward compatibility

@@ -32,6 +32,7 @@ export async function DELETE(
       const storage = getStorageClient();
       if (video.storageUrl && 'deleteVideo' in storage) {
         const match = video.storageUrl.match(/\/object\/public\/videos\/(.+)/);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (match) await (storage as any).deleteVideo(match[1]).catch(() => {});
       }
     } catch {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Job } from 'bullmq';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';

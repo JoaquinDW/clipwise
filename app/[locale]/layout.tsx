@@ -29,6 +29,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const messages = (await getMessages({ locale })) as any;
 
   return {

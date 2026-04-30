@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Worker, Job } from 'bullmq';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { detectHighlights } from '@/lib/ai/highlights';

@@ -288,6 +288,7 @@ class SupabaseStorage {
 /**
  * S3 Storage Client (placeholder for future implementation)
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 class S3Storage {
   constructor(_config: {
     accessKeyId: string;

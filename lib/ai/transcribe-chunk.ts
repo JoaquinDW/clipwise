@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { readFile } from 'fs/promises';
 import type { TranscriptionSegment, WordTimestamp } from './transcribe';
 

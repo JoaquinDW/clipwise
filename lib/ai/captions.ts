@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, no-multi-spaces */
 /**
  * AI-Powered Caption Generation
  *

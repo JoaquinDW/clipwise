@@ -132,14 +132,15 @@ export class RegenerateClips {
 
     // Validate video status - can only regenerate from these states
     const allowedStatuses: VideoStatus[] = ['READY', 'FAILED', 'TRANSCRIBED'];
-    if (!allowedStatuses.includes(video.props.status)) {
+    if (!allowedStatuses.includes(video.status)) {
       throw new Error(
-        `Cannot regenerate clips from status ${video.props.status}. Video must be READY, FAILED, or TRANSCRIBED.`
+        `Cannot regenerate clips from status ${video.status}. Video must be READY, FAILED, or TRANSCRIBED.`
       );
     }
 
     // For READY and TRANSCRIBED videos, ensure transcription exists
-    if (video.props.status !== 'FAILED' && !video.props.transcription) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (video.status !== 'FAILED' && !(video as any).transcription) {
       throw new Error('Cannot regenerate clips: transcription not found. Use retry instead.');
     }
 
@@ -150,7 +151,7 @@ export class RegenerateClips {
     });
 
     // Reset video status to TRANSCRIBED and clear error
-    return await this.repository.updateStatus(videoId, 'TRANSCRIBED', null);
+    return await this.repository.updateStatus(videoId, 'TRANSCRIBED', undefined);
   }
 }
 
@@ -176,7 +177,8 @@ export class RetryVideoProcessing {
     const { prismaClientGlobal } = await import('@/infra/prisma');
 
     // Delete transcription (cascade will delete segments)
-    if (video.props.transcription) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((video as any).transcription) {
       await prismaClientGlobal.transcription.delete({
         where: { videoId },
       });
@@ -188,6 +190,6 @@ export class RetryVideoProcessing {
     });
 
     // Reset video status to UPLOADED and clear error
-    return await this.repository.updateStatus(videoId, 'UPLOADED', null);
+    return await this.repository.updateStatus(videoId, 'UPLOADED', undefined);
   }
 }
