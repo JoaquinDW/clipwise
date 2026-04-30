@@ -3,6 +3,7 @@ import { createRedisConnection, QUEUE_NAME } from './queue';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { processIngest } from './workers/ingest.worker';
 import { processTranscribe } from './workers/transcribe.worker';
+import { processTranscribeChunk } from './workers/transcribe-chunk.worker';
 import { processAnalyze } from './workers/analyze.worker';
 import { processClip } from './workers/clip.worker';
 
@@ -13,10 +14,11 @@ export function startAllWorkers() {
     QUEUE_NAME,
     async (job) => {
       switch (job.name) {
-        case 'ingest':     return processIngest(job as any);
-        case 'transcribe': return processTranscribe(job as any);
-        case 'analyze':    return processAnalyze(job as any);
-        case 'clip':       return processClip(job as any);
+        case 'ingest':            return processIngest(job as any);
+        case 'transcribe':        return processTranscribe(job as any);
+        case 'transcribe-chunk':  return processTranscribeChunk(job as any);
+        case 'analyze':           return processAnalyze(job as any);
+        case 'clip':              return processClip(job as any);
         default:
           console.warn(`[worker] Unknown job type: ${job.name}`);
       }

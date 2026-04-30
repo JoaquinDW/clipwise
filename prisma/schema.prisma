@@ -84,6 +84,8 @@ model PaymentTransaction {
 enum VideoSource {
   UPLOAD
   YOUTUBE
+  TWITCH
+  KICK
 }
 
 enum VideoStatus {

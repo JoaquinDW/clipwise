@@ -24,6 +24,10 @@ export async function GET(
         },
         orderBy: { score: 'desc' },
       },
+      audioChunks: {
+        select: { id: true, status: true, index: true },
+        orderBy: { index: 'asc' },
+      },
     },
   });
 
@@ -33,6 +37,8 @@ export async function GET(
 
   const totalClips = video.clips.length;
   const readyClips = video.clips.filter((c) => c.status === 'READY').length;
+  const chunksTotal = video.audioChunks?.length ?? 0;
+  const chunksDone = video.audioChunks?.filter((c) => c.status === 'DONE').length ?? 0;
 
   // Compute overall progress percentage
   const statusWeight: Record<string, number> = {
@@ -61,5 +67,7 @@ export async function GET(
     clips: video.clips,
     clipsTotal: totalClips,
     clipsReady: readyClips,
+    chunksTotal,
+    chunksDone,
   });
 }

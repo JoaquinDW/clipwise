@@ -203,6 +203,26 @@ class SupabaseStorage {
     return { url: publicUrl, path: data.path, size: file.size };
   }
 
+  async uploadAudioChunk(
+    file: File | Blob,
+    companyId: string,
+    videoId: string,
+    chunkIndex: number
+  ): Promise<UploadResult> {
+    const fileName = `${companyId}/${videoId}/chunk-${chunkIndex}.m4a`;
+    const { data, error } = await this.client.storage
+      .from(this.buckets.audio)
+      .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+    if (error) throw new Error(`Failed to upload audio chunk: ${error.message}`);
+
+    const { data: { publicUrl } } = this.client.storage
+      .from(this.buckets.audio)
+      .getPublicUrl(fileName);
+
+    return { url: publicUrl, path: data.path, size: file.size };
+  }
+
   async uploadProxy(
     file: File | Blob,
     companyId: string,
@@ -269,7 +289,7 @@ class SupabaseStorage {
  * S3 Storage Client (placeholder for future implementation)
  */
 class S3Storage {
-  constructor(config: {
+  constructor(_config: {
     accessKeyId: string;
     secretAccessKey: string;
     region: string;
@@ -280,36 +300,36 @@ class S3Storage {
   }
 
   async uploadVideo(
-    file: File | Blob,
-    companyId: string,
-    videoId: string
+    _file: File | Blob,
+    _companyId: string,
+    _videoId: string
   ): Promise<UploadResult> {
     throw new Error('S3 storage not yet implemented');
   }
 
   async uploadClip(
-    file: File | Blob,
-    companyId: string,
-    videoId: string,
-    clipId: string
+    _file: File | Blob,
+    _companyId: string,
+    _videoId: string,
+    _clipId: string
   ): Promise<UploadResult> {
     throw new Error('S3 storage not yet implemented');
   }
 
   async uploadThumbnail(
-    file: File | Blob,
-    companyId: string,
-    videoId: string,
-    clipId?: string
+    _file: File | Blob,
+    _companyId: string,
+    _videoId: string,
+    _clipId?: string
   ): Promise<UploadResult> {
     throw new Error('S3 storage not yet implemented');
   }
 
   async uploadProxy(
-    file: File | Blob,
-    companyId: string,
-    videoId: string,
-    clipId: string
+    _file: File | Blob,
+    _companyId: string,
+    _videoId: string,
+    _clipId: string
   ): Promise<UploadResult> {
     throw new Error('S3 storage not yet implemented');
   }

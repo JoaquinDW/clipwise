@@ -12,16 +12,23 @@ export function createRedisConnection() {
 
 export const QUEUE_NAME = 'video-pipeline';
 
-export type JobName = 'ingest' | 'transcribe' | 'analyze' | 'clip';
+export type JobName = 'ingest' | 'transcribe' | 'transcribe-chunk' | 'analyze' | 'clip';
 
 export interface IngestJobData {
   videoId: string;
   sourceUrl: string;
-  source: 'YOUTUBE' | 'UPLOAD';
+  source: 'YOUTUBE' | 'UPLOAD' | 'TWITCH' | 'KICK';
 }
 
 export interface TranscribeJobData {
   videoId: string;
+}
+
+export interface TranscribeChunkJobData {
+  videoId: string;
+  chunkId: string;
+  chunkIndex: number;
+  totalChunks: number;
 }
 
 export interface AnalyzeJobData {
@@ -33,7 +40,7 @@ export interface ClipJobData {
   clipId: string;
 }
 
-export type JobData = IngestJobData | TranscribeJobData | AnalyzeJobData | ClipJobData;
+export type JobData = IngestJobData | TranscribeJobData | TranscribeChunkJobData | AnalyzeJobData | ClipJobData;
 
 let pipelineQueue: Queue | null = null;
 
@@ -54,6 +61,10 @@ export async function enqueueTranscribe(data: TranscribeJobData) {
 
 export async function enqueueAnalyze(data: AnalyzeJobData) {
   return getPipelineQueue().add('analyze', data, { attempts: 2, backoff: { type: 'fixed', delay: 3000 } });
+}
+
+export async function enqueueTranscribeChunk(data: TranscribeChunkJobData) {
+  return getPipelineQueue().add('transcribe-chunk', data, { attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
 }
 
 export async function enqueueClip(data: ClipJobData) {

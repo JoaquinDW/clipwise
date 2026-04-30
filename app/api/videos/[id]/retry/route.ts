@@ -70,7 +70,7 @@ export async function POST(
       await enqueueIngest({
         videoId,
         sourceUrl,
-        source: video.source as 'YOUTUBE' | 'UPLOAD',
+        source: video.source as 'YOUTUBE' | 'UPLOAD' | 'TWITCH' | 'KICK',
       });
       console.log(`[retry] Re-enqueued ingest for video ${videoId}`);
     }

@@ -6,7 +6,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { generateCaptions } from '@/lib/ai/captions';
-import { createClipSmart, generateProxy } from '@/lib/video/processor';
+import { createClipSmart, generateProxy, generateThumbnail } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
 import { createRedisConnection, QUEUE_NAME, type ClipJobData } from '../queue';
 import type { WordTimestamp } from '@/lib/ai/transcribe';
@@ -40,7 +40,8 @@ export async function processClip(job: Job<ClipJobData>) {
 
   try {
     // 1. Download only the clip segment
-    if (video.source === 'YOUTUBE' && video.sourceUrl) {
+    const videoSource: string = video.source;
+    if ((videoSource === 'YOUTUBE' || videoSource === 'TWITCH' || videoSource === 'KICK') && video.sourceUrl) {
       const startTime = Math.floor(clip.startTime);
       const endTime = Math.ceil(clip.endTime);
       const cmd = [
@@ -140,6 +141,23 @@ export async function processClip(job: Job<ClipJobData>) {
     // Explicit cleanup of outputPath now that proxy is done
     await unlink(outputPath).catch(() => {});
 
+    // 5c. Generate and upload clip thumbnail
+    let clipThumbnailUrl: string | undefined;
+    const thumbPath = join(tmpdir(), `thumb-${clipId}.jpg`);
+    try {
+      await generateThumbnail(segmentPath, thumbPath, 1);
+      const thumbBuffer = await readFile(thumbPath);
+      const thumbArrayBuffer = thumbBuffer.buffer.slice(thumbBuffer.byteOffset, thumbBuffer.byteOffset + thumbBuffer.byteLength) as ArrayBuffer;
+      const thumbBlob = new Blob([thumbArrayBuffer], { type: 'image/jpeg' });
+      const thumbResult = await (storage as any).uploadThumbnail(thumbBlob, video.companyId, videoId, clipId);
+      clipThumbnailUrl = thumbResult.url;
+      console.log(`[clip] Thumbnail uploaded for clip ${clipId}: ${clipThumbnailUrl}`);
+    } catch (thumbErr) {
+      console.warn(`[clip] Thumbnail generation failed (non-fatal) for ${clipId}:`, thumbErr);
+    } finally {
+      await unlink(thumbPath).catch(() => {});
+    }
+
     // 6. Save clip record
     await prismaClientGlobal.clip.update({
       where: { id: clipId },
@@ -147,6 +165,7 @@ export async function processClip(job: Job<ClipJobData>) {
         storageUrl: uploadResult.url,
         status: 'READY',
         captions: captions as any,
+        ...(clipThumbnailUrl ? { thumbnailUrl: clipThumbnailUrl } : {}),
         metadata: {
           ...(metadata ?? {}),
           ...(proxyUrl ? { proxyUrl } : {}),

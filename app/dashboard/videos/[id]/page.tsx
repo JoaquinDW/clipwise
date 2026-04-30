@@ -25,13 +25,18 @@ export default async function VideoDetailPage({
   if (!video) notFound()
 
   const isProcessing = !["READY", "FAILED"].includes(video.status)
+  const isStream = (video.source as string) === "TWITCH" || (video.source as string) === "KICK"
 
   const processingLabel: Record<string, string> = {
     UPLOADING: "Waiting to start…",
     UPLOADED: "Queued for processing…",
-    INGESTING: "Extracting audio from video…",
+    INGESTING: isStream
+      ? "Downloading stream in chunks — transcription starts immediately…"
+      : "Extracting audio from video…",
     INGESTED: "Audio ready, starting transcription…",
-    TRANSCRIBING: "Transcribing audio…",
+    TRANSCRIBING: isStream
+      ? "Transcribing chunks in parallel…"
+      : "Transcribing audio…",
     TRANSCRIBED: "Detecting highlights with AI…",
     PROCESSING: `Generating clips (${video.clips.filter((c) => c.status === "READY").length}/${video.clips.length} ready)…`,
   }

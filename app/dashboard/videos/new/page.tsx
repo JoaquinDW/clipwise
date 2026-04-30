@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAllCaptionStyles, type CaptionStyleName } from '@/lib/ai/caption-styles';
 
-type UploadMode = 'file' | 'youtube';
+type UploadMode = 'file' | 'youtube' | 'stream';
 
 export default function NewVideoPage() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function NewVideoPage() {
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [streamUrl, setStreamUrl] = useState('');
   const [captionStyle, setCaptionStyle] = useState<CaptionStyleName>('classic');
 
   const captionStyles = getAllCaptionStyles();
@@ -56,6 +57,7 @@ export default function NewVideoPage() {
     e.preventDefault();
     if (mode === 'file' && !file) { setError('Please select a video file'); return; }
     if (mode === 'youtube' && !youtubeUrl) { setError('Please enter a YouTube URL'); return; }
+    if (mode === 'stream' && !streamUrl) { setError('Please enter a Twitch or Kick VOD URL'); return; }
     if (!title.trim()) { setError('Please enter a title'); return; }
 
     setUploading(true);
@@ -76,13 +78,22 @@ export default function NewVideoPage() {
         if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
         videoId = (await res.json()).videoId;
         setProgress(30);
-      } else {
+      } else if (mode === 'youtube') {
         const res = await fetch('/api/videos/youtube', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: youtubeUrl, title, description, captionStyle }),
         });
         if (!res.ok) throw new Error((await res.json()).error || 'YouTube download failed');
+        videoId = (await res.json()).videoId;
+        setProgress(30);
+      } else {
+        const res = await fetch('/api/videos/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: streamUrl, title, description, captionStyle }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error || 'Stream import failed');
         videoId = (await res.json()).videoId;
         setProgress(30);
       }
@@ -127,7 +138,7 @@ export default function NewVideoPage() {
         <div className="mb-6">
           <div style={{ borderBottom: '1px solid #1a1a1a' }}>
             <nav role="tablist" className="-mb-px flex space-x-8">
-              {(['file', 'youtube'] as UploadMode[]).map((m) => (
+              {(['file', 'youtube', 'stream'] as UploadMode[]).map((m) => (
                 <button
                   key={m}
                   role="tab"
@@ -140,7 +151,7 @@ export default function NewVideoPage() {
                       : { borderColor: 'transparent', color: '#555' }
                   }
                 >
-                  {m === 'file' ? '📁 Upload File' : '🎥 YouTube URL'}
+                  {m === 'file' ? '📁 Upload File' : m === 'youtube' ? '🎥 YouTube URL' : '🎮 Stream URL'}
                 </button>
               ))}
             </nav>
@@ -224,6 +235,31 @@ export default function NewVideoPage() {
                 required={mode === 'youtube'}
               />
               <p className="mt-2 text-xs" style={{ color: '#444' }}>Paste the full URL of a YouTube video</p>
+            </div>
+          )}
+
+          {/* Stream URL */}
+          {mode === 'stream' && (
+            <div>
+              <label htmlFor="stream-url" className="block text-sm font-medium mb-2" style={{ color: '#777' }}>
+                Stream URL *
+              </label>
+              <input
+                type="url"
+                id="stream-url"
+                name="stream-url"
+                autoComplete="url"
+                spellCheck={false}
+                value={streamUrl}
+                onChange={(e) => setStreamUrl(e.target.value)}
+                placeholder="https://www.twitch.tv/videos/… or https://kick.com/…/video/…"
+                className="dash-input"
+                disabled={uploading}
+                required={mode === 'stream'}
+              />
+              <p className="mt-2 text-xs" style={{ color: '#444' }}>
+                Paste a Twitch VOD URL or Kick VOD URL. Clips appear progressively as the stream is processed.
+              </p>
             </div>
           )}
 
@@ -328,7 +364,7 @@ export default function NewVideoPage() {
             <div className="rounded-xl p-4" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium" style={{ color: '#f2ede8' }}>
-                  {mode === 'file' ? 'Uploading video…' : 'Submitting YouTube URL…'}
+                  {mode === 'file' ? 'Uploading video…' : mode === 'youtube' ? 'Submitting YouTube URL…' : 'Starting stream import…'}
                 </span>
                 <span className="text-sm font-medium" style={{ color: '#FF3B5C' }}>{progress}%</span>
               </div>
@@ -351,7 +387,7 @@ export default function NewVideoPage() {
             </Link>
             <button
               type="submit"
-              disabled={(mode === 'file' && !file) || (mode === 'youtube' && !youtubeUrl) || uploading}
+              disabled={(mode === 'file' && !file) || (mode === 'youtube' && !youtubeUrl) || (mode === 'stream' && !streamUrl) || uploading}
               className="dash-btn-gradient px-5 py-2 text-sm"
             >
               {uploading ? 'Processing…' : 'Upload & Process'}

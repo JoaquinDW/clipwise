@@ -8,9 +8,10 @@ type props = {
   priceId: string
   price: string
   description: string
+  buttonLabel?: string
 }
 
-const SubscribeComponent = ({ priceId }: props) => {
+const SubscribeComponent = ({ priceId, buttonLabel = "Upgrade" }: props) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const handleSubmit = async () => {
     if (!priceId) {
@@ -40,9 +41,8 @@ const SubscribeComponent = ({ priceId }: props) => {
   }
   return (
     <div>
-      {/* Click Below button to get {description} */}
       <Button onClick={handleSubmit} disabled={!priceId || isSubmitting}>
-        {isSubmitting ? "Redirecting..." : "Upgrade"}
+        {isSubmitting ? "Redirecting..." : buttonLabel}
       </Button>
     </div>
   )
