@@ -2,21 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+// import Link from 'next/link'; // re-enable on launch
 import type { Lang } from './use-lang';
 
 const i18n = {
   es: {
-    links: [['Características', '#features'], ['Demo', '#demo'], ['Precios', '#pricing'], ['FAQ', '#faq']] as const,
+    links: [['Características', '#features'], ['Demo', '#demo'], ['Lista de espera', '#waitlist'], ['FAQ', '#faq']] as const,
     signIn: 'Iniciar sesión',
-    cta: 'Empezar gratis →',
+    cta: 'Unirme →',
+    ctaHref: '#waitlist',
     switchLabel: 'EN',
     switchLocale: '/',
   },
   en: {
-    links: [['Features', '#features'], ['Demo', '#demo'], ['Pricing', '#pricing'], ['FAQ', '#faq']] as const,
+    links: [['Features', '#features'], ['Demo', '#demo'], ['Waitlist', '#waitlist'], ['FAQ', '#faq']] as const,
     signIn: 'Sign in',
-    cta: 'Start for free →',
+    cta: 'Join waitlist →',
+    ctaHref: '#waitlist',
     switchLabel: 'ES',
     switchLocale: '/es',
   },
@@ -77,15 +79,12 @@ export default function Header({ lang }: { lang: Lang }) {
         >
           {t.switchLabel}
         </button>
-        <Link href="/login" style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', textDecoration: 'none', transition: 'color 0.2s' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#f2ede8')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#555')}
-        >
-          {t.signIn}
-        </Link>
-        <Link href="/login" className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
+        {/* On launch: replace the two lines below with Sign In + Start for free buttons */}
+        {/* <Link href="/login" style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#f2ede8')} onMouseLeave={e => (e.currentTarget.style.color = '#555')}>{t.signIn}</Link> */}
+        {/* <Link href="/login" className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>{t.cta}</Link> */}
+        <a href={t.ctaHref} className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
           {t.cta}
-        </Link>
+        </a>
       </div>
 
       {/* Mobile menu button */}
@@ -120,7 +119,7 @@ export default function Header({ lang }: { lang: Lang }) {
             </a>
           ))}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
-            <Link href="/login" className="cta-btn" style={{ alignSelf: 'flex-start' }}>{t.cta}</Link>
+            <a href={t.ctaHref} className="cta-btn" style={{ alignSelf: 'flex-start' }}>{t.cta}</a>
             <button onClick={() => router.push(t.switchLocale)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 6, border: '1px solid #242424', background: 'transparent', color: '#444', cursor: 'pointer' }}>
               {t.switchLabel}
             </button>

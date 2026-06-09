@@ -1,0 +1,42 @@
+Top 5 ideas para Clipwise — Pre-launch, recursos mínimos
+1. Demo clips como contenido (#42 + #87)
+El mejor marketing para una herramienta de clips es mostrar clips.
+
+Tu producto genera el content que necesitás. Procesá episodios populares de podcasts públicos (Lex Fridman, My First Million, The Joe Rogan Experience) y posteá los clips resultantes con el caption "Este clip lo generó IA de una entrevista de 2 horas — tardó 4 minutos" + link a tu waitlist.
+
+Cómo empezar: Procesá 2 episodios públicos → publicá los mejores clips en Twitter/X, TikTok y YouTube Shorts. La calidad del output habla sola.
+Resultado esperado: prueba social visual, shares orgánicos, primeros signups sin gastar nada
+Recursos: 2 horas/semana, $0
+2. Reddit Marketing — comunidades de creadores (#38)
+Hay 3 subreddits con tu audiencia exacta: r/podcasting (150k), r/NewTubers (500k), r/Twitch (700k).
+
+Cómo empezar: Posteá en uno por semana. Mostrá un demo clip real, contá que estás en beta, ofrecé acceso gratis a 5 personas que comenten. No vendas — demos y autenticidad.
+Resultado esperado: 20-100 signups por post bien recibido + feedback real
+Recursos: 1 hora/semana, $0
+3. DM directo a creadores mid-tier (#47 founder-led)
+Los creadores de 10k–100k subs tienen el dolor real y son accesibles. Los grandes ya tienen solución; los pequeños no pueden pagar un editor.
+
+Cómo empezar: Encontrá 10 YouTubers o podcasters por semana. Procesá su último episodio como demo. Mandá un DM: "Hola [nombre] — generé 3 clips de tu último episodio con una herramienta que estoy construyendo. ¿Querés verlos?"
+Resultado esperado: 2-4 respuestas por semana → primeros usuarios + testimonios reales
+Recursos: 1 hora/semana, $0. Los $20 podrían ir a Twitter Blue para mandar más DMs.
+4. Product Hunt + plataformas alternativas (#78 + #82)
+Un buen launch bien preparado genera 200-500 signups en un día.
+
+Cómo empezar: Abrí la página de "upcoming" en Product Hunt hoy. Simultáneamente, listá en BetaList, AlternativeTo (como alternativa a Opus Clip y Descript), y Uneed.app.
+Resultado esperado: oleada de early adopters + backlinks
+Recursos: 3 horas en total (preparación + día de launch), $0
+5. "Powered By" en clips exportados (#87)
+Cada clip que genera Clipwise puede llevar un watermark o metadata de marca. Cuando creadores lo compartan, tu marca se ve.
+
+Cómo empezar: Agregar un badge sutil "Made with Clipwise" en el plan gratuito/trial. Creadores que no pagan siguen siendo distribuidores de marca.
+Resultado esperado: distribución orgánica proporcional a la cantidad de clips creados
+Recursos: 2 horas de implementación, $0 recurrente
+Ritmo semanal — 3 horas totales
+Día	Acción	Tiempo
+Lunes	Procesá 2 episodios públicos → seleccioná los 2 mejores clips	30 min
+Mar/Mié/Jue	Publicá 1 clip demo en Twitter/X + TikTok con link a waitlist	15 min/día
+Viernes	10 DMs a creadores + 1 post en un subreddit rotativo	1 hora
+Sábado	Respuesta a comentarios/DMs, ajustá messaging según lo que funcione	30 min
+Los $20: invertílos en Twitter Blue (DMs ilimitados a no-seguidores) o en un mes de BetaList premium.
+
+Ahora, para que la landing convierta esos visitantes: el testimonials component sigue con contenido de boilerplate ("Open PRO", "Anastasia Dan") y ni siquiera está incluido en la página. ¿Querés que aplique los cambios en la landing ahora — testimoniales reales, fix del copy de pricing, y el sub del hero más punchero?

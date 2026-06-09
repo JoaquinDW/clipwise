@@ -2,7 +2,7 @@ import Hero from './components/hero';
 import Features from './components/features';
 import Demo from './components/demo';
 import Testimonials from './components/testimonials';
-import Pricing from './components/pricing';
+import Waitlist from './components/waitlist';
 import Faq from './components/faq';
 
 export default function Home() {
@@ -12,7 +12,7 @@ export default function Home() {
       <Features lang="en" />
       <Demo lang="en" />
       <Testimonials lang="en" />
-      <Pricing lang="en" />
+      <Waitlist lang="en" />
       <Faq lang="en" />
     </>
   );

@@ -1,7 +1,7 @@
 import Hero from '../(landing-page)/components/hero';
 import Features from '../(landing-page)/components/features';
 import Demo from '../(landing-page)/components/demo';
-import Pricing from '../(landing-page)/components/pricing';
+import Waitlist from '../(landing-page)/components/waitlist';
 import Faq from '../(landing-page)/components/faq';
 import type { Lang } from '../(landing-page)/components/use-lang';
 
@@ -14,7 +14,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <Hero lang={lang} />
       <Features lang={lang} />
       <Demo lang={lang} />
-      <Pricing lang={lang} />
+      <Waitlist lang={lang} />
       <Faq lang={lang} />
     </>
   );
