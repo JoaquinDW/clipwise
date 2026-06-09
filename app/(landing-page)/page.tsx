@@ -1,6 +1,7 @@
 import Hero from './components/hero';
 import Features from './components/features';
 import Demo from './components/demo';
+import Testimonials from './components/testimonials';
 import Pricing from './components/pricing';
 import Faq from './components/faq';
 
@@ -10,6 +11,7 @@ export default function Home() {
       <Hero lang="en" />
       <Features lang="en" />
       <Demo lang="en" />
+      <Testimonials lang="en" />
       <Pricing lang="en" />
       <Faq lang="en" />
     </>

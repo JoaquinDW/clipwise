@@ -8,7 +8,7 @@ const i18n = {
     badge: '✦ Precios simples',
     headline: 'Elige tu',
     gradPart: 'plan',
-    sub: '7 días de prueba gratis. Sin tarjeta de crédito al inicio.',
+    sub: '7 días de prueba. Cancela cuando quieras.',
     popularLabel: 'Más popular',
     plans: [
       {
@@ -44,7 +44,7 @@ const i18n = {
     badge: '✦ Simple pricing',
     headline: 'Choose your',
     gradPart: 'plan',
-    sub: '7-day free trial. No credit card required to start.',
+    sub: '7-day free trial. Cancel anytime.',
     popularLabel: 'Most popular',
     plans: [
       {

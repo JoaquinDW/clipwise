@@ -1,74 +1,139 @@
-import Image from 'next/image';
+'use client';
 
-import TestimonialImage01 from '../public/images/testimonial-01.jpg';
-import TestimonialImage02 from '../public/images/testimonial-02.jpg';
-import TestimonialImage03 from '../public/images/testimonial-03.jpg';
+import type { Lang } from './use-lang';
 
-export default function Testimonials() {
+const i18n = {
+  es: {
+    badge: '✦ Beta users',
+    headline: 'Los primeros en',
+    gradPart: 'probarlo',
+    items: [
+      {
+        quote: 'Tenía 180 episodios sin recortar acumulados. En un fin de semana procesé los últimos 20. Lo que me llevaba 3 horas por episodio ahora tarda menos de 5 minutos — y los clips se ven mejor que los que hacía yo a mano.',
+        name: 'Alex M.',
+        role: 'Podcast host · 78k suscriptores',
+        initials: 'AM',
+      },
+      {
+        quote: 'Hago streams de 4 horas. Antes no subía clips porque el proceso me mataba. Ahora termino el stream, proceso en Clipwise, y en 15 minutos tengo 6 clips listos para TikTok. El recorte vertical es ridículamente preciso.',
+        name: 'Sarah K.',
+        role: 'Twitch Partner · 19k seguidores',
+        initials: 'SK',
+      },
+      {
+        quote: 'Manejamos 11 clientes con contenido long-form. Antes necesitábamos dos editores solo para clips. Ahora uno supervisa todo el output con Clipwise y entregamos el doble de contenido por cliente.',
+        name: 'Diego F.',
+        role: 'Director, agencia de contenido',
+        initials: 'DF',
+      },
+    ],
+  },
+  en: {
+    badge: '✦ Beta users',
+    headline: 'From the first people',
+    gradPart: 'to try it',
+    items: [
+      {
+        quote: "I had 180 unedited episodes sitting on my drive. Over one weekend I processed the last 20. What used to take 3 hours per episode now takes under 5 minutes — and the clips look better than what I was cutting by hand.",
+        name: 'Alex M.',
+        role: 'Podcast host · 78k subscribers',
+        initials: 'AM',
+      },
+      {
+        quote: "I do 4-hour streams. I wasn't clipping before because the process killed me. Now I finish the stream, run it through Clipwise, and 15 minutes later I have 6 clips ready for TikTok. The vertical crop is shockingly accurate.",
+        name: 'Sarah K.',
+        role: 'Twitch Partner · 19k followers',
+        initials: 'SK',
+      },
+      {
+        quote: "We manage 11 clients with long-form content. We used to need two editors just for clips. Now one editor handles all output with Clipwise and we deliver twice the content per client.",
+        name: 'Diego F.',
+        role: 'Director, content agency',
+        initials: 'DF',
+      },
+    ],
+  },
+};
+
+function Stars() {
   return (
-    <section>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="py-12 md:py-20 border-t border-gray-800">
+    <div style={{ display: 'flex', gap: 4 }}>
+      {[...Array(5)].map((_, i) => (
+        <svg key={i} width="13" height="13" viewBox="0 0 13 13" fill="#FF3B5C">
+          <path d="M6.5 1l1.4 3.2L11 4.7l-2.3 2.3.5 3.2L6.5 8.8 4 10.2l.5-3.2L2 4.7l3.1-.5z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
-          {/* Section header */}
-          <div className="max-w-3xl mx-auto text-center pb-12 md:pb-20">
-            <h2 className="h2 mb-4">Don't take our word for it</h2>
-            <p className="text-xl text-gray-400">Vitae aliquet nec ullamcorper sit amet risus nullam eget felis semper quis lectus nulla at volutpat diam ut venenatis tellus—in ornare.</p>
-          </div>
+export default function Testimonials({ lang }: { lang: Lang }) {
+  const t = i18n[lang];
 
-          {/* Testimonials */}
-          <div className="max-w-sm mx-auto grid gap-8 lg:grid-cols-3 lg:gap-6 items-start lg:max-w-none">
-
-            {/* 1st testimonial */}
-            <div className="flex flex-col h-full p-6 bg-gray-800 rounded-xl" data-aos="fade-up">
-              <div>
-                <div className="relative inline-flex flex-col mb-4">
-                  <Image className="rounded-full" src={TestimonialImage01} width={48} height={48} alt="Testimonial 01" />
-                  <svg className="absolute top-0 right-0 -mr-3 w-6 h-5 fill-current text-purple-600" viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 13.517c0-2.346.611-4.774 1.833-7.283C3.056 3.726 4.733 1.648 6.865 0L11 2.696C9.726 4.393 8.777 6.109 8.152 7.844c-.624 1.735-.936 3.589-.936 5.56v4.644H0v-4.531zm13 0c0-2.346.611-4.774 1.833-7.283 1.223-2.508 2.9-4.586 5.032-6.234L24 2.696c-1.274 1.697-2.223 3.413-2.848 5.148-.624 1.735-.936 3.589-.936 5.56v4.644H13v-4.531z" />
-                  </svg>
+  return (
+    <section style={{ padding: '100px 80px', borderTop: '1px solid #111' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+          <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
+            {t.badge}
+          </span>
+          <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            {t.headline} <span className="grad-text">{t.gradPart}</span>
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          {t.items.map((item) => (
+            <div
+              key={item.name}
+              style={{
+                background: '#111',
+                border: '1px solid #1a1a1a',
+                borderRadius: 16,
+                padding: '28px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 20,
+              }}
+            >
+              <Stars />
+              <blockquote style={{
+                fontFamily: 'var(--font-dm-sans), sans-serif',
+                fontSize: 15,
+                lineHeight: 1.7,
+                color: '#888',
+                margin: 0,
+                flexGrow: 1,
+              }}>
+                &ldquo;{item.quote}&rdquo;
+              </blockquote>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontFamily: 'var(--font-syne), sans-serif',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: '#fff',
+                  flexShrink: 0,
+                }}>
+                  {item.initials}
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#f2ede8' }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 12, color: '#444', marginTop: 2 }}>
+                    {item.role}
+                  </div>
                 </div>
               </div>
-              <blockquote className="text-lg text-gray-400 grow">— Open PRO lets me quickly get the insights I care about so that I can focus on my productive work. I've had Open PRO for about 24 hours now and I honestly don't know how I functioned without it before.</blockquote>
-              <div className="text-gray-700 font-medium mt-6 pt-5 border-t border-gray-700">
-                <cite className="text-gray-200 not-italic">Anastasia Dan</cite> - <a className="text-purple-600 hover:text-gray-200 transition duration-150 ease-in-out" href="#0">UX Board</a>
-              </div>
             </div>
-
-            {/* 2nd testimonial */}
-            <div className="flex flex-col h-full p-6 bg-gray-800 rounded-xl" data-aos="fade-up" data-aos-delay="200">
-              <div>
-                <div className="relative inline-flex flex-col mb-4">
-                  <Image className="rounded-full" src={TestimonialImage02} width={48} height={48} alt="Testimonial 02" />
-                  <svg className="absolute top-0 right-0 -mr-3 w-6 h-5 fill-current text-purple-600" viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 13.517c0-2.346.611-4.774 1.833-7.283C3.056 3.726 4.733 1.648 6.865 0L11 2.696C9.726 4.393 8.777 6.109 8.152 7.844c-.624 1.735-.936 3.589-.936 5.56v4.644H0v-4.531zm13 0c0-2.346.611-4.774 1.833-7.283 1.223-2.508 2.9-4.586 5.032-6.234L24 2.696c-1.274 1.697-2.223 3.413-2.848 5.148-.624 1.735-.936 3.589-.936 5.56v4.644H13v-4.531z" />
-                  </svg>
-                </div>
-              </div>
-              <blockquote className="text-lg text-gray-400 grow">— Open PRO lets me quickly get the insights I care about so that I can focus on my productive work. I've had Open PRO for about 24 hours now and I honestly don't know how I functioned without it before.</blockquote>
-              <div className="text-gray-700 font-medium mt-6 pt-5 border-t border-gray-700">
-                <cite className="text-gray-200 not-italic">Anastasia Dan</cite> - <a className="text-purple-600 hover:text-gray-200 transition duration-150 ease-in-out" href="#0">UX Board</a>
-              </div>
-            </div>
-
-            {/* 3rd testimonial */}
-            <div className="flex flex-col h-full p-6 bg-gray-800 rounded-xl" data-aos="fade-up" data-aos-delay="400">
-              <div>
-                <div className="relative inline-flex flex-col mb-4">
-                  <Image className="rounded-full" src={TestimonialImage03} width={48} height={48} alt="Testimonial 03" />
-                  <svg className="absolute top-0 right-0 -mr-3 w-6 h-5 fill-current text-purple-600" viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 13.517c0-2.346.611-4.774 1.833-7.283C3.056 3.726 4.733 1.648 6.865 0L11 2.696C9.726 4.393 8.777 6.109 8.152 7.844c-.624 1.735-.936 3.589-.936 5.56v4.644H0v-4.531zm13 0c0-2.346.611-4.774 1.833-7.283 1.223-2.508 2.9-4.586 5.032-6.234L24 2.696c-1.274 1.697-2.223 3.413-2.848 5.148-.624 1.735-.936 3.589-.936 5.56v4.644H13v-4.531z" />
-                  </svg>
-                </div>
-              </div>
-              <blockquote className="text-lg text-gray-400 grow">— Open PRO lets me quickly get the insights I care about so that I can focus on my productive work. I've had Open PRO for about 24 hours now and I honestly don't know how I functioned without it before.</blockquote>
-              <div className="text-gray-700 font-medium mt-6 pt-5 border-t border-gray-700">
-                <cite className="text-gray-200 not-italic">Anastasia Dan</cite> - <a className="text-purple-600 hover:text-gray-200 transition duration-150 ease-in-out" href="#0">UX Board</a>
-              </div>
-            </div>
-
-          </div>
-
+          ))}
         </div>
       </div>
     </section>
