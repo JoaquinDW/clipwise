@@ -99,7 +99,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
           <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
             {t.headline} <span className="grad-text">{t.gradPart}</span>
           </h2>
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#555' }}>{t.sub}</p>
+          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#888' }}>{t.sub}</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'start' }}>
           {t.plans.map(plan => (
@@ -119,12 +119,12 @@ export default function Pricing({ lang }: { lang: Lang }) {
                 </div>
               )}
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#555', marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{plan.name}</div>
+                <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#888', marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{plan.name}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
                   <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 44, fontWeight: 800, background: 'linear-gradient(135deg,#FF3B5C,#FF8C00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>{plan.price}</span>
-                  <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#444' }}>{plan.period}</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#777' }}>{plan.period}</span>
                 </div>
-                <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', lineHeight: 1.5 }}>{plan.desc}</p>
+                <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888', lineHeight: 1.5 }}>{plan.desc}</p>
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {plan.features.map(f => (

@@ -345,7 +345,7 @@ export default function Hero({ lang }: { lang: Lang }) {
               fontFamily: "var(--font-dm-sans), sans-serif",
               fontSize: 18,
               lineHeight: 1.65,
-              color: "#666",
+              color: "#888",
               marginBottom: 40,
               maxWidth: 420,
             }}
@@ -367,7 +367,7 @@ export default function Hero({ lang }: { lang: Lang }) {
                 style={{
                   fontFamily: "var(--font-dm-sans), sans-serif",
                   fontSize: 11,
-                  color: "#444",
+                  color: "#777",
                   border: "1px solid #1e1e1e",
                   padding: "5px 13px",
                   borderRadius: 100,
@@ -429,7 +429,7 @@ export default function Hero({ lang }: { lang: Lang }) {
                   style={{
                     fontFamily: "var(--font-dm-sans), sans-serif",
                     fontSize: 12,
-                    color: "#444",
+                    color: "#777",
                     marginTop: 4,
                   }}
                 >

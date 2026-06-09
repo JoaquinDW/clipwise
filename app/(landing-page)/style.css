@@ -115,14 +115,14 @@ body::after {
 
 /* ── Hover utilities (used by server components) ───────────────────────── */
 .nav-link {
-  color: #555;
+  color: #888;
   text-decoration: none;
   transition: color 0.2s;
 }
 .nav-link:hover { color: #f2ede8; }
 
 .footer-link {
-  color: #444;
+  color: #777;
   text-decoration: none;
   transition: color 0.2s;
 }

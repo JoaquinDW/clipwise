@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import type { Lang } from './use-lang';
 
 const i18n = {
@@ -10,8 +9,8 @@ const i18n = {
     gradPart: 'listo para publicar',
     steps: [
       { n: '01', title: 'Sube tu video', desc: 'Pega un enlace de YouTube o sube un archivo MP4. Máx. 500 MB.' },
-      { n: '02', title: 'IA transcribe y analiza', desc: 'Whisper v3 transcribe con timestamps. GPT detecta los mejores momentos.' },
-      { n: '03', title: 'Clips generados', desc: 'FFmpeg recorta, encuadra a 9:16 y quema los subtítulos automáticamente.' },
+      { n: '02', title: 'IA transcribe y analiza', desc: 'Cada palabra, con timestamps exactos. La IA detecta los momentos con más potencial viral.' },
+      { n: '03', title: 'Clips generados', desc: 'Recortados a 9:16, encuadrados de forma inteligente y con subtítulos quemados — sin tocar nada.' },
       { n: '04', title: 'Descarga y publica', desc: 'Clips listos para TikTok, Shorts y Reels. Un clic para descargar todos.' },
     ],
     cta: 'Probarlo gratis →',
@@ -23,8 +22,8 @@ const i18n = {
     gradPart: 'ready to publish',
     steps: [
       { n: '01', title: 'Upload your video', desc: 'Paste a YouTube link or upload an MP4 file. Max 500 MB.' },
-      { n: '02', title: 'AI transcribes & analyzes', desc: 'Whisper v3 transcribes with timestamps. GPT detects the best moments.' },
-      { n: '03', title: 'Clips generated', desc: 'FFmpeg trims, crops to 9:16, and burns captions automatically.' },
+      { n: '02', title: 'AI transcribes & analyzes', desc: 'Every word, with precise timestamps. AI spots the moments with the highest viral potential.' },
+      { n: '03', title: 'Clips generated', desc: 'Trimmed to 9:16, intelligently framed, and captions burned in — no editing needed.' },
       { n: '04', title: 'Download & publish', desc: 'Clips ready for TikTok, Shorts, and Reels. One click to download all.' },
     ],
     cta: 'Try it free →',
@@ -92,12 +91,12 @@ export default function Demo({ lang }: { lang: Lang }) {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 16, fontWeight: 700, color: '#f2ede8', marginBottom: 6 }}>{s.title}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', lineHeight: 1.6 }}>{s.desc}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888', lineHeight: 1.6 }}>{s.desc}</div>
                 </div>
               </div>
             ))}
             <div style={{ marginTop: 8 }}>
-              <Link href="/login" className="cta-btn">{t.cta}</Link>
+              <a href="#waitlist" className="cta-btn">{t.cta}</a>
             </div>
           </div>
           <MiniEditor label={t.editorLabel} />

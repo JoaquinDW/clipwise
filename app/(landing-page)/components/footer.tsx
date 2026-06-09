@@ -7,17 +7,17 @@ const i18n = {
   es: {
     tagline: 'Convierte tus streams y videos largos en clips virales optimizados para redes sociales — automáticamente.',
     product: 'Producto',
-    productLinks: [['Características', '#features'], ['Cómo funciona', '#demo'], ['Precios', '#pricing'], ['FAQ', '#faq']] as const,
+    productLinks: [['Características', '#features'], ['Cómo funciona', '#demo'], ['Lista de espera', '#waitlist'], ['FAQ', '#faq']] as const,
     account: 'Cuenta',
-    accountLinks: [['Iniciar sesión', '/login'], ['Registrarse', '/login'], ['Dashboard', '/dashboard']] as const,
+    accountLinks: [['Unirme a la lista', '#waitlist'], ['Dashboard', '/dashboard']] as const,
     copyright: '© 2026 Clipwise. Todos los derechos reservados.',
   },
   en: {
     tagline: 'Turn your streams and long videos into viral clips optimized for social media — automatically.',
     product: 'Product',
-    productLinks: [['Features', '#features'], ['How it works', '#demo'], ['Pricing', '#pricing'], ['FAQ', '#faq']] as const,
+    productLinks: [['Features', '#features'], ['How it works', '#demo'], ['Waitlist', '#waitlist'], ['FAQ', '#faq']] as const,
     account: 'Account',
-    accountLinks: [['Sign in', '/login'], ['Sign up', '/login'], ['Dashboard', '/dashboard']] as const,
+    accountLinks: [['Join the waitlist', '#waitlist'], ['Dashboard', '/dashboard']] as const,
     copyright: '© 2026 Clipwise. All rights reserved.',
   },
 };
@@ -34,14 +34,14 @@ export default function Footer({ lang }: { lang: Lang }) {
             <div className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 12 }}>
               Clipwise
             </div>
-            <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#444', lineHeight: 1.65, maxWidth: 260 }}>
+            <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#777', lineHeight: 1.65, maxWidth: 260 }}>
               {t.tagline}
             </p>
           </div>
 
           {/* Product */}
           <div>
-            <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 12, fontWeight: 700, color: '#333', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{t.product}</div>
+            <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 12, fontWeight: 700, color: '#777', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{t.product}</div>
             <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {t.productLinks.map(([label, href]) => (
                 <li key={label}>
@@ -55,7 +55,7 @@ export default function Footer({ lang }: { lang: Lang }) {
 
           {/* Account */}
           <div>
-            <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 12, fontWeight: 700, color: '#333', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{t.account}</div>
+            <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 12, fontWeight: 700, color: '#777', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>{t.account}</div>
             <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {t.accountLinks.map(([label, href]) => (
                 <li key={label}>
@@ -70,7 +70,7 @@ export default function Footer({ lang }: { lang: Lang }) {
 
         {/* Bottom */}
         <div style={{ borderTop: '1px solid #111', paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13, color: '#333' }}>
+          <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13, color: '#777' }}>
             {t.copyright}
           </span>
           <div style={{ display: 'flex', gap: 20 }}>

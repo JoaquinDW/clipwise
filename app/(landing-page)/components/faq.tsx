@@ -10,8 +10,8 @@ const i18n = {
     gradPart: 'dudas?',
     items: [
       { question: '¿Qué formatos de video acepta Clipwise?', answer: 'Acepta archivos MP4, MOV y WebM de hasta 500 MB, o directamente URLs de YouTube. El video puede durar hasta 60 minutos.' },
-      { question: '¿Cuánto tiempo tarda en procesar un video?', answer: 'La mayoría de videos de 30-60 minutos se procesan en menos de 5 minutos. La transcripción con Whisper v3 y la detección de highlights con GPT corren en paralelo para máxima velocidad.' },
-      { question: '¿En qué idiomas funciona la transcripción?', answer: 'Whisper v3 soporta más de 50 idiomas, incluyendo español, inglés, francés, alemán, portugués, japonés y muchos más. Los captions se generan en el mismo idioma del video.' },
+      { question: '¿Cuánto tiempo tarda en procesar un video?', answer: 'La mayoría de videos de 30-60 minutos se procesan en menos de 5 minutos. La transcripción y la detección de highlights corren en paralelo para máxima velocidad.' },
+      { question: '¿En qué idiomas funciona la transcripción?', answer: 'Soporta más de 50 idiomas, incluyendo español, inglés, francés, alemán, portugués, japonés y muchos más. Los captions se generan en el mismo idioma del video.' },
       { question: '¿Cómo funciona el recorte inteligente a 9:16?', answer: 'La IA analiza el contenido de la transcripción para determinar la estrategia óptima: seguimiento de cara para talking heads, seguimiento dinámico para demostraciones, letterbox desenfocado para paneles grupales o encuadre estático para pantallas y paisajes.' },
       { question: '¿Puedo personalizar los captions y el estilo?', answer: 'En los planes Pro y Agency puedes ajustar la fuente, tamaño, color y posición de los subtítulos. En el plan Starter los captions se aplican con el estilo predeterminado de Clipwise.' },
       { question: '¿Hay un período de prueba gratuito?', answer: 'Sí, todos los planes incluyen 7 días de prueba gratuita. No se requiere tarjeta de crédito para empezar. Podrás cancelar en cualquier momento desde tu panel de facturación.' },
@@ -25,8 +25,8 @@ const i18n = {
     gradPart: 'questions?',
     items: [
       { question: 'What video formats does Clipwise support?', answer: 'It accepts MP4, MOV, and WebM files up to 500 MB, or directly YouTube URLs. Videos can be up to 60 minutes long.' },
-      { question: 'How long does it take to process a video?', answer: 'Most 30-60 minute videos are processed in under 5 minutes. Whisper v3 transcription and GPT highlight detection run in parallel for maximum speed.' },
-      { question: 'What languages does transcription support?', answer: 'Whisper v3 supports 50+ languages including English, Spanish, French, German, Portuguese, Japanese, and many more. Captions are generated in the same language as the video.' },
+      { question: 'How long does it take to process a video?', answer: 'Most 30-60 minute videos are processed in under 5 minutes. Transcription and highlight detection run in parallel for maximum speed.' },
+      { question: 'What languages does transcription support?', answer: 'Clipwise supports 50+ languages including English, Spanish, French, German, Portuguese, Japanese, and many more. Captions are generated in the same language as the video.' },
       { question: 'How does the smart 9:16 crop work?', answer: 'The AI analyzes transcription content to determine the optimal strategy: face tracking for talking heads, dynamic tracking for demos, blurred letterbox for group panels, or static crop for screens and landscapes.' },
       { question: 'Can I customize captions and style?', answer: 'On Pro and Agency plans you can adjust font, size, color, and position of subtitles. On the Starter plan captions use Clipwise\'s default style.' },
       { question: 'Is there a free trial?', answer: 'Yes, all plans include a 7-day free trial. No credit card required to start. You can cancel at any time from your billing panel.' },
@@ -64,7 +64,7 @@ export default function Faq({ lang }: { lang: Lang }) {
                     </svg>
                   </DisclosureButton>
                   <DisclosurePanel style={{ paddingBottom: 20 }}>
-                    <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 15, color: '#555', lineHeight: 1.7 }}>
+                    <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 15, color: '#888', lineHeight: 1.7 }}>
                       {faq.answer}
                     </p>
                   </DisclosurePanel>

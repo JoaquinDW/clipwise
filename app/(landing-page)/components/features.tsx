@@ -18,8 +18,8 @@ const i18n = {
     gradPart: 'clip viral',
     sub: 'Toda la cadena de producción automatizada en una sola plataforma.',
     items: [
-      { title: 'Transcripción Whisper v3', desc: 'Tu video entra, el texto sale con marcas de tiempo palabra por palabra. 94% de precisión en más de 50 idiomas — la base que hace posible todo lo demás.' },
-      { title: 'Detección de momentos IA', desc: 'GPT lee la transcripción completa y detecta los momentos con más potencial de retención: hooks fuertes, puntos de giro, frases que la gente repite. No los más ruidosos — los más efectivos.' },
+      { title: 'Transcripción de precisión', desc: 'Tu video entra, el texto sale con marcas de tiempo palabra por palabra. 94% de precisión en más de 50 idiomas — la base que hace posible todo lo demás.' },
+      { title: 'Detección de momentos IA', desc: 'La IA analiza el video completo y detecta los momentos con más potencial de retención: hooks fuertes, puntos de giro, frases que la gente repite. No los más ruidosos — los más efectivos.' },
       { title: 'Recorte 9:16 inteligente', desc: 'Sin perder la cara del speaker ni el contexto de la escena. La IA elige entre seguimiento facial, acción dinámica o letterbox desenfocado — el encuadre correcto para cada clip, automáticamente.' },
       { title: 'Captions automáticos', desc: 'El 85% de los videos se ve sin sonido. Los subtítulos se queman directamente en el clip — estilo, tamaño y posición configurables — para que funcione en cualquier feed.' },
       { title: 'Multi-plataforma', desc: 'Un video de entrada, cinco destinos de salida. Cada clip sale optimizado para TikTok, YouTube Shorts, Instagram Reels, Twitter/X y Kick — sin reexportar.' },
@@ -32,8 +32,8 @@ const i18n = {
     gradPart: 'viral clip',
     sub: 'The entire production chain automated in a single platform.',
     items: [
-      { title: 'Whisper v3 Transcription', desc: 'Your video goes in, timestamped text comes out — word by word. 94% accuracy across 50+ languages. The foundation that makes everything else possible.' },
-      { title: 'AI Highlight Detection', desc: 'GPT reads the full transcript and finds the moments with the highest retention potential: strong hooks, turning points, the lines people repeat. Not the loudest — the most effective.' },
+      { title: 'Precision Transcription', desc: 'Your video goes in, timestamped text comes out — word by word. 94% accuracy across 50+ languages. The foundation that makes everything else possible.' },
+      { title: 'AI Highlight Detection', desc: 'AI analyzes your full video and finds the moments with the highest retention potential: strong hooks, turning points, the lines people repeat. Not the loudest — the most effective.' },
       { title: 'Smart 9:16 Crop', desc: "Without losing the speaker's face or the scene's context. The AI chooses between face tracking, dynamic action, or blurred letterbox — the right framing for every clip, automatically." },
       { title: 'Auto Captions', desc: '85% of videos are watched without sound. Captions are burned directly into each clip — style, size, and position configurable — so it works in any feed.' },
       { title: 'Multi-platform', desc: 'One video in, five destinations out. Each clip exports optimized for TikTok, YouTube Shorts, Instagram Reels, Twitter/X, and Kick — no re-exporting.' },
@@ -55,7 +55,7 @@ export default function Features({ lang }: { lang: Lang }) {
           <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
             {t.headline} <span className="grad-text">{t.gradPart}</span>
           </h2>
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#555', maxWidth: 480, margin: '0 auto' }}>
+          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#888', maxWidth: 480, margin: '0 auto' }}>
             {t.sub}
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function Features({ lang }: { lang: Lang }) {
               <h3 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 17, fontWeight: 700, color: '#f2ede8', marginBottom: 10, letterSpacing: '-0.01em' }}>
                 {f.title}
               </h3>
-              <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', lineHeight: 1.65 }}>
+              <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888', lineHeight: 1.65 }}>
                 {f.desc}
               </p>
             </div>
