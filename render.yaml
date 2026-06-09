@@ -1,22 +1,8 @@
-# render.yaml — ejemplo de configuración para Render (referencia)
-# Rellená <owner> y <repo> y ajustá los campos según tu cuenta/plan.
-
 services:
-  - type: web
-    name: clipwise-frontend
-    env: node
-    repo: https://github.com/<owner>/<repo>
-    branch: main
-    plan: starter
-    buildCommand: pnpm install && pnpm prisma generate && pnpm build
-    startCommand: pnpm start
-
   - type: worker
     name: clipwise-worker
     env: docker
-    repo: https://github.com/<owner>/<repo>
+    repo: https://github.com/JoaquinDW/clipwise
     branch: main
     plan: starter
     dockerfilePath: docker/worker/Dockerfile
-    buildCommand: pnpm install && pnpm prisma generate
-    startCommand: pnpm run worker
