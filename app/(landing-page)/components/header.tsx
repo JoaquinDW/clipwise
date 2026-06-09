@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-// import Link from 'next/link'; // re-enable on launch
+import Link from 'next/link';
 import type { Lang } from './use-lang';
 
 const i18n = {
@@ -79,9 +79,6 @@ export default function Header({ lang }: { lang: Lang }) {
         >
           {t.switchLabel}
         </button>
-        {/* On launch: replace the two lines below with Sign In + Start for free buttons */}
-        {/* <Link href="/login" style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#f2ede8')} onMouseLeave={e => (e.currentTarget.style.color = '#555')}>{t.signIn}</Link> */}
-        {/* <Link href="/login" className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>{t.cta}</Link> */}
         <a href={t.ctaHref} className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
           {t.cta}
         </a>
