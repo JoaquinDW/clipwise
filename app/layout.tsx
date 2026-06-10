@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: 'Momentreel - AI-Powered Video Clips',
   },
   description: 'Transform your long-form videos into viral clips with AI.',
-  // metadataBase: new URL('https://mywebsite.com'),
+  metadataBase: new URL('https://www.momentreel.app'),
 };
 
 export default function RootLayout({

@@ -18,8 +18,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: 'Momentreel — Clips Virales en Minutos',
-  description: 'Nuestra IA detecta los mejores momentos de tus streams y videos largos, los recorta y los optimiza para TikTok, YouTube Shorts y más — automáticamente.',
+  title: 'Momentreel — Viral Clips in Minutes',
+  description: 'Our AI detects the best moments from your streams and long videos, trims them, and optimizes them for TikTok, YouTube Shorts, and more — automatically.',
 };
 
 export default function RootLayout({
