@@ -40,7 +40,7 @@ export default function Faq({ lang }: { lang: Lang }) {
   const t = i18n[lang];
 
   return (
-    <section id="faq" style={{ padding: '100px 80px', borderTop: '1px solid #111' }}>
+    <section id="faq" className="section-pad" style={{ borderTop: '1px solid #111' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 60 }}>
           <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
@@ -56,7 +56,7 @@ export default function Faq({ lang }: { lang: Lang }) {
               {({ open }) => (
                 <div style={{ borderBottom: '1px solid #1a1a1a' }}>
                   <DisclosureButton style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 0', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 16 }}>
-                    <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 16, fontWeight: 700, color: open ? '#f2ede8' : '#888', transition: 'color 0.2s', lineHeight: 1.3 }}>
+                    <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 16, fontWeight: 700, color: open ? '#f2ede8' : '#bbb', transition: 'color 0.2s', lineHeight: 1.3 }}>
                       {faq.question}
                     </span>
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', color: '#FF3B5C' }}>
@@ -64,7 +64,7 @@ export default function Faq({ lang }: { lang: Lang }) {
                     </svg>
                   </DisclosureButton>
                   <DisclosurePanel style={{ paddingBottom: 20 }}>
-                    <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 15, color: '#888', lineHeight: 1.7 }}>
+                    <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 15, color: '#aaa', lineHeight: 1.7 }}>
                       {faq.answer}
                     </p>
                   </DisclosurePanel>

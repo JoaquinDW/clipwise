@@ -71,7 +71,7 @@ export default function Testimonials({ lang }: { lang: Lang }) {
   const t = i18n[lang];
 
   return (
-    <section style={{ padding: '100px 80px', borderTop: '1px solid #111' }}>
+    <section className="section-pad" style={{ borderTop: '1px solid #111' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 72 }}>
           <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
@@ -81,7 +81,7 @@ export default function Testimonials({ lang }: { lang: Lang }) {
             {t.headline} <span className="grad-text">{t.gradPart}</span>
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        <div className="grid-3col">
           {t.items.map((item) => (
             <div
               key={item.name}
@@ -100,7 +100,7 @@ export default function Testimonials({ lang }: { lang: Lang }) {
                 fontFamily: 'var(--font-dm-sans), sans-serif',
                 fontSize: 15,
                 lineHeight: 1.7,
-                color: '#888',
+                color: '#aaa',
                 margin: 0,
                 flexGrow: 1,
               }}>
@@ -127,7 +127,7 @@ export default function Testimonials({ lang }: { lang: Lang }) {
                   <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#f2ede8' }}>
                     {item.name}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 12, color: '#444', marginTop: 2 }}>
+                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 12, color: '#666', marginTop: 2 }}>
                     {item.role}
                   </div>
                 </div>

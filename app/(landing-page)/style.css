@@ -210,3 +210,30 @@ body::after {
   html:not(.no-js) body [data-aos=fade-right] { transform: translate3d(-10px, 0, 0); }
   html:not(.no-js) body [data-aos=fade-left]  { transform: translate3d(10px, 0, 0); }
 }
+
+/* ── Responsive layout utilities ────────────────────────────────────────── */
+.section-pad        { padding: 60px 20px; }
+.section-pad-footer { padding: 48px 20px 32px; }
+.header-inner       { padding: 0 20px; }
+
+.grid-3col  { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.grid-2col  { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+.hero-grid  { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+.footer-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+
+@media (min-width: 640px) {
+  .section-pad        { padding: 80px 40px; }
+  .section-pad-footer { padding: 52px 40px 36px; }
+  .header-inner       { padding: 0 32px; }
+  .grid-3col          { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+}
+
+@media (min-width: 1024px) {
+  .section-pad        { padding: 100px 80px; }
+  .section-pad-footer { padding: 60px 80px 40px; }
+  .header-inner       { padding: 0 48px; }
+  .grid-3col          { grid-template-columns: repeat(3, 1fr); }
+  .grid-2col          { grid-template-columns: 1fr 1fr; gap: 80px; }
+  .hero-grid          { grid-template-columns: 1fr 1fr; gap: 80px; }
+  .footer-grid        { grid-template-columns: 1fr 1fr 1fr; gap: 40px; }
+}

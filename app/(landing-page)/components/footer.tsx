@@ -26,9 +26,9 @@ export default function Footer({ lang }: { lang: Lang }) {
   const t = i18n[lang];
 
   return (
-    <footer style={{ borderTop: '1px solid #111', padding: '60px 80px 40px' }}>
+    <footer className="section-pad-footer" style={{ borderTop: '1px solid #111' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 40, marginBottom: 48 }}>
+        <div className="footer-grid" style={{ marginBottom: 48 }}>
           {/* Brand */}
           <div>
             <div className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 12 }}>

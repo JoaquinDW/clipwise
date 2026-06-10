@@ -38,6 +38,7 @@ export default function Header({ lang }: { lang: Lang }) {
 
   return (
     <header
+      className="header-inner"
       style={{
         position: 'fixed',
         top: 0,
@@ -45,7 +46,6 @@ export default function Header({ lang }: { lang: Lang }) {
         right: 0,
         zIndex: 1000,
         height: 64,
-        padding: '0 48px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -109,7 +109,7 @@ export default function Header({ lang }: { lang: Lang }) {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid #1a1a1a', padding: '24px 48px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(20px)', borderBottom: '1px solid #1a1a1a', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {t.links.map(([label, href]) => (
             <a key={label} href={href} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#888', textDecoration: 'none' }}>
               {label}

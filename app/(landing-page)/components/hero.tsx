@@ -278,24 +278,21 @@ export default function Hero({ lang }: { lang: Lang }) {
   const t = i18n[lang]
   return (
     <section
+      className="section-pad"
       style={{
         position: "relative",
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
-        padding: "100px 80px",
         overflow: "hidden",
       }}
     >
       <OrbBg />
       <div
+        className="hero-grid"
         style={{
           position: "relative",
           zIndex: 1,
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 80,
-          alignItems: "center",
           maxWidth: 1280,
           margin: "0 auto",
           width: "100%",
@@ -345,7 +342,7 @@ export default function Hero({ lang }: { lang: Lang }) {
               fontFamily: "var(--font-dm-sans), sans-serif",
               fontSize: 18,
               lineHeight: 1.65,
-              color: "#888",
+              color: "#aaa",
               marginBottom: 40,
               maxWidth: 420,
             }}
@@ -367,7 +364,7 @@ export default function Hero({ lang }: { lang: Lang }) {
                 style={{
                   fontFamily: "var(--font-dm-sans), sans-serif",
                   fontSize: 11,
-                  color: "#777",
+                  color: "#999",
                   border: "1px solid #1e1e1e",
                   padding: "5px 13px",
                   borderRadius: 100,

@@ -46,7 +46,7 @@ export default function Features({ lang }: { lang: Lang }) {
   const t = i18n[lang];
 
   return (
-    <section id="features" style={{ padding: '100px 80px', position: 'relative' }}>
+    <section id="features" className="section-pad" style={{ position: 'relative' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 72 }}>
           <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
@@ -55,11 +55,11 @@ export default function Features({ lang }: { lang: Lang }) {
           <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
             {t.headline} <span className="grad-text">{t.gradPart}</span>
           </h2>
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#888', maxWidth: 480, margin: '0 auto' }}>
+          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#aaa', maxWidth: 480, margin: '0 auto' }}>
             {t.sub}
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+        <div className="grid-3col">
           {t.items.map((f, i) => (
             <div key={f.title} className="feature-card">
               <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(255,59,92,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
@@ -68,7 +68,7 @@ export default function Features({ lang }: { lang: Lang }) {
               <h3 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 17, fontWeight: 700, color: '#f2ede8', marginBottom: 10, letterSpacing: '-0.01em' }}>
                 {f.title}
               </h3>
-              <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888', lineHeight: 1.65 }}>
+              <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#aaa', lineHeight: 1.65 }}>
                 {f.desc}
               </p>
             </div>

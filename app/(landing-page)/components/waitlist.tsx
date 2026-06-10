@@ -49,7 +49,7 @@ export default function Waitlist({ lang }: { lang: Lang }) {
   }
 
   return (
-    <section id="waitlist" style={{ padding: '100px 80px' }}>
+    <section id="waitlist" className="section-pad">
       <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
         {/* Badge */}
         <div style={{ marginBottom: 28 }}>
@@ -92,7 +92,7 @@ export default function Waitlist({ lang }: { lang: Lang }) {
             fontFamily: 'var(--font-dm-sans), sans-serif',
             fontSize: 18,
             lineHeight: 1.65,
-            color: '#666',
+            color: '#999',
             marginBottom: 40,
             maxWidth: 520,
             margin: '0 auto 40px',
@@ -146,7 +146,8 @@ export default function Waitlist({ lang }: { lang: Lang }) {
                 padding: '14px 20px',
                 color: '#f2ede8',
                 outline: 'none',
-                width: 300,
+                width: '100%',
+                maxWidth: 300,
                 transition: 'border-color 0.2s',
               }}
               onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,59,92,0.4)')}
@@ -171,7 +172,7 @@ export default function Waitlist({ lang }: { lang: Lang }) {
 
         {/* Social proof */}
         {status !== 'success' && (
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13, color: '#333', marginTop: 20 }}>
+          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13, color: '#666', marginTop: 20 }}>
             {t.count}
           </p>
         )}

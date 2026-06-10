@@ -72,7 +72,7 @@ export default function Demo({ lang }: { lang: Lang }) {
   const t = i18n[lang];
 
   return (
-    <section id="demo" style={{ padding: '100px 80px', borderTop: '1px solid #111', position: 'relative' }}>
+    <section id="demo" className="section-pad" style={{ borderTop: '1px solid #111', position: 'relative' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 72 }}>
           <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
@@ -82,7 +82,7 @@ export default function Demo({ lang }: { lang: Lang }) {
             {t.headline} <span className="grad-text">{t.gradPart}</span>
           </h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+        <div className="grid-2col">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             {t.steps.map(s => (
               <div key={s.n} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
@@ -91,7 +91,7 @@ export default function Demo({ lang }: { lang: Lang }) {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 16, fontWeight: 700, color: '#f2ede8', marginBottom: 6 }}>{s.title}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888', lineHeight: 1.6 }}>{s.desc}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#aaa', lineHeight: 1.6 }}>{s.desc}</div>
                 </div>
               </div>
             ))}
