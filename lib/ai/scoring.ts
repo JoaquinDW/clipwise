@@ -2,11 +2,11 @@ import type { TranscriptionSegment } from './transcribe';
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-export const WINDOW_DURATION = 30;             // seconds per window
-export const WINDOW_STEP = 15;                 // 50% overlap between windows
-export const TOP_K_CANDIDATES = 20;            // windows forwarded to GPT
-export const EXPANSION_SECONDS = 30;           // context padding ±N seconds
-export const MIN_HEURISTIC_SCORE = 0.18;       // discard bottom ~40% of windows
+export const WINDOW_DURATION = 30; // seconds per window
+export const WINDOW_STEP = 15; // 50% overlap between windows
+export const TOP_K_CANDIDATES = 20; // windows forwarded to GPT
+export const EXPANSION_SECONDS = 30; // context padding ±N seconds
+export const MIN_HEURISTIC_SCORE = 0.18; // discard bottom ~40% of windows
 export const SHORT_VIDEO_BYPASS_SECONDS = 300; // videos < 5min use legacy path
 
 // ── Keyword & Pattern Tables ──────────────────────────────────────────────────
@@ -27,23 +27,23 @@ const EMOTIONAL_KEYWORDS: Record<string, number> = {
 
 const STRONG_STATEMENT_PATTERNS: Array<{ pattern: RegExp; weight: number }> = [
   // Spanish
-  { pattern: /esto cambi[oó] mi vida/i,          weight: 1.0 },
-  { pattern: /perd[ií] todo/i,                    weight: 1.0 },
-  { pattern: /gan[eé] millones/i,                 weight: 1.0 },
-  { pattern: /nadie (sabe|lo sabe|esperaba)/i,    weight: 0.9 },
-  { pattern: /el secreto (es|de|para)/i,          weight: 0.9 },
-  { pattern: /cambi[oó] todo/i,                   weight: 0.9 },
+  { pattern: /esto cambi[oó] mi vida/i, weight: 1.0 },
+  { pattern: /perd[ií] todo/i, weight: 1.0 },
+  { pattern: /gan[eé] millones/i, weight: 1.0 },
+  { pattern: /nadie (sabe|lo sabe|esperaba)/i, weight: 0.9 },
+  { pattern: /el secreto (es|de|para)/i, weight: 0.9 },
+  { pattern: /cambi[oó] todo/i, weight: 0.9 },
   { pattern: /nunca (antes|lo hab[ií]a|pens[eé])/i, weight: 0.85 },
   // English
-  { pattern: /changed my life/i,                 weight: 1.0 },
-  { pattern: /lost everything/i,                 weight: 1.0 },
-  { pattern: /made millions/i,                   weight: 1.0 },
-  { pattern: /nobody (knows|told|expected)/i,    weight: 0.9 },
-  { pattern: /the secret (is|to|of)/i,           weight: 0.9 },
-  { pattern: /changed everything/i,              weight: 0.9 },
-  { pattern: /you won't believe/i,               weight: 0.85 },
-  { pattern: /this will change/i,                weight: 0.85 },
-  { pattern: /i never thought/i,                 weight: 0.8 },
+  { pattern: /changed my life/i, weight: 1.0 },
+  { pattern: /lost everything/i, weight: 1.0 },
+  { pattern: /made millions/i, weight: 1.0 },
+  { pattern: /nobody (knows|told|expected)/i, weight: 0.9 },
+  { pattern: /the secret (is|to|of)/i, weight: 0.9 },
+  { pattern: /changed everything/i, weight: 0.9 },
+  { pattern: /you won't believe/i, weight: 0.85 },
+  { pattern: /this will change/i, weight: 0.85 },
+  { pattern: /i never thought/i, weight: 0.8 },
 ];
 
 const PROBLEM_WORDS = /\b(problem|issue|error|fail|broke|lost|bad|terrible|worst|wrong|broken|problema|error|fallo|mal|perd[ií]|roto|terrible|peor)\b/i;

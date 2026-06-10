@@ -180,12 +180,12 @@ export default async function VideoDetailPage({
           transcription={
             video.transcription
               ? {
-                  text: video.transcription.text,
-                  language: video.transcription.language,
-                  segments: Array.isArray(video.transcription.segments)
-                    ? video.transcription.segments
-                    : null,
-                }
+                text: video.transcription.text,
+                language: video.transcription.language,
+                segments: Array.isArray(video.transcription.segments)
+                  ? video.transcription.segments
+                  : null,
+              }
               : null
           }
         />
