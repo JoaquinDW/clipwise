@@ -7,7 +7,7 @@ const i18n = {
   es: {
     badge: '✦ Acceso anticipado',
     title: 'Sé el primero en saber cuando lancemos',
-    sub: 'Estamos preparando algo increíble. Déjanos tu email y te avisamos cuando Clipwise esté listo — sin spam, solo lo importante.',
+    sub: 'Estamos preparando algo increíble. Déjanos tu email y te avisamos cuando Momentreel esté listo — sin spam, solo lo importante.',
     placeholder: 'tu@email.com',
     cta: 'Unirme a la lista →',
     loading: 'Guardando...',
@@ -18,7 +18,7 @@ const i18n = {
   en: {
     badge: '✦ Early access',
     title: 'Be the first to know when we launch',
-    sub: "We're building something great. Drop your email and we'll let you know when Clipwise is ready — no spam, just the important stuff.",
+    sub: "We're building something great. Drop your email and we'll let you know when Momentreel is ready — no spam, just the important stuff.",
     placeholder: 'you@email.com',
     cta: 'Join the waitlist →',
     loading: 'Saving...',

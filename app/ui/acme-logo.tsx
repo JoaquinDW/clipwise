@@ -8,14 +8,14 @@ export default function AcmeLogo() {
       <div className={"flex flex-row items-center leading-none text-white"}>
         <Image
           src={Logo}
-          alt="Clipwise Logo"
+          alt="Momentreel Logo"
           width={56}
           height={56}
           className="h-14 w-14 rounded-2xl object-contain"
           priority
         />
         <p className="text-[20px] text-black font-bold tracking-tight	pl-2">
-          Clipwise
+          Momentreel
         </p>
       </div>
     </Link>

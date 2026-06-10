@@ -57,7 +57,7 @@ export default function Header({ lang }: { lang: Lang }) {
     >
       {/* Logo */}
       <Link href="/" className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', textDecoration: 'none' }}>
-        Clipwise
+        Momentreel
       </Link>
 
       {/* Desktop nav */}

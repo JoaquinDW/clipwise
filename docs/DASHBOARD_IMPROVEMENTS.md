@@ -1,7 +1,7 @@
 # Dashboard Improvements Summary
 
 ## Overview
-Comprehensive UI/UX improvements to the Clipwise dashboard to enhance user experience and functionality.
+Comprehensive UI/UX improvements to the Momentreel dashboard to enhance user experience and functionality.
 
 ## Changes Implemented
 
@@ -144,7 +144,7 @@ Comprehensive UI/UX improvements to the Clipwise dashboard to enhance user exper
   - Increased padding for better spacing
 
 - **Metadata Updates:**
-  - Changed site title to "Clipwise"
+  - Changed site title to "Momentreel"
   - Updated description to match product offering
 
 - **Transitions:**

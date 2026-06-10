@@ -1,4 +1,4 @@
-Top 5 ideas para Clipwise — Pre-launch, recursos mínimos
+Top 5 ideas para Momentreel — Pre-launch, recursos mínimos
 1. Demo clips como contenido (#42 + #87)
 El mejor marketing para una herramienta de clips es mostrar clips.
 
@@ -26,9 +26,9 @@ Cómo empezar: Abrí la página de "upcoming" en Product Hunt hoy. Simultáneame
 Resultado esperado: oleada de early adopters + backlinks
 Recursos: 3 horas en total (preparación + día de launch), $0
 5. "Powered By" en clips exportados (#87)
-Cada clip que genera Clipwise puede llevar un watermark o metadata de marca. Cuando creadores lo compartan, tu marca se ve.
+Cada clip que genera Momentreel puede llevar un watermark o metadata de marca. Cuando creadores lo compartan, tu marca se ve.
 
-Cómo empezar: Agregar un badge sutil "Made with Clipwise" en el plan gratuito/trial. Creadores que no pagan siguen siendo distribuidores de marca.
+Cómo empezar: Agregar un badge sutil "Made with Momentreel" en el plan gratuito/trial. Creadores que no pagan siguen siendo distribuidores de marca.
 Resultado esperado: distribución orgánica proporcional a la cantidad de clips creados
 Recursos: 2 horas de implementación, $0 recurrente
 Ritmo semanal — 3 horas totales

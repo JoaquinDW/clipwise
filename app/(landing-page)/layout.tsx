@@ -18,7 +18,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: 'Clipwise — Clips Virales en Minutos',
+  title: 'Momentreel — Clips Virales en Minutos',
   description: 'Nuestra IA detecta los mejores momentos de tus streams y videos largos, los recorta y los optimiza para TikTok, YouTube Shorts y más — automáticamente.',
 };
 

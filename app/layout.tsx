@@ -7,8 +7,8 @@ import { ToastProvider } from '@/app/ui/toast';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Clipwise',
-    default: 'Clipwise - AI-Powered Video Clips',
+    template: '%s | Momentreel',
+    default: 'Momentreel - AI-Powered Video Clips',
   },
   description: 'Transform your long-form videos into viral clips with AI.',
   // metadataBase: new URL('https://mywebsite.com'),

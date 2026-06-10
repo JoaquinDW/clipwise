@@ -9,7 +9,7 @@ set -euo pipefail
 #   RENDER_API_KEY (optional)
 
 OWNER=${GHCR_OWNER:-"<owner>"}
-IMAGE_NAME=${IMAGE_NAME:-"clipwise-worker"}
+IMAGE_NAME=${IMAGE_NAME:-"momentreel-worker"}
 TAG=${TAG:-$(git rev-parse --short HEAD || echo latest)}
 IMAGE=ghcr.io/${OWNER}/${IMAGE_NAME}:${TAG}
 

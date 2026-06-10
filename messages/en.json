@@ -1,7 +1,7 @@
 {
   "landing": {
     "metadata": {
-      "title": "Clipwise - Turn Long Videos Into Viral Shorts",
+      "title": "Momentreel - Turn Long Videos Into Viral Shorts",
       "description": "AI-powered video editor that converts long-form videos into engaging vertical clips for TikTok, Instagram Reels, and YouTube Shorts. Start your 7-day trial today."
     },
     "header": {
@@ -21,7 +21,7 @@
     },
     "benefits": {
       "badge": "Built for creators who want speed",
-      "headline": "Why Creators Love Clipwise",
+      "headline": "Why Creators Love Momentreel",
       "items": [
         {
           "title": "Create viral clips in minutes, not hours",
@@ -206,7 +206,7 @@
     "faq": {
       "badge": "FAQ",
       "headline": "Frequently Asked Questions",
-      "subheadline": "Everything you need to know about Clipwise",
+      "subheadline": "Everything you need to know about Momentreel",
       "items": [
         {
           "question": "How does the 7-day trial work?",

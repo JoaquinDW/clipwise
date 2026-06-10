@@ -45,7 +45,7 @@ function MiniEditor({ label }: { label: string }) {
         {['#ff5f57', '#ffbd2e', '#28c840'].map(c => (
           <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
         ))}
-        <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, color: '#333', marginLeft: 8, letterSpacing: '0.04em' }}>clipwise · editor</span>
+        <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, color: '#333', marginLeft: 8, letterSpacing: '0.04em' }}>momentreel · editor</span>
         <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 9, color: '#FF3B5C', background: 'rgba(255,59,92,0.08)', padding: '2px 8px', borderRadius: 3 }}>{label}</span>
       </div>
       <div style={{ background: 'repeating-linear-gradient(45deg,#181818 0,#181818 8px,#111 8px,#111 16px)', aspectRatio: '16/9', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

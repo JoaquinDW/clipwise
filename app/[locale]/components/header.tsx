@@ -61,10 +61,10 @@ export default function Header() {
           {/* Logo - Left */}
           <div className="shrink-0">
             {showLogo && (
-              <Link href="/" className="block" aria-label="Clipwise">
+              <Link href="/" className="block" aria-label="Momentreel">
                 <Image
                   src={Logo}
-                  alt="Clipwise"
+                  alt="Momentreel"
                   width={200}
                   height={200}
                   className={`bg-transparent w-full transition-all duration-300 ${

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Clipwise is a SaaS platform that automatically converts long-form videos into short, vertical clips optimized for TikTok, YouTube Shorts, and Instagram Reels using AI. Users upload videos or paste YouTube links, and Clipwise handles transcription (OpenAI Whisper v3), highlight detection (GPT), clip generation, and caption generation.
+Momentreel is a SaaS platform that automatically converts long-form videos into short, vertical clips optimized for TikTok, YouTube Shorts, and Instagram Reels using AI. Users upload videos or paste YouTube links, and Momentreel handles transcription (OpenAI Whisper v3), highlight detection (GPT), clip generation, and caption generation.
 
 The project is built on a Next.js boilerplate designed for solopreneurs, with Google SSO authentication, Stripe payments, and Postgres database with Prisma ORM.
 

@@ -196,7 +196,7 @@ Desde la UI o con `vercel` (o via GitHub PRs) Vercel buildará el `next build` d
   ```yaml
   services:
     - type: worker
-      name: clipwise-worker
+      name: momentreel-worker
       env: docker
       repo: https://github.com/<owner>/<repo>
       branch: main
@@ -210,13 +210,13 @@ Desde la UI o con `vercel` (o via GitHub PRs) Vercel buildará el `next build` d
 
   ```bash
   # build
-  docker build -t ghcr.io/<owner>/clipwise-worker:latest -f docker/worker/Dockerfile .
+  docker build -t ghcr.io/<owner>/momentreel-worker:latest -f docker/worker/Dockerfile .
 
   # push (ejemplo GHCR)
-  docker push ghcr.io/<owner>/clipwise-worker:latest
+  docker push ghcr.io/<owner>/momentreel-worker:latest
   ```
 
-  Luego, en Render / Fly podés desplegar usando la imagen `ghcr.io/<owner>/clipwise-worker:latest` y configurar las env vars.
+  Luego, en Render / Fly podés desplegar usando la imagen `ghcr.io/<owner>/momentreel-worker:latest` y configurar las env vars.
 
 5. Probar e iterar
 

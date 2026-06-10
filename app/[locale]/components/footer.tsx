@@ -19,10 +19,10 @@ export default function Footer() {
             <div className="md:col-span-4 lg:col-span-5">
               <div className="mb-2">
                 {/* Logo */}
-                <Link href="/" className="inline-block" aria-label="Clipwise">
+                <Link href="/" className="inline-block" aria-label="Momentreel">
                   <Image
                     src={Logo}
-                    alt="Clipwise"
+                    alt="Momentreel"
                     width={120}
                     height={40}
                     className="h-8 bg-white rounded-full max-w-fit"
@@ -175,7 +175,7 @@ export default function Footer() {
 
             {/* Copyrights note */}
             <div className="text-gray-400 text-sm mr-4">
-              &copy; Clipwise {new Date().getFullYear()}. {t("copyright")}
+              &copy; Momentreel {new Date().getFullYear()}. {t("copyright")}
               <div className="text-xs mt-1 text-gray-500">{t("credits")}</div>
             </div>
           </div>

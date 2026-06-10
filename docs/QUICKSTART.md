@@ -1,4 +1,4 @@
-# Quick Start - Clipwise Video Processing
+# Quick Start - Momentreel Video Processing
 
 ## 🚀 Setup Rápido (5 minutos)
 
@@ -19,7 +19,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx
 # AWS_ACCESS_KEY_ID=xxxxx
 # AWS_SECRET_ACCESS_KEY=xxxxx
 # AWS_REGION=us-east-1
-# AWS_S3_BUCKET=clipwise-videos
+# AWS_S3_BUCKET=momentreel-videos
 
 # Límites (OPCIONAL - usa defaults)
 MAX_VIDEO_SIZE_MB=500

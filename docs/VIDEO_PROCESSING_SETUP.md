@@ -1,8 +1,8 @@
-# Video Processing Setup - Clipwise
+# Video Processing Setup - Momentreel
 
 ## 🎉 Fase 1 Completada
 
-Hemos configurado exitosamente la **fundación completa** del sistema de procesamiento de videos con IA para Clipwise.
+Hemos configurado exitosamente la **fundación completa** del sistema de procesamiento de videos con IA para Momentreel.
 
 ## ✅ Lo que se ha construido
 

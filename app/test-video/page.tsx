@@ -219,7 +219,7 @@ export default function TestVideoPage() {
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• Esta página está diseñada para testear sin autenticación</li>
             <li>• Usa datos simulados (no hace llamadas reales a OpenAI)</li>
-            <li>• El usuario de prueba es: test@clipwise.com</li>
+            <li>• El usuario de prueba es: test@momentreel.com</li>
             <li>• Para tests reales, configura OPENAI_API_KEY en .env</li>
           </ul>
         </div>

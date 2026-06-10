@@ -15,13 +15,13 @@ const i18n = {
         initials: 'AM',
       },
       {
-        quote: 'Hago streams de 4 horas. Antes no subía clips porque el proceso me mataba. Ahora termino el stream, proceso en Clipwise, y en 15 minutos tengo 6 clips listos para TikTok. El recorte vertical es ridículamente preciso.',
+        quote: 'Hago streams de 4 horas. Antes no subía clips porque el proceso me mataba. Ahora termino el stream, proceso en Momentreel, y en 15 minutos tengo 6 clips listos para TikTok. El recorte vertical es ridículamente preciso.',
         name: 'Sarah K.',
         role: 'Twitch Partner · 19k seguidores',
         initials: 'SK',
       },
       {
-        quote: 'Manejamos 11 clientes con contenido long-form. Antes necesitábamos dos editores solo para clips. Ahora uno supervisa todo el output con Clipwise y entregamos el doble de contenido por cliente.',
+        quote: 'Manejamos 11 clientes con contenido long-form. Antes necesitábamos dos editores solo para clips. Ahora uno supervisa todo el output con Momentreel y entregamos el doble de contenido por cliente.',
         name: 'Diego F.',
         role: 'Director, agencia de contenido',
         initials: 'DF',
@@ -40,13 +40,13 @@ const i18n = {
         initials: 'AM',
       },
       {
-        quote: "I do 4-hour streams. I wasn't clipping before because the process killed me. Now I finish the stream, run it through Clipwise, and 15 minutes later I have 6 clips ready for TikTok. The vertical crop is shockingly accurate.",
+        quote: "I do 4-hour streams. I wasn't clipping before because the process killed me. Now I finish the stream, run it through Momentreel, and 15 minutes later I have 6 clips ready for TikTok. The vertical crop is shockingly accurate.",
         name: 'Sarah K.',
         role: 'Twitch Partner · 19k followers',
         initials: 'SK',
       },
       {
-        quote: "We manage 11 clients with long-form content. We used to need two editors just for clips. Now one editor handles all output with Clipwise and we deliver twice the content per client.",
+        quote: "We manage 11 clients with long-form content. We used to need two editors just for clips. Now one editor handles all output with Momentreel and we deliver twice the content per client.",
         name: 'Diego F.',
         role: 'Director, content agency',
         initials: 'DF',

@@ -1,4 +1,4 @@
-# 🧪 Testing Guide - Clipwise Video Processing
+# 🧪 Testing Guide - Momentreel Video Processing
 
 ## Quick Testing (Sin Auth, Sin Stripe, Sin OpenAI)
 
@@ -62,7 +62,7 @@ Abre http://localhost:5555 y verás:
 Ya se creó un usuario de prueba en tu base de datos:
 
 ```
-Email: test@clipwise.com
+Email: test@momentreel.com
 User ID: test-user-id
 Company ID: test-company-id
 ```

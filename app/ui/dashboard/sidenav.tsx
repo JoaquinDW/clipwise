@@ -16,7 +16,7 @@ export default async function SideNav() {
           className="grad-text"
           style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' }}
         >
-          Clipwise
+          Momentreel
         </span>
       </Link>
 

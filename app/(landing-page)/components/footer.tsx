@@ -10,7 +10,7 @@ const i18n = {
     productLinks: [['Características', '#features'], ['Cómo funciona', '#demo'], ['Lista de espera', '#waitlist'], ['FAQ', '#faq']] as const,
     account: 'Cuenta',
     accountLinks: [['Unirme a la lista', '#waitlist'], ['Dashboard', '/dashboard']] as const,
-    copyright: '© 2026 Clipwise. Todos los derechos reservados.',
+    copyright: '© 2026 Momentreel. Todos los derechos reservados.',
   },
   en: {
     tagline: 'Turn your streams and long videos into viral clips optimized for social media — automatically.',
@@ -18,7 +18,7 @@ const i18n = {
     productLinks: [['Features', '#features'], ['How it works', '#demo'], ['Waitlist', '#waitlist'], ['FAQ', '#faq']] as const,
     account: 'Account',
     accountLinks: [['Join the waitlist', '#waitlist'], ['Dashboard', '/dashboard']] as const,
-    copyright: '© 2026 Clipwise. All rights reserved.',
+    copyright: '© 2026 Momentreel. All rights reserved.',
   },
 };
 
@@ -32,7 +32,7 @@ export default function Footer({ lang }: { lang: Lang }) {
           {/* Brand */}
           <div>
             <div className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', marginBottom: 12 }}>
-              Clipwise
+              Momentreel
             </div>
             <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#777', lineHeight: 1.65, maxWidth: 260 }}>
               {t.tagline}

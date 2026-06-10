@@ -1,8 +1,8 @@
-# Clipwise
+# Momentreel
 
-**Clipwise** is a SaaS that automatically turns long-form videos into short, vertical clips optimized for TikTok, YouTube Shorts, and Instagram Reels using AI.
+**Momentreel** is a SaaS that automatically turns long-form videos into short, vertical clips optimized for TikTok, YouTube Shorts, and Instagram Reels using AI.
 
-Users upload a video or paste a YouTube link, and Clipwise handles transcription, highlight detection, clip generation, and captions — all in the background.
+Users upload a video or paste a YouTube link, and Momentreel handles transcription, highlight detection, clip generation, and captions — all in the background.
 
 ---
 
@@ -10,7 +10,7 @@ Users upload a video or paste a YouTube link, and Clipwise handles transcription
 
 > Upload once. Get multiple short-form clips ready to post.
 
-Clipwise saves creators hours of manual editing by automating:
+Momentreel saves creators hours of manual editing by automating:
 
 - Highlight detection
 - Vertical cropping

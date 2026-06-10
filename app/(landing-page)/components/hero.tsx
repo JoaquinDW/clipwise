@@ -8,7 +8,7 @@ const i18n = {
     h1a: "Convierte tu contenido",
     h1b: "en clips",
     h1c: "virales",
-    sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Clipwise los detecta, recorta a 9:16 y quema los subtítulos — sin tocar el timeline, listo en minutos.",
+    sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Momentreel los detecta, recorta a 9:16 y quema los subtítulos — sin tocar el timeline, listo en minutos.",
     cta: "Unirme a la lista →",
     stats: [
       { value: "94%", label: "Precisión IA" },
@@ -23,7 +23,7 @@ const i18n = {
     h1a: "Turn your",
     h1b: "content into",
     h1c: "viral clips",
-    sub: "Every podcast, stream, or video has viral moments buried inside it. Clipwise finds them, crops to 9:16, and burns captions — no timeline, no editor, done in minutes.",
+    sub: "Every podcast, stream, or video has viral moments buried inside it. Momentreel finds them, crops to 9:16, and burns captions — no timeline, no editor, done in minutes.",
     cta: "Join the waitlist →",
     stats: [
       { value: "94%", label: "AI accuracy" },
@@ -133,7 +133,7 @@ function MiniEditor({ label }: { label: string }) {
             letterSpacing: "0.04em",
           }}
         >
-          clipwise · editor
+          momentreel · editor
         </span>
         <span
           style={{

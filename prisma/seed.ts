@@ -28,13 +28,13 @@ async function main() {
   // Create test user
   console.log('Creating test user...');
   const user = await prisma.user.upsert({
-    where: { email: 'test@clipwise.com' },
+    where: { email: 'test@momentreel.com' },
     update: {
       companyId: company.id,
     },
     create: {
       id: 'test-user-id',
-      email: 'test@clipwise.com',
+      email: 'test@momentreel.com',
       name: 'Test User',
       emailVerified: new Date(),
       companyId: company.id,
@@ -45,7 +45,7 @@ async function main() {
   console.log('═══════════════════════════════════════');
   console.log('✅ Seed completed!\n');
   console.log('Test Credentials:');
-  console.log('  Email: test@clipwise.com');
+  console.log('  Email: test@momentreel.com');
   console.log('  User ID: test-user-id');
   console.log('  Company ID: test-company-id');
   console.log('═══════════════════════════════════════\n');

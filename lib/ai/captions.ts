@@ -306,7 +306,7 @@ export function captionsToASS(
   const isBold = preset.fontWeight === 'bold' ? -1 : 0; // ASS uses -1 for bold, 0 for normal
 
   const header = `[Script Info]
-Title: Clipwise Captions
+Title: Momentreel Captions
 ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes

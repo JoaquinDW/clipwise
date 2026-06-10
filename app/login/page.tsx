@@ -41,7 +41,7 @@ export default async function LoginPage() {
         {/* Logo */}
         <Link href="/" style={{ textDecoration: 'none' }}>
           <span className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em' }}>
-            Clipwise
+            Momentreel
           </span>
         </Link>
 
@@ -52,7 +52,7 @@ export default async function LoginPage() {
               Welcome back
             </h1>
             <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#555', lineHeight: 1.6 }}>
-              Sign in to your Clipwise account
+              Sign in to your Momentreel account
             </p>
           </div>
 

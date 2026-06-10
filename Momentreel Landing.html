@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clipwise — Clips Virales en Minutos</title>
+  <title>Momentreel — Clips Virales en Minutos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
@@ -80,7 +80,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="clipwise-sections.jsx"></script>
+  <script type="text/babel" src="momentreel-sections.jsx"></script>
   <script type="text/babel">
     const { useState, useEffect } = React;
 
@@ -117,7 +117,7 @@
         <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 12, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.6)" }}>
           <div style={{ padding: "10px 16px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: 6 }}>
             {["#ff5f57","#ffbd2e","#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#333", marginLeft: 8, letterSpacing: "0.04em" }}>clipwise · editor</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#333", marginLeft: 8, letterSpacing: "0.04em" }}>momentreel · editor</span>
             <span style={{ marginLeft: "auto", fontFamily: "'DM Sans', sans-serif", fontSize: 9, color: "#FF3B5C", background: "rgba(255,59,92,0.08)", padding: "2px 8px", borderRadius: 3 }}>4 clips detectados</span>
           </div>
           <div style={{ background: "repeating-linear-gradient(45deg,#181818 0,#181818 8px,#111 8px,#111 16px)", aspectRatio: "16/9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -275,7 +275,7 @@
 
       return (
         <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 64, padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: scrolled ? "rgba(10,10,10,0.9)" : "transparent", backdropFilter: scrolled ? "blur(20px)" : "none", borderBottom: scrolled ? "1px solid #1a1a1a" : "none", transition: "all 0.4s" }}>
-          <div className="grad-text" style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: "-0.01em", cursor: "default" }}>Clipwise</div>
+          <div className="grad-text" style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: "-0.01em", cursor: "default" }}>Momentreel</div>
           <div style={{ display: "flex", gap: 34 }}>
             {links.map(([label, href]) => (
               <a key={label} href={href} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#555", textDecoration: "none", transition: "color 0.2s" }}

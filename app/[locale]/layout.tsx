@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const messages = (await getMessages({ locale })) as any;
 
   return {
-    title: messages.landing?.metadata?.title || 'Clipwise',
+    title: messages.landing?.metadata?.title || 'Momentreel',
     description: messages.landing?.metadata?.description || 'Turn long videos into viral shorts',
   };
 }
