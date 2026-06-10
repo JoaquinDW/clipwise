@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useRef, useState } from "react"
-import { XMarkIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline"
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline"
 import { getCaptionCSSStyle } from "@/lib/ai/caption-styles"
 import type { CaptionsResult, CaptionSegment } from "@/lib/ai/captions"
 import { useClipEditorStore } from "@/lib/store/clip-editor.store"
@@ -22,7 +22,7 @@ interface Clip {
 
 interface ClipEditorProps {
   clip: Clip
-  onClose: () => void
+  videoRef: React.RefObject<HTMLVideoElement>
   onExportStart: (newClipId: string) => void
 }
 
@@ -54,9 +54,9 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-// ── Caption overlay ──────────────────────────────────────────────────────────
+// ── Caption overlay (exported for use in EditableVideoPlayer) ─────────────────
 
-function CaptionOverlay({
+export function CaptionOverlay({
   captions,
   currentTime,
   captionStyle,
@@ -97,9 +97,9 @@ function CaptionOverlay({
   )
 }
 
-// ── Safe area overlay ────────────────────────────────────────────────────────
+// ── Safe area overlay (exported for use in EditableVideoPlayer) ───────────────
 
-function SafeAreaOverlay({ show }: { show: boolean }) {
+export function SafeAreaOverlay({ show }: { show: boolean }) {
   if (!show) return null
   return (
     <>
@@ -139,7 +139,7 @@ function SafeAreaOverlay({ show }: { show: boolean }) {
 
 // ── Interactive scrub bar ────────────────────────────────────────────────────
 
-function ScrubBar({
+export function ScrubBar({
   windowStart,
   windowDuration,
   editedStart,
@@ -220,111 +220,10 @@ function ScrubBar({
   )
 }
 
-// ── Editable video player ────────────────────────────────────────────────────
+// ── Main editor (controls only) ──────────────────────────────────────────────
 
-function EditableVideoPlayer({
-  src,
-  editedStart,
-  editedEnd,
-  captions,
-  captionStyle,
-  captionPosition,
-  captionSize,
-  showSafeAreas,
-  currentTime,
-  onTimeUpdate,
-  videoRef,
-}: {
-  src: string
-  editedStart: number
-  editedEnd: number
-  captions: CaptionsResult | null
-  captionStyle: string
-  captionPosition: "top" | "center" | "bottom"
-  captionSize: "small" | "medium" | "large"
-  showSafeAreas: boolean
-  currentTime: number
-  onTimeUpdate: (t: number) => void
-  videoRef: React.RefObject<HTMLVideoElement>
-}) {
-  const rafRef = useRef<number | null>(null)
-  const playingRef = useRef(false)
-
-  // Seek to editedStart when it changes
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    video.currentTime = editedStart
-  }, [editedStart, videoRef])
-
-  // Pause at editedEnd boundary
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    const handleTimeUpdate = () => {
-      if (video.currentTime >= editedEnd) {
-        video.pause()
-        video.currentTime = editedStart
-      }
-    }
-    video.addEventListener("timeupdate", handleTimeUpdate)
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate)
-  }, [editedStart, editedEnd, videoRef])
-
-  // RAF loop for smooth caption sync when playing
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    const tick = () => {
-      if (playingRef.current && video) {
-        onTimeUpdate(video.currentTime)
-      }
-      rafRef.current = requestAnimationFrame(tick)
-    }
-
-    const onPlay = () => { playingRef.current = true }
-    const onPause = () => {
-      playingRef.current = false
-      onTimeUpdate(video.currentTime)
-    }
-
-    video.addEventListener("play", onPlay)
-    video.addEventListener("pause", onPause)
-    rafRef.current = requestAnimationFrame(tick)
-
-    return () => {
-      video.removeEventListener("play", onPlay)
-      video.removeEventListener("pause", onPause)
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [onTimeUpdate, videoRef])
-
-  return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: "9/16", borderRadius: "0.75rem", overflow: "hidden", background: "#000" }}>
-      <video
-        ref={videoRef}
-        src={src}
-        controls
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-      />
-      <SafeAreaOverlay show={showSafeAreas} />
-      <CaptionOverlay
-        captions={captions}
-        currentTime={currentTime}
-        captionStyle={captionStyle}
-        captionPosition={captionPosition}
-        captionSize={captionSize}
-      />
-    </div>
-  )
-}
-
-// ── Main editor ──────────────────────────────────────────────────────────────
-
-export default function ClipEditor({ clip, onClose, onExportStart }: ClipEditorProps) {
+export default function ClipEditor({ clip, videoRef, onExportStart }: ClipEditorProps) {
   const store = useClipEditorStore()
-  const videoRef = useRef<HTMLVideoElement>(null)
 
   // Reset store when clip changes
   useEffect(() => {
@@ -378,13 +277,9 @@ export default function ClipEditor({ clip, onClose, onExportStart }: ClipEditorP
   const handleScrub = useCallback((time: number) => {
     const video = videoRef.current
     if (!video) return
-    video.currentTime = time
+    video.currentTime = Math.max(0, time - clip.startTime)
     store.setCurrentTime(time)
-  }, [store])
-
-  const handleTimeUpdate = useCallback((t: number) => {
-    store.setCurrentTime(t)
-  }, [store])
+  }, [videoRef, store, clip.startTime])
 
   async function handleReexport() {
     setIsSubmitting(true)
@@ -409,8 +304,6 @@ export default function ClipEditor({ clip, onClose, onExportStart }: ClipEditorP
   const windowEnd = clip.endTime + MAX_DELTA
   const windowDuration = windowEnd - windowStart
 
-  const videoSrc = clip.proxyUrl ?? clip.storageUrl
-
   const AdjustButton = ({ label, onClick }: { label: string; onClick: () => void }) => (
     <button
       type="button"
@@ -427,44 +320,8 @@ export default function ClipEditor({ clip, onClose, onExportStart }: ClipEditorP
   )
 
   return (
-    <div className="w-full flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--dash-text-muted)" }}>
-          Quick Creative Editor
-        </span>
-        <button type="button" onClick={onClose} className="p-1 rounded-md transition-colors" style={{ color: "var(--dash-text-muted)" }}>
-          <XMarkIcon className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Video player with overlays */}
-      <EditableVideoPlayer
-        src={videoSrc}
-        editedStart={editedStart}
-        editedEnd={editedEnd}
-        captions={clip.captions}
-        captionStyle={captionStyle}
-        captionPosition={captionPosition}
-        captionSize={captionSize}
-        showSafeAreas={showSafeAreas}
-        currentTime={currentTime}
-        onTimeUpdate={handleTimeUpdate}
-        videoRef={videoRef}
-      />
-
-      {/* Safe areas toggle */}
-      <button
-        type="button"
-        onClick={() => store.setShowSafeAreas(!showSafeAreas)}
-        className="flex items-center gap-1.5 text-xs self-end"
-        style={{ color: showSafeAreas ? "#FF3B5C" : "var(--dash-text-muted)" }}
-      >
-        {showSafeAreas ? <EyeSlashIcon className="w-3.5 h-3.5" /> : <EyeIcon className="w-3.5 h-3.5" />}
-        Safe areas
-      </button>
-
-      {/* Interactive scrub bar */}
+    <div className="flex flex-col gap-4">
+      {/* Scrub bar */}
       <ScrubBar
         windowStart={windowStart}
         windowDuration={windowDuration}
@@ -473,6 +330,12 @@ export default function ClipEditor({ clip, onClose, onExportStart }: ClipEditorP
         currentTime={currentTime}
         onScrub={handleScrub}
       />
+
+      {(deltaStart < 0 || deltaEnd > 0) && (
+        <p className="text-xs text-center" style={{ color: "var(--dash-text-muted)" }}>
+          Extended footage only visible after re-export
+        </p>
+      )}
 
       {/* Timing controls */}
       <div className="flex flex-col gap-2">
@@ -564,6 +427,20 @@ export default function ClipEditor({ clip, onClose, onExportStart }: ClipEditorP
           ))}
         </div>
       </div>
+
+      {/* Safe areas toggle */}
+      <button
+        type="button"
+        onClick={() => store.setShowSafeAreas(!showSafeAreas)}
+        className="flex items-center gap-1.5 text-xs"
+        style={{ color: showSafeAreas ? "#FF3B5C" : "var(--dash-text-muted)" }}
+      >
+        {showSafeAreas ? <EyeSlashIcon className="w-3.5 h-3.5" /> : <EyeIcon className="w-3.5 h-3.5" />}
+        Safe areas
+      </button>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
 
       {/* Error */}
       {error && <p className="text-xs text-red-400 text-center">{error}</p>}

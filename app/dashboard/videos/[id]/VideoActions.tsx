@@ -18,6 +18,8 @@ type VideoStatus =
   | "INGESTED"
   | "TRANSCRIBING"
   | "TRANSCRIBED"
+  | "SCORING"
+  | "RANKING"
   | "PROCESSING"
   | "READY"
   | "FAILED"

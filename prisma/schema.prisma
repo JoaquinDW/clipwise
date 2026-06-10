@@ -95,6 +95,8 @@ enum VideoStatus {
   INGESTED
   TRANSCRIBING
   TRANSCRIBED
+  SCORING
+  RANKING
   PROCESSING
   READY
   FAILED
@@ -134,12 +136,14 @@ model Video {
   duration      Int?          // Duration in seconds
   status        VideoStatus   @default(UPLOADING)
   errorMessage  String?
-  metadata      Json?         // Additional video metadata
-  transcription Transcription?
-  clips         Clip[]
-  jobs          ProcessingJob[]
-  audioChunks   AudioChunk[]
-  createdAt     DateTime      @default(now())
+  metadata         Json?         // Additional video metadata
+  analysisMetrics  Json?         // { fullTranscriptTokenEstimate, actualTokenEstimate, compressionRatio, candidateCount, durationMs }
+  transcription    Transcription?
+  clips            Clip[]
+  candidates       Candidate[]
+  jobs             ProcessingJob[]
+  audioChunks      AudioChunk[]
+  createdAt        DateTime      @default(now())
   updatedAt     DateTime      @updatedAt @default(now())
 
   @@index([companyId, status])
@@ -224,4 +228,22 @@ model WaitlistEntry {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+model Candidate {
+  id             String   @id @default(cuid())
+  video          Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId        String
+  startTime      Float
+  endTime        Float
+  expandedStart  Float
+  expandedEnd    Float
+  transcript     String   @db.Text
+  heuristicScore Float
+  gptScore       Float?
+  finalScore     Float?
+  rank           Int?
+  createdAt      DateTime @default(now())
+
+  @@index([videoId, heuristicScore])
 }

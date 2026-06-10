@@ -14,7 +14,7 @@ import { TranscriptionSegment } from './transcribe';
 /**
  * Composite layout type for multi-region 9:16 compositions
  */
-const LayoutTypeSchema = z.enum([
+export const LayoutTypeSchema = z.enum([
   'talking_head',
   'interview_split',
   'gameplay_cam',
@@ -31,7 +31,7 @@ const LayoutTypeSchema = z.enum([
 /**
  * A source/destination region for composite layouts (all values are fractions 0.0–1.0)
  */
-const LayoutRegionSchema = z.object({
+export const LayoutRegionSchema = z.object({
   regionId: z.string().describe('Identifier e.g. "face", "gameplay", "person_a"'),
   sourceX: z.number().min(0).max(1).describe('Left edge of region in source video (fraction of source width)'),
   sourceY: z.number().min(0).max(1).describe('Top edge of region in source video (fraction of source height)'),
@@ -44,7 +44,7 @@ const LayoutRegionSchema = z.object({
 /**
  * Crop strategy for vertical video formatting
  */
-const CropStrategySchema = z.object({
+export const CropStrategySchema = z.object({
   method: z.enum(['track_speaker', 'track_action', 'wide_shot', 'blur_sides'])
     .describe('Crop method: track_speaker (follow person speaking), track_action (follow movement), wide_shot (static center), blur_sides (blurred letterbox for groups OR educational_visual content)'),
   subjectPosition: z.enum(['left', 'center', 'right'])
@@ -184,6 +184,8 @@ function buildSystemPrompt(targetAudience: string, contentType: string): string 
   return `You are an expert content strategist specializing in creating viral short-form videos for ${targetAudience}.
 
 Your role is to analyze ${contentType} transcriptions and identify the most engaging moments that would perform well as short vertical clips (9:16 format) on platforms like TikTok, Instagram Reels, and YouTube Shorts.
+
+⚠️ LANGUAGE RULE: Detect the language of the transcription and write ALL text fields (title, description, hookText, tags, reasoning, summary, mainTopics) in THAT SAME LANGUAGE. If the transcription is in Spanish, respond in Spanish. If it's in French, respond in French. Never translate content to English.
 
 Key criteria for viral moments:
 1. STRONG HOOK: Opens with an attention-grabbing statement or question
@@ -402,6 +404,7 @@ function buildUserPrompt(
   return `Analyze this video transcription and identify the top ${maxHighlights} moments that would make great short-form clips.
 
 ⚠️ CRITICAL REQUIREMENTS:
+0. LANGUAGE: Detect the language of the transcription and write ALL text fields (title, description, hookText, tags, reasoning, summary, mainTopics) in THAT SAME LANGUAGE. Do NOT translate to English.
 1. DURATION: Each clip MUST be ${minDuration}-${maxDuration} seconds long
 2. COMPLETE SENTENCES: Clips MUST start at the beginning of a sentence and end at the end of a complete sentence
 3. NEVER cut off mid-sentence - this looks unprofessional and confuses viewers

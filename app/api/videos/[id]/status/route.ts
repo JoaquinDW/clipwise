@@ -48,15 +48,17 @@ export async function GET(
     INGESTED: 25,
     TRANSCRIBING: 40,
     TRANSCRIBED: 55,
-    PROCESSING: 60,
+    SCORING: 58,
+    RANKING: 62,
+    PROCESSING: 65,
     READY: 100,
     FAILED: 0,
   };
 
   let progress = statusWeight[video.status] ?? 0;
   if (video.status === 'PROCESSING' && totalClips > 0) {
-    // Scale from 60 → 100 as clips complete
-    progress = 60 + Math.round((readyClips / totalClips) * 40);
+    // Scale from 65 → 100 as clips complete
+    progress = 65 + Math.round((readyClips / totalClips) * 35);
   }
 
   return NextResponse.json({

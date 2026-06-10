@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAllCaptionStyles, type CaptionStyleName } from '@/lib/ai/caption-styles';
+
+const YT_URL_RE = /^https?:\/\/(www\.)?(youtube\.com\/watch\?.*v=|youtu\.be\/)[\w-]+/;
 
 type UploadMode = 'file' | 'youtube' | 'stream';
 
@@ -20,9 +21,34 @@ export default function NewVideoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
-  const [captionStyle, setCaptionStyle] = useState<CaptionStyleName>('classic');
+  const [fetchingMeta, setFetchingMeta] = useState(false);
+  const [youtubeThumbnail, setYoutubeThumbnail] = useState<string | null>(null);
+  const autoFilledTitle = useRef('');
 
-  const captionStyles = getAllCaptionStyles();
+  useEffect(() => {
+    if (mode !== 'youtube' || !YT_URL_RE.test(youtubeUrl)) return;
+    setFetchingMeta(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://www.youtube.com/oembed?url=${encodeURIComponent(youtubeUrl)}&format=json`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.title && (title === '' || title === autoFilledTitle.current)) {
+          setTitle(data.title);
+          autoFilledTitle.current = data.title;
+        }
+        if (data.thumbnail_url) setYoutubeThumbnail(data.thumbnail_url);
+      } catch {
+        // silently fail — user can type manually
+      } finally {
+        setFetchingMeta(false);
+      }
+    }, 600);
+    return () => { clearTimeout(timer); setFetchingMeta(false); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [youtubeUrl, mode]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -72,8 +98,6 @@ export default function NewVideoPage() {
         formData.append('file', file!);
         formData.append('title', title);
         if (description) formData.append('description', description);
-        formData.append('captionStyle', captionStyle);
-
         const res = await fetch('/api/videos/upload', { method: 'POST', body: formData });
         if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
         videoId = (await res.json()).videoId;
@@ -82,7 +106,7 @@ export default function NewVideoPage() {
         const res = await fetch('/api/videos/youtube', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: youtubeUrl, title, description, captionStyle }),
+          body: JSON.stringify({ url: youtubeUrl, title, description }),
         });
         if (!res.ok) throw new Error((await res.json()).error || 'YouTube download failed');
         videoId = (await res.json()).videoId;
@@ -91,7 +115,7 @@ export default function NewVideoPage() {
         const res = await fetch('/api/videos/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: streamUrl, title, description, captionStyle }),
+          body: JSON.stringify({ url: streamUrl, title, description }),
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Stream import failed');
         videoId = (await res.json()).videoId;
@@ -228,13 +252,24 @@ export default function NewVideoPage() {
                 autoComplete="url"
                 spellCheck={false}
                 value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
+                onChange={(e) => {
+                  setYoutubeUrl(e.target.value);
+                  if (!e.target.value) { setYoutubeThumbnail(null); autoFilledTitle.current = ''; }
+                }}
                 placeholder="https://www.youtube.com/watch?v=…"
                 className="dash-input"
                 disabled={uploading}
                 required={mode === 'youtube'}
               />
-              <p className="mt-2 text-xs" style={{ color: '#444' }}>Paste the full URL of a YouTube video</p>
+              {youtubeThumbnail && (
+                <div className="mt-3 flex items-center gap-3 rounded-xl overflow-hidden" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
+                  <img src={youtubeThumbnail} alt="Video thumbnail" className="h-16 w-28 object-cover shrink-0" />
+                  <p className="text-xs truncate pr-3" style={{ color: '#777' }}>{title || '…'}</p>
+                </div>
+              )}
+              {!youtubeThumbnail && (
+                <p className="mt-2 text-xs" style={{ color: '#444' }}>Paste the full URL of a YouTube video</p>
+              )}
             </div>
           )}
 
@@ -280,9 +315,23 @@ export default function NewVideoPage() {
 
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium mb-1" style={{ color: '#777' }}>
-              Title *
-            </label>
+            <div className="flex items-center gap-2 mb-1">
+              <label htmlFor="title" className="block text-sm font-medium" style={{ color: '#777' }}>
+                Title *
+              </label>
+              {fetchingMeta && (
+                <span className="text-xs flex items-center gap-1" style={{ color: '#555' }}>
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Fetching…
+                </span>
+              )}
+              {!fetchingMeta && title && title === autoFilledTitle.current && (
+                <span className="text-xs" style={{ color: '#444' }}>Auto-filled · editable</span>
+              )}
+            </div>
             <input
               type="text"
               id="title"
@@ -290,7 +339,10 @@ export default function NewVideoPage() {
               autoComplete="off"
               spellCheck={false}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                autoFilledTitle.current = '';
+              }}
               placeholder="My awesome video"
               className="dash-input"
               disabled={uploading}
@@ -314,49 +366,6 @@ export default function NewVideoPage() {
               style={{ resize: 'vertical' }}
               disabled={uploading}
             />
-          </div>
-
-          {/* Caption Style */}
-          <div>
-            <label className="block text-sm font-medium mb-3" style={{ color: '#777' }}>
-              Caption Style
-            </label>
-            <div className="grid grid-cols-3 gap-4">
-              {captionStyles.map(({ key, preset }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setCaptionStyle(key)}
-                  disabled={uploading}
-                  className={`relative rounded-xl border-2 p-4 text-left transition-all ${uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  style={
-                    captionStyle === key
-                      ? { borderColor: '#FF3B5C', background: 'rgba(255,59,92,0.08)' }
-                      : { borderColor: '#1a1a1a', background: '#111' }
-                  }
-                >
-                  {captionStyle === key && (
-                    <div className="absolute top-2 right-2">
-                      <svg className="h-5 w-5" style={{ color: '#FF3B5C' }} fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="mb-3">
-                    <h3 className="text-sm font-semibold" style={{ color: '#f2ede8' }}>{preset.name}</h3>
-                    <p className="text-xs mt-1" style={{ color: '#555' }}>{preset.description}</p>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded p-2 flex items-center justify-center h-16">
-                    <span style={{ fontFamily: preset.font, fontSize: '14px', color: preset.color, fontWeight: preset.fontWeight, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                      <span style={{ backgroundColor: preset.highlightColor, padding: '2px 4px', borderRadius: '2px' }}>Example</span>{' '}Text
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs" style={{ color: '#444' }}>
-              Choose how captions will appear on your video clips
-            </p>
           </div>
 
           {/* Progress */}

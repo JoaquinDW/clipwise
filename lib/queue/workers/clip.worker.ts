@@ -76,6 +76,7 @@ export async function processClip(job: Job<ClipJobData>) {
     const captionStyle = (metadata?.captionStyle ?? undefined) as CaptionStyleName | undefined;
     const captionPosition = (metadata?.captionPosition ?? undefined) as 'top' | 'center' | 'bottom' | undefined;
     const captionSize = (metadata?.captionSize ?? undefined) as 'small' | 'medium' | 'large' | undefined;
+    const shouldBurnCaptions = metadata?.burnCaptions === true;
     const language = video.transcription.language ?? undefined;
 
     const captions = await generateCaptions(clipWords, {
@@ -91,7 +92,9 @@ export async function processClip(job: Job<ClipJobData>) {
       captions.captions = captions.captions.map((seg) => ({ ...seg, position: captionPosition }));
     }
 
-    // 4. Process clip with smart cropping and burned captions
+    // 4. Process clip with smart cropping.
+    //    Captions are only burned when this is a re-export (burnCaptions flag in metadata).
+    //    Initial clips stay caption-free so the editor overlay is the only source of truth.
     const layoutType = (metadata?.layoutType ?? 'standard') as string;
     const cropStrategy = (metadata?.cropStrategy ?? { method: 'wide_shot' }) as { method: string; subjectPosition?: string };
 
@@ -110,10 +113,8 @@ export async function processClip(job: Job<ClipJobData>) {
               ? { layoutType: layoutType as any, layoutRegions: metadata?.layoutRegions as any }
               : undefined,
         },
-        burnCaptions: true,
-        stylePreset: captionStyle,
-        captionPosition,
-        captionSize,
+        burnCaptions: shouldBurnCaptions,
+        ...(shouldBurnCaptions && { stylePreset: captionStyle, captionPosition, captionSize }),
       }
     );
 

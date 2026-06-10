@@ -1,16 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
-import { VerticalVideoPlayer } from "@/app/ui/VideoPlayer"
-import {
-  ArrowDownTrayIcon,
-  DocumentTextIcon,
-  PencilSquareIcon,
-  PlayCircleIcon,
-} from "@heroicons/react/24/outline"
-import TranscriptPanel from "./TranscriptPanel"
-import ClipEditor from "./ClipEditor"
+import React, { useCallback, useEffect, useRef } from "react"
+import { PlayCircleIcon } from "@heroicons/react/24/outline"
+import { CaptionOverlay, SafeAreaOverlay } from "./ClipEditor"
+import { useClipEditorStore } from "@/lib/store/clip-editor.store"
+import type { CaptionsResult } from "@/lib/ai/captions"
 
 interface Clip {
   id: string
@@ -24,23 +18,17 @@ interface Clip {
   duration: number
   metadata: unknown
   parentClipId?: string | null
-  captions: import("@/lib/ai/captions").CaptionsResult | null
+  captions: CaptionsResult | null
   proxyUrl: string | null
   captionStyle: string | null
   captionPosition: "top" | "center" | "bottom" | null
   captionSize: "small" | "medium" | "large" | null
 }
 
-interface Transcription {
-  text: string
-  language?: string | null
-  segments?: unknown[] | null
-}
-
 interface ClipPreviewProps {
   clips: Clip[]
   activeClipId: string | null
-  transcription: Transcription | null
+  videoRef: React.RefObject<HTMLVideoElement>
 }
 
 function formatDuration(seconds: number): string {
@@ -50,22 +38,129 @@ function formatDuration(seconds: number): string {
   return s > 0 ? `${m}m ${s}s` : `${m}m`
 }
 
+// ── Editable video player (main area) ────────────────────────────────────────
+
+function EditableVideoPlayer({
+  src,
+  clipStartTime,
+  editedStart,
+  editedEnd,
+  captions,
+  captionStyle,
+  captionPosition,
+  captionSize,
+  showSafeAreas,
+  onTimeUpdate,
+  videoRef,
+}: {
+  src: string
+  clipStartTime: number
+  editedStart: number
+  editedEnd: number
+  captions: CaptionsResult | null
+  captionStyle: string
+  captionPosition: "top" | "center" | "bottom"
+  captionSize: "small" | "medium" | "large"
+  showSafeAreas: boolean
+  onTimeUpdate: (t: number) => void
+  videoRef: React.RefObject<HTMLVideoElement>
+}) {
+  const rafRef = useRef<number | null>(null)
+  const playingRef = useRef(false)
+
+  const toProxy = (originalTime: number) => Math.max(0, originalTime - clipStartTime)
+
+  // Seek to editedStart when it changes
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.currentTime = toProxy(editedStart)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedStart, clipStartTime])
+
+  // Pause at editedEnd boundary
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const proxyEnd = toProxy(editedEnd)
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= Math.min(proxyEnd, video.duration)) {
+        video.pause()
+        video.currentTime = toProxy(editedStart)
+      }
+    }
+    video.addEventListener("timeupdate", handleTimeUpdate)
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedStart, editedEnd, clipStartTime])
+
+  // RAF loop for smooth caption sync, reports time in original-video space
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const tick = () => {
+      if (playingRef.current && video) {
+        onTimeUpdate(video.currentTime + clipStartTime)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+
+    const onPlay = () => { playingRef.current = true }
+    const onPause = () => {
+      playingRef.current = false
+      onTimeUpdate(video.currentTime + clipStartTime)
+    }
+
+    video.addEventListener("play", onPlay)
+    video.addEventListener("pause", onPause)
+    rafRef.current = requestAnimationFrame(tick)
+
+    return () => {
+      video.removeEventListener("play", onPlay)
+      video.removeEventListener("pause", onPause)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clipStartTime, onTimeUpdate])
+
+  const store = useClipEditorStore()
+  const captionTime = store.currentTime - clipStartTime
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: "0.75rem", overflow: "hidden", background: "#000" }}>
+      <video
+        ref={videoRef}
+        src={src}
+        controls
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+      <SafeAreaOverlay show={showSafeAreas} />
+      <CaptionOverlay
+        captions={captions}
+        currentTime={captionTime}
+        captionStyle={captionStyle}
+        captionPosition={captionPosition}
+        captionSize={captionSize}
+      />
+    </div>
+  )
+}
+
+// ── Main preview component ────────────────────────────────────────────────────
+
 export default function ClipPreview({
   clips,
   activeClipId,
-  transcription,
+  videoRef,
 }: ClipPreviewProps) {
-  const router = useRouter()
-  const [transcriptOpen, setTranscriptOpen] = useState(false)
-  const [editorOpen, setEditorOpen] = useState(false)
+  const store = useClipEditorStore()
 
-  const activeClip = useMemo(
-    () => clips.find((c) => c.id === activeClipId) ?? null,
-    [clips, activeClipId],
-  )
+  const activeClip = clips.find((c) => c.id === activeClipId) ?? null
 
-  // Close editor when switching clips
-  useEffect(() => setEditorOpen(false), [activeClipId])
+  const handleTimeUpdate = useCallback((t: number) => {
+    store.setCurrentTime(t)
+  }, [store])
 
   if (!activeClip) {
     return (
@@ -81,183 +176,96 @@ export default function ClipPreview({
 
   const isGenerating = activeClip.status !== "READY" || !activeClip.storageUrl
 
-  function handleExportStart(newClipId: string) {
-    console.log(`[editor] Re-export queued, new clip: ${newClipId}`)
-    setEditorOpen(false)
-    router.refresh()
-  }
+  const { captionStyle, captionPosition, captionSize, showSafeAreas, deltaStart, deltaEnd } = store
+  const editedStart = activeClip.startTime + deltaStart
+  const editedEnd = activeClip.endTime + deltaEnd
+  const videoSrc = activeClip.proxyUrl ?? activeClip.storageUrl!
 
   return (
     <>
-      <div className="sticky top-6 flex flex-col items-center gap-5 max-w-xs mx-auto">
-        {/* 9:16 Player — hidden when editor is open (editor has its own player) */}
-        {!editorOpen && (
-          <div className="w-full">
-            {isGenerating ? (
-              <div
-                className="w-full rounded-2xl flex flex-col items-center justify-center gap-3"
-                style={{
-                  aspectRatio: "9/16",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                {activeClip.status === "FAILED" ? (
-                  <p className="text-sm text-red-400 px-4 text-center">
-                    Clip generation failed
-                  </p>
-                ) : (
-                  <>
-                    <svg
-                      className="animate-spin h-8 w-8"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      style={{ color: "#FF3B5C" }}
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v8H4z"
-                      />
-                    </svg>
-                    <span
-                      className="text-sm"
-                      style={{ color: "var(--dash-text-secondary)" }}
-                    >
-                      Generating clip…
-                    </span>
-                  </>
-                )}
-              </div>
-            ) : (
-              <VerticalVideoPlayer
-                url={activeClip.storageUrl!}
-                title={activeClip.title}
-                controls
-                playing
-              />
-            )}
-          </div>
-        )}
-
-        {/* Editor panel — replaces clip info when open */}
-        {editorOpen && activeClip.storageUrl ? (
-          <ClipEditor
-            clip={{
-              id: activeClip.id,
-              title: activeClip.title,
-              storageUrl: activeClip.storageUrl,
-              startTime: activeClip.startTime,
-              endTime: activeClip.endTime,
-              duration: activeClip.duration,
-              captions: activeClip.captions,
-              proxyUrl: activeClip.proxyUrl,
-              captionStyle: activeClip.captionStyle,
-              captionPosition: activeClip.captionPosition,
-              captionSize: activeClip.captionSize,
-            }}
-            onClose={() => setEditorOpen(false)}
-            onExportStart={handleExportStart}
-          />
-        ) : (
-          <div className="w-full text-center space-y-1.5">
-            <h3
-              className="font-semibold text-sm leading-snug"
+      <div className="flex flex-col items-center gap-4">
+        {/* 9:16 player — height driven by viewport, width by aspect-ratio */}
+        <div
+          style={{
+            aspectRatio: "9/16",
+            height: "calc(100vh - 16rem)",
+            maxHeight: "80vh",
+            minHeight: 240,
+          }}
+        >
+          {isGenerating ? (
+            <div
+              className="w-full h-full rounded-2xl flex flex-col items-center justify-center gap-3"
               style={{
-                fontFamily: "var(--font-syne), sans-serif",
-                color: "#f2ede8",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              {activeClip.title}
-            </h3>
-            <p className="text-xs" style={{ color: "var(--dash-text-muted)" }}>
-              {activeClip.startTime.toFixed(1)}s – {activeClip.endTime.toFixed(1)}
-              s · {formatDuration(activeClip.duration)}
-            </p>
-            <p>
-              {activeClip.description ? (
-                <span
-                  className="text-sm"
-                  style={{ color: "var(--dash-text-secondary)" }}
-                >
-                  {activeClip.description}
-                </span>
+              {activeClip.status === "FAILED" ? (
+                <p className="text-sm text-red-400 px-4 text-center">
+                  Clip generation failed
+                </p>
               ) : (
-                <span
-                  className="text-sm italic"
-                  style={{ color: "var(--dash-text-secondary)" }}
-                >
-                  No description
-                </span>
-              )}
-            </p>
-            <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
-              {activeClip.storageUrl && (
-                <a
-                  href={activeClip.storageUrl}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-white"
-                  style={{
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                  }}
-                >
-                  <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                  Download
-                </a>
-              )}
-              {activeClip.status === "READY" && activeClip.storageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setEditorOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
-                  style={{
-                    background: "rgba(255,59,92,0.12)",
-                    border: "1px solid rgba(255,59,92,0.25)",
-                    color: "#FF3B5C",
-                  }}
-                >
-                  <PencilSquareIcon className="w-3.5 h-3.5" />
-                  Edit Clip
-                </button>
-              )}
-              {transcription && (
-                <button
-                  type="button"
-                  onClick={() => setTranscriptOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.10)",
-                    color: "var(--dash-text-secondary)",
-                  }}
-                >
-                  <DocumentTextIcon className="w-3.5 h-3.5" />
-                  Transcript
-                </button>
+                <>
+                  <svg
+                    className="animate-spin h-8 w-8"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    style={{ color: "#FF3B5C" }}
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8H4z"
+                    />
+                  </svg>
+                  <span
+                    className="text-sm"
+                    style={{ color: "var(--dash-text-secondary)" }}
+                  >
+                    Generating clip…
+                  </span>
+                </>
               )}
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <EditableVideoPlayer
+              src={videoSrc}
+              clipStartTime={activeClip.startTime}
+              editedStart={editedStart}
+              editedEnd={editedEnd}
+              captions={activeClip.captions}
+              captionStyle={captionStyle}
+              captionPosition={captionPosition}
+              captionSize={captionSize}
+              showSafeAreas={showSafeAreas}
+              onTimeUpdate={handleTimeUpdate}
+              videoRef={videoRef}
+            />
+          )}
+        </div>
 
-      {transcription && (
-        <TranscriptPanel
-          isOpen={transcriptOpen}
-          onClose={() => setTranscriptOpen(false)}
-          transcription={transcription}
-        />
-      )}
+        {/* Clip info */}
+        <div className="flex flex-col items-center gap-1 text-center w-full max-w-xs">
+          <h3
+            className="font-semibold text-sm leading-snug"
+            style={{ fontFamily: "var(--font-syne), sans-serif", color: "#f2ede8" }}
+          >
+            {activeClip.title}
+          </h3>
+          <p className="text-xs" style={{ color: "var(--dash-text-muted)" }}>
+            {activeClip.startTime.toFixed(1)}s – {activeClip.endTime.toFixed(1)}s · {formatDuration(activeClip.duration)}
+          </p>
+        </div>
+      </div>
     </>
   )
 }

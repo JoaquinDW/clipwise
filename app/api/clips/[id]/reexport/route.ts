@@ -101,6 +101,7 @@ export async function POST(
           ...(captionStyle !== undefined && { captionStyle }),
           ...(captionPosition !== undefined && { captionPosition }),
           ...(captionSize !== undefined && { captionSize }),
+          burnCaptions: true,
         },
         parentClipId: clip.id,
         originalStart: clip.startTime,
