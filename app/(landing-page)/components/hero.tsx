@@ -8,7 +8,7 @@ const i18n = {
     h1a: "Convierte tu contenido",
     h1b: "en clips",
     h1c: "virales",
-    sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Momentreel los detecta, recorta a 9:16 y quema los subtítulos — sin tocar el timeline, listo en minutos.",
+    sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Momentreel los detecta, recorta a 9:16 y agrega los subtítulos — sin tocar el timeline, listo en minutos.",
     cta: "Unirme a la lista →",
     stats: [
       { value: "94%", label: "Precisión IA" },
