@@ -1,6 +1,7 @@
 'use client';
 
 import type { Lang } from './use-lang';
+import Reveal from './reveal';
 
 const icons = [
   <svg key="0" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 8v4l3 3" /></svg>,
@@ -48,30 +49,34 @@ export default function Features({ lang }: { lang: Lang }) {
   return (
     <section id="features" className="section-pad" style={{ position: 'relative' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 72 }}>
-          <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
-            {t.badge}
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
-            {t.headline} <span className="grad-text">{t.gradPart}</span>
-          </h2>
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#aaa', maxWidth: 480, margin: '0 auto' }}>
-            {t.sub}
-          </p>
-        </div>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
+              {t.badge}
+            </span>
+            <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
+              {t.headline} <span className="grad-text">{t.gradPart}</span>
+            </h2>
+            <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#aaa', maxWidth: 480, margin: '0 auto' }}>
+              {t.sub}
+            </p>
+          </div>
+        </Reveal>
         <div className="grid-3col">
           {t.items.map((f, i) => (
-            <div key={f.title} className="feature-card">
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(255,59,92,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                {icons[i]}
+            <Reveal key={f.title} delay={(i % 3) * 0.1}>
+              <div className="feature-card" style={{ height: '100%' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(255,59,92,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                  {icons[i]}
+                </div>
+                <h3 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 17, fontWeight: 700, color: '#f2ede8', marginBottom: 10, letterSpacing: '-0.01em' }}>
+                  {f.title}
+                </h3>
+                <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#aaa', lineHeight: 1.65 }}>
+                  {f.desc}
+                </p>
               </div>
-              <h3 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 17, fontWeight: 700, color: '#f2ede8', marginBottom: 10, letterSpacing: '-0.01em' }}>
-                {f.title}
-              </h3>
-              <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#aaa', lineHeight: 1.65 }}>
-                {f.desc}
-              </p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

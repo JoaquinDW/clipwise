@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- monochrome black: for light backgrounds, print, single-color contexts -->
+  <rect x="98" y="146" width="148" height="252" rx="34" stroke="#0A0A0A" stroke-width="12" opacity="0.35" transform="rotate(-8 172 272)"/>
+  <rect x="266" y="146" width="148" height="252" rx="34" stroke="#0A0A0A" stroke-width="12" opacity="0.35" transform="rotate(8 340 272)"/>
+  <rect x="166" y="86" width="180" height="320" rx="40" fill="#0A0A0A"/>
+  <path d="M240 212 L292 246 L240 280 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="22" stroke-linejoin="round"/>
+  <path d="M388 56 L400 92 L436 104 L400 116 L388 152 L376 116 L340 104 L376 92 Z" fill="#0A0A0A"/>
+</svg>

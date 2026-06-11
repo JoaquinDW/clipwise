@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import type { Lang } from './use-lang';
+import Reveal from './reveal';
 
 const i18n = {
   es: {
     badge: '✦ Acceso anticipado',
-    title: 'Sé el primero en saber cuando lancemos',
-    sub: 'Estamos preparando algo increíble. Déjanos tu email y te avisamos cuando Momentreel esté listo — sin spam, solo lo importante.',
+    title: 'Deja de editar. Empieza a publicar.',
+    sub: 'Momentreel está casi listo. Déjanos tu email y serás el primero en entrar cuando lancemos — sin spam, solo el aviso que importa.',
     placeholder: 'tu@email.com',
     cta: 'Unirme a la lista →',
     loading: 'Guardando...',
@@ -17,8 +18,8 @@ const i18n = {
   },
   en: {
     badge: '✦ Early access',
-    title: 'Be the first to know when we launch',
-    sub: "We're building something great. Drop your email and we'll let you know when Momentreel is ready — no spam, just the important stuff.",
+    title: 'Stop editing. Start posting.',
+    sub: "Momentreel is almost ready. Drop your email and you'll be first in line at launch — no spam, just the one email that matters.",
     placeholder: 'you@email.com',
     cta: 'Join the waitlist →',
     loading: 'Saving...',
@@ -50,7 +51,7 @@ export default function Waitlist({ lang }: { lang: Lang }) {
 
   return (
     <section id="waitlist" className="section-pad">
-      <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
+      <Reveal style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
         {/* Badge */}
         <div style={{ marginBottom: 28 }}>
           <span
@@ -176,7 +177,7 @@ export default function Waitlist({ lang }: { lang: Lang }) {
             {t.count}
           </p>
         )}
-      </div>
+      </Reveal>
     </section>
   );
 }

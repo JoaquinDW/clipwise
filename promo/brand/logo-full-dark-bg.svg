@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 256" fill="none">
+  <!-- full lockup for dark backgrounds. Wordmark uses Syne (load via webfont);
+       for guaranteed rendering use the PNG renders in promo/out/brand/ -->
+  <defs>
+    <linearGradient id="mr-g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF3B5C"/>
+      <stop offset="1" stop-color="#FF8C00"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 -8) scale(0.53)">
+    <rect x="98" y="146" width="148" height="252" rx="34" stroke="url(#mr-g)" stroke-width="12" opacity="0.32" transform="rotate(-8 172 272)"/>
+    <rect x="266" y="146" width="148" height="252" rx="34" stroke="url(#mr-g)" stroke-width="12" opacity="0.32" transform="rotate(8 340 272)"/>
+    <rect x="166" y="86" width="180" height="320" rx="40" fill="url(#mr-g)"/>
+    <path d="M240 212 L292 246 L240 280 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="22" stroke-linejoin="round"/>
+    <path d="M388 56 L400 92 L436 104 L400 116 L388 152 L376 116 L340 104 L376 92 Z" fill="#F2EDE8"/>
+  </g>
+  <text x="268" y="158" font-family="Syne, 'Avenir Next', 'Arial Black', sans-serif" font-size="104" font-weight="800" letter-spacing="-2" fill="#F2EDE8">Momentreel</text>
+</svg>

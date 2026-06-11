@@ -1,12 +1,13 @@
 'use client';
 
 import type { Lang } from './use-lang';
+import Reveal from './reveal';
 
 const i18n = {
   es: {
     badge: '✦ Beta users',
-    headline: 'Los primeros en',
-    gradPart: 'probarlo',
+    headline: 'De 3 horas editando,',
+    gradPart: 'a 5 minutos',
     items: [
       {
         quote: 'Tenía 180 episodios sin recortar acumulados. En un fin de semana procesé los últimos 20. Lo que me llevaba 3 horas por episodio ahora tarda menos de 5 minutos — y los clips se ven mejor que los que hacía yo a mano.',
@@ -30,8 +31,8 @@ const i18n = {
   },
   en: {
     badge: '✦ Beta users',
-    headline: 'From the first people',
-    gradPart: 'to try it',
+    headline: '3 hours of editing,',
+    gradPart: 'down to 5 minutes',
     items: [
       {
         quote: "I had 180 unedited episodes sitting on my drive. Over one weekend I processed the last 20. What used to take 3 hours per episode now takes under 5 minutes — and the clips look better than what I was cutting by hand.",
@@ -73,18 +74,21 @@ export default function Testimonials({ lang }: { lang: Lang }) {
   return (
     <section className="section-pad" style={{ borderTop: '1px solid #111' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 72 }}>
-          <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
-            {t.badge}
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-            {t.headline} <span className="grad-text">{t.gradPart}</span>
-          </h2>
-        </div>
+        <Reveal>
+          <div style={{ textAlign: 'center', marginBottom: 72 }}>
+            <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
+              {t.badge}
+            </span>
+            <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {t.headline} <span className="grad-text">{t.gradPart}</span>
+            </h2>
+          </div>
+        </Reveal>
         <div className="grid-3col">
-          {t.items.map((item) => (
-            <div
+          {t.items.map((item, i) => (
+            <Reveal
               key={item.name}
+              delay={i * 0.1}
               style={{
                 background: '#111',
                 border: '1px solid #1a1a1a',
@@ -132,7 +136,7 @@ export default function Testimonials({ lang }: { lang: Lang }) {
                   </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
