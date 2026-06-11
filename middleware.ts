@@ -52,6 +52,6 @@ export const config = {
   // https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
   // Exclude: API routes, static files, images
   matcher: [
-    "/((?!api|_next/static|_next/image|test-video|.*\\.png$|.*\\.svg$|.*\\.jpg$|.*\\.jpeg$|.*\\.ico$).*)",
+    "/((?!api|_next/static|_next/image|test-video|.*\\.png$|.*\\.svg$|.*\\.jpg$|.*\\.jpeg$|.*\\.ico$|.*\\.mp4$|.*\\.webm$).*)",
   ],
 }
