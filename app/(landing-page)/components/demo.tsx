@@ -289,7 +289,7 @@ function PhaseOutput({ lang }: { lang: Lang }) {
           ? "4 clips generados · listos para publicar"
           : "4 clips generated · ready to publish"}
       </div>
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 20 }}>
+      <div className="mini-phones-row">
         {phones.map((p, i) => (
           <MiniPhone key={i} gradient={p.gradient} score={p.score} />
         ))}
@@ -387,15 +387,8 @@ function ProcessFlow({ lang }: { lang: Lang }) {
         </div>
       </div>
       <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 40,
-          transition: "opacity 0.4s ease",
-          opacity: visible ? 1 : 0,
-        }}
+        className="process-flow-body"
+        style={{ opacity: visible ? 1 : 0 }}
       >
         {phase === 0 && <PhaseInput lang={lang} />}
         {phase === 1 && <PhaseProcessing lang={lang} />}

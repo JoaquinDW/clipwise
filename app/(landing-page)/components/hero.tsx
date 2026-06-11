@@ -254,6 +254,7 @@ function Phone({
 function PhoneStack() {
   return (
     <div
+      className="phone-stack-wrapper"
       style={{
         display: "flex",
         alignItems: "center",
@@ -405,7 +406,7 @@ export default function Hero({ lang }: { lang: Lang }) {
             ))}
           </div>
         </div>
-        <div className="fu d3" style={{ position: "relative" }}>
+        <div className="fu d3" style={{ position: "relative", overflow: "hidden" }}>
           <div
             style={{
               position: "absolute",

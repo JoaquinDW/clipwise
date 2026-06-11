@@ -14,7 +14,6 @@ const i18n = {
     loading: 'Guardando...',
     success: '¡Listo! Te avisamos cuando lancemos.',
     error: 'Algo salió mal. Intenta de nuevo.',
-    count: 'Más de 200 personas ya están esperando.',
   },
   en: {
     badge: '✦ Early access',
@@ -25,7 +24,6 @@ const i18n = {
     loading: 'Saving...',
     success: "You're in! We'll notify you when we launch.",
     error: 'Something went wrong. Please try again.',
-    count: 'Over 200 people are already waiting.',
   },
 };
 
@@ -171,12 +169,6 @@ export default function Waitlist({ lang }: { lang: Lang }) {
           </p>
         )}
 
-        {/* Social proof */}
-        {status !== 'success' && (
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13, color: '#666', marginTop: 20 }}>
-            {t.count}
-          </p>
-        )}
       </Reveal>
     </section>
   );

@@ -5,68 +5,50 @@ import Reveal from './reveal';
 
 const i18n = {
   es: {
-    badge: '✦ Beta users',
-    headline: 'De 3 horas editando,',
-    gradPart: 'a 5 minutos',
+    badge: '✦ Hecho para creadores como tú',
+    headline: 'No te falta contenido.',
+    gradPart: 'Te falta tiempo para clippearlo.',
     items: [
       {
-        quote: 'Tenía 180 episodios sin recortar acumulados. En un fin de semana procesé los últimos 20. Lo que me llevaba 3 horas por episodio ahora tarda menos de 5 minutos — y los clips se ven mejor que los que hacía yo a mano.',
-        name: 'Alex M.',
-        role: 'Podcast host · 78k suscriptores',
-        initials: 'AM',
+        quote: 'Grabaste 3 horas de oro. Ahora está en tu disco porque recortar clips tarda más que grabar el episodio.',
+        role: 'Podcasters y YouTubers',
+        icon: '🎙️',
       },
       {
-        quote: 'Hago streams de 4 horas. Antes no subía clips porque el proceso me mataba. Ahora termino el stream, proceso en Momentreel, y en 15 minutos tengo 6 clips listos para TikTok. El recorte vertical es ridículamente preciso.',
-        name: 'Sarah K.',
-        role: 'Twitch Partner · 19k seguidores',
-        initials: 'SK',
+        quote: 'Tus mejores momentos pasan en vivo. Para cuando recortaste a 9:16 y quemaste los subtítulos, la ventana del algoritmo ya cerró.',
+        role: 'Streamers y creadores en vivo',
+        icon: '🎮',
       },
       {
-        quote: 'Manejamos 11 clientes con contenido long-form. Antes necesitábamos dos editores solo para clips. Ahora uno supervisa todo el output con Momentreel y entregamos el doble de contenido por cliente.',
-        name: 'Diego F.',
-        role: 'Director, agencia de contenido',
-        initials: 'DF',
+        quote: 'Tus clientes quieren 6 clips por video. Tú entregas 2 porque la math no cierra editando a mano. Momentreel cambia el denominador.',
+        role: 'Agencias y editores de video',
+        icon: '🏢',
       },
     ],
   },
   en: {
-    badge: '✦ Beta users',
-    headline: '3 hours of editing,',
-    gradPart: 'down to 5 minutes',
+    badge: '✦ Built for creators like you',
+    headline: "You're not short on content.",
+    gradPart: "You're short on time to clip it.",
     items: [
       {
-        quote: "I had 180 unedited episodes sitting on my drive. Over one weekend I processed the last 20. What used to take 3 hours per episode now takes under 5 minutes — and the clips look better than what I was cutting by hand.",
-        name: 'Alex M.',
-        role: 'Podcast host · 78k subscribers',
-        initials: 'AM',
+        quote: "You recorded 3 hours of gold. Now it's sitting on your drive because cutting clips takes longer than recording the episode itself.",
+        role: 'Podcasters & YouTubers',
+        icon: '🎙️',
       },
       {
-        quote: "I do 4-hour streams. I wasn't clipping before because the process killed me. Now I finish the stream, run it through Momentreel, and 15 minutes later I have 6 clips ready for TikTok. The vertical crop is shockingly accurate.",
-        name: 'Sarah K.',
-        role: 'Twitch Partner · 19k followers',
-        initials: 'SK',
+        quote: "Your best moments happen live. By the time you've clipped, cropped to 9:16, and burned captions — the algorithm window has already closed.",
+        role: 'Streamers & live creators',
+        icon: '🎮',
       },
       {
-        quote: "We manage 11 clients with long-form content. We used to need two editors just for clips. Now one editor handles all output with Momentreel and we deliver twice the content per client.",
-        name: 'Diego F.',
-        role: 'Director, content agency',
-        initials: 'DF',
+        quote: "Your clients want 6 clips per video. You're quoting 2 because the math doesn't work with manual editing. Momentreel changes the denominator.",
+        role: 'Agencies & video editors',
+        icon: '🏢',
       },
     ],
   },
 };
-
-function Stars() {
-  return (
-    <div style={{ display: 'flex', gap: 4 }}>
-      {[...Array(5)].map((_, i) => (
-        <svg key={i} width="13" height="13" viewBox="0 0 13 13" fill="#FF3B5C">
-          <path d="M6.5 1l1.4 3.2L11 4.7l-2.3 2.3.5 3.2L6.5 8.8 4 10.2l.5-3.2L2 4.7l3.1-.5z" />
-        </svg>
-      ))}
-    </div>
-  );
-}
 
 export default function Testimonials({ lang }: { lang: Lang }) {
   const t = i18n[lang];
@@ -87,7 +69,7 @@ export default function Testimonials({ lang }: { lang: Lang }) {
         <div className="grid-3col">
           {t.items.map((item, i) => (
             <Reveal
-              key={item.name}
+              key={item.role}
               delay={i * 0.1}
               style={{
                 background: '#111',
@@ -99,8 +81,8 @@ export default function Testimonials({ lang }: { lang: Lang }) {
                 gap: 20,
               }}
             >
-              <Stars />
-              <blockquote style={{
+              <div style={{ fontSize: 28 }}>{item.icon}</div>
+              <p style={{
                 fontFamily: 'var(--font-dm-sans), sans-serif',
                 fontSize: 15,
                 lineHeight: 1.7,
@@ -108,33 +90,17 @@ export default function Testimonials({ lang }: { lang: Lang }) {
                 margin: 0,
                 flexGrow: 1,
               }}>
-                &ldquo;{item.quote}&rdquo;
-              </blockquote>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontFamily: 'var(--font-syne), sans-serif',
-                  fontSize: 13,
-                  fontWeight: 800,
-                  color: '#fff',
-                  flexShrink: 0,
-                }}>
-                  {item.initials}
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#f2ede8' }}>
-                    {item.name}
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 12, color: '#666', marginTop: 2 }}>
-                    {item.role}
-                  </div>
-                </div>
+                {item.quote}
+              </p>
+              <div style={{
+                fontFamily: 'var(--font-syne), sans-serif',
+                fontSize: 13,
+                fontWeight: 700,
+                color: '#555',
+                borderTop: '1px solid #1a1a1a',
+                paddingTop: 16,
+              }}>
+                {item.role}
               </div>
             </Reveal>
           ))}

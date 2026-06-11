@@ -4,39 +4,98 @@
 
 /* ── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(28px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes pulseOrb {
-  0%, 100% { transform: scale(1);   opacity: 0.25; }
-  50%       { transform: scale(1.1); opacity: 0.45; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.45;
+  }
 }
 
 @keyframes ticker {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes pulseLoop {
-  0%   { opacity: 0; transform: scale(0.1) translateZ(0); }
-  40%  { opacity: 1; }
-  60%  { opacity: 1; }
-  100% { opacity: 0; transform: scale(2) translateZ(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.1) translateZ(0);
+  }
+
+  40% {
+    opacity: 1;
+  }
+
+  60% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2) translateZ(0);
+  }
 }
 
 /* ── Animation utilities ────────────────────────────────────────────────── */
-.fu  { animation: fadeUp 0.65s ease forwards; opacity: 0; }
-.d1  { animation-delay: 0.08s; }
-.d2  { animation-delay: 0.2s; }
-.d3  { animation-delay: 0.35s; }
-.d4  { animation-delay: 0.5s; }
-.d5  { animation-delay: 0.65s; }
+.fu {
+  animation: fadeUp 0.65s ease forwards;
+  opacity: 0;
+}
+
+.d1 {
+  animation-delay: 0.08s;
+}
+
+.d2 {
+  animation-delay: 0.2s;
+}
+
+.d3 {
+  animation-delay: 0.35s;
+}
+
+.d4 {
+  animation-delay: 0.5s;
+}
+
+.d5 {
+  animation-delay: 0.65s;
+}
 
 /* ── Scroll reveal ──────────────────────────────────────────────────────── */
 .reveal {
@@ -45,25 +104,54 @@
   transition: opacity 0.65s ease, transform 0.65s ease;
   transition-delay: var(--reveal-delay, 0s);
 }
+
 .reveal.in {
   opacity: 1;
   transform: translateY(0);
 }
 
 /* ── Floating phones (hero) ─────────────────────────────────────────────── */
-.float-slow   { animation: float 7s ease-in-out infinite; }
-.float-slower { animation: float 9s ease-in-out infinite 1.4s; }
+.float-slow {
+  animation: float 7s ease-in-out infinite;
+}
+
+.float-slower {
+  animation: float 9s ease-in-out infinite 1.4s;
+}
 
 @keyframes viralGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.5); }
-  50%       { box-shadow: 0 0 0 6px rgba(255, 59, 92, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 59, 92, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 59, 92, 0);
+  }
 }
-.viral-badge { animation: viralGlow 2.4s ease-in-out infinite; }
+
+.viral-badge {
+  animation: viralGlow 2.4s ease-in-out infinite;
+}
 
 /* ── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .fu, .reveal { animation: none; transition: none; opacity: 1; transform: none; }
-  .float-slow, .float-slower, .viral-badge, .pulse { animation: none; }
+
+  .fu,
+  .reveal {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .float-slow,
+  .float-slower,
+  .viral-badge,
+  .pulse {
+    animation: none;
+  }
 }
 
 .pulse {
@@ -72,9 +160,18 @@
   transform-origin: center;
   animation: pulseLoop 8000ms linear infinite;
 }
-.pulse-1 { animation-delay: -2000ms; }
-.pulse-2 { animation-delay: -4000ms; }
-.pulse-3 { animation-delay: -6000ms; }
+
+.pulse-1 {
+  animation-delay: -2000ms;
+}
+
+.pulse-2 {
+  animation-delay: -4000ms;
+}
+
+.pulse-3 {
+  animation-delay: -6000ms;
+}
 
 /* ── Gradient text ──────────────────────────────────────────────────────── */
 .grad-text {
@@ -104,6 +201,7 @@
   text-decoration: none;
   white-space: nowrap;
 }
+
 .cta-btn:hover {
   box-shadow: 0 0 60px rgba(255, 59, 92, 0.5);
   transform: translateY(-2px);
@@ -125,6 +223,7 @@
   text-decoration: none;
   white-space: nowrap;
 }
+
 .cta-ghost:hover {
   color: #f2ede8;
   border-color: #555;
@@ -147,20 +246,29 @@ body::after {
   text-decoration: none;
   transition: color 0.2s;
 }
-.nav-link:hover { color: #f2ede8; }
+
+.nav-link:hover {
+  color: #f2ede8;
+}
 
 .footer-link {
   color: #777;
   text-decoration: none;
   transition: color 0.2s;
 }
-.footer-link:hover { color: #f2ede8; }
+
+.footer-link:hover {
+  color: #f2ede8;
+}
 
 .social-link {
   color: #333;
   transition: color 0.2s;
 }
-.social-link:hover { color: #f2ede8; }
+
+.social-link:hover {
+  color: #f2ede8;
+}
 
 .feature-card {
   background: #111;
@@ -169,7 +277,10 @@ body::after {
   padding: 28px 28px 32px;
   transition: border-color 0.2s;
 }
-.feature-card:hover { border-color: rgba(255, 59, 92, 0.25); }
+
+.feature-card:hover {
+  border-color: rgba(255, 59, 92, 0.25);
+}
 
 /* ── Legacy btn classes (used by auth pages etc.) ───────────────────────── */
 .btn,
@@ -186,8 +297,14 @@ body::after {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 0.15s;
 }
-.btn    { padding: 11px 1rem; }
-.btn-sm { padding: 7px 0.75rem; }
+
+.btn {
+  padding: 11px 1rem;
+}
+
+.btn-sm {
+  padding: 7px 0.75rem;
+}
 
 /* ── Form styles ────────────────────────────────────────────────────────── */
 .form-input:focus,
@@ -200,32 +317,38 @@ body::after {
 }
 
 /* ── Hamburger (mobile menu) ────────────────────────────────────────────── */
-.hamburger svg > *:nth-child(1),
-.hamburger svg > *:nth-child(2),
-.hamburger svg > *:nth-child(3) {
+.hamburger svg>*:nth-child(1),
+.hamburger svg>*:nth-child(2),
+.hamburger svg>*:nth-child(3) {
   transform-origin: center;
   transform: rotate(0deg);
 }
-.hamburger svg > *:nth-child(1) {
+
+.hamburger svg>*:nth-child(1) {
   transition: y 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19), opacity 0.1s ease-in;
 }
-.hamburger svg > *:nth-child(2) {
+
+.hamburger svg>*:nth-child(2) {
   transition: transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
-.hamburger svg > *:nth-child(3) {
+
+.hamburger svg>*:nth-child(3) {
   transition: y 0.1s 0.25s ease-in, transform 0.22s cubic-bezier(0.55, 0.055, 0.675, 0.19), width 0.1s 0.25s ease-in;
 }
-.hamburger.active svg > *:nth-child(1) {
+
+.hamburger.active svg>*:nth-child(1) {
   opacity: 0;
   y: 11;
   transform: rotate(225deg);
   transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), opacity 0.1s 0.12s ease-out;
 }
-.hamburger.active svg > *:nth-child(2) {
+
+.hamburger.active svg>*:nth-child(2) {
   transform: rotate(225deg);
   transition: transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
-.hamburger.active svg > *:nth-child(3) {
+
+.hamburger.active svg>*:nth-child(3) {
   y: 11;
   transform: rotate(135deg);
   transition: y 0.1s ease-out, transform 0.22s 0.12s cubic-bezier(0.215, 0.61, 0.355, 1), width 0.1s ease-out;
@@ -233,35 +356,155 @@ body::after {
 
 /* ── Custom AOS distance ────────────────────────────────────────────────── */
 @media screen {
-  html:not(.no-js) body [data-aos=fade-up]    { transform: translate3d(0, 10px, 0); }
-  html:not(.no-js) body [data-aos=fade-down]  { transform: translate3d(0, -10px, 0); }
-  html:not(.no-js) body [data-aos=fade-right] { transform: translate3d(-10px, 0, 0); }
-  html:not(.no-js) body [data-aos=fade-left]  { transform: translate3d(10px, 0, 0); }
+  html:not(.no-js) body [data-aos=fade-up] {
+    transform: translate3d(0, 10px, 0);
+  }
+
+  html:not(.no-js) body [data-aos=fade-down] {
+    transform: translate3d(0, -10px, 0);
+  }
+
+  html:not(.no-js) body [data-aos=fade-right] {
+    transform: translate3d(-10px, 0, 0);
+  }
+
+  html:not(.no-js) body [data-aos=fade-left] {
+    transform: translate3d(10px, 0, 0);
+  }
+}
+
+/* ── Phone stack hero – scale on narrow screens ─────────────────────────── */
+/* Parent has overflow:hidden so this only needs to make phones visually fit.
+   scale = container_width/523. Targeting 320px (360-px phones): 320/523 ≈ 0.61, use 0.58.
+   margin-bottom collapses the dead layout space: 391px × (1-0.58) ≈ 164px. */
+@media (max-width: 639px) {
+  .phone-stack-wrapper {
+    transform: scale(0.68);
+    transform-origin: top center;
+    margin-bottom: -124px;
+  }
+}
+
+/* ── Demo ProcessFlow – tighter padding on mobile ────────────────────────── */
+.process-flow-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  transition: opacity 0.4s ease;
+}
+
+@media (max-width: 639px) {
+  .process-flow-body {
+    padding: 20px 16px;
+  }
+}
+
+/* ── Mini phones in demo output – scale to fit on mobile ────────────────── */
+.mini-phones-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 639px) {
+  .mini-phones-row {
+    transform: scale(0.76);
+    transform-origin: center top;
+    margin-bottom: -17px;
+    /* 153px × (1-0.76) ≈ 37px excess – 20px original gap */
+  }
 }
 
 /* ── Responsive layout utilities ────────────────────────────────────────── */
-.section-pad        { padding: 60px 20px; }
-.section-pad-footer { padding: 48px 20px 32px; }
-.header-inner       { padding: 0 20px; }
+.section-pad {
+  padding: 60px 20px;
+}
 
-.grid-3col  { display: grid; grid-template-columns: 1fr; gap: 16px; }
-.grid-2col  { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
-.hero-grid  { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
-.footer-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+.section-pad-footer {
+  padding: 48px 20px 32px;
+}
+
+.header-inner {
+  padding: 0 20px;
+}
+
+.grid-3col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
 
 @media (min-width: 640px) {
-  .section-pad        { padding: 80px 40px; }
-  .section-pad-footer { padding: 52px 40px 36px; }
-  .header-inner       { padding: 0 32px; }
-  .grid-3col          { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .section-pad {
+    padding: 80px 40px;
+  }
+
+  .section-pad-footer {
+    padding: 52px 40px 36px;
+  }
+
+  .header-inner {
+    padding: 0 32px;
+  }
+
+  .grid-3col {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
 }
 
 @media (min-width: 1024px) {
-  .section-pad        { padding: 100px 80px; }
-  .section-pad-footer { padding: 60px 80px 40px; }
-  .header-inner       { padding: 0 48px; }
-  .grid-3col          { grid-template-columns: repeat(3, 1fr); }
-  .grid-2col          { grid-template-columns: 1fr 1fr; gap: 80px; }
-  .hero-grid          { grid-template-columns: 1fr 1fr; gap: 80px; }
-  .footer-grid        { grid-template-columns: 1fr 1fr 1fr; gap: 40px; }
+  .section-pad {
+    padding: 100px 80px;
+  }
+
+  .section-pad-footer {
+    padding: 60px 80px 40px;
+  }
+
+  .header-inner {
+    padding: 0 48px;
+  }
+
+  .grid-3col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-2col {
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+  }
 }
