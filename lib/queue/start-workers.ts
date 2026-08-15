@@ -24,7 +24,7 @@ export function startAllWorkers() {
           console.warn(`[worker] Unknown job type: ${job.name}`);
       }
     },
-    { connection: createRedisConnection(), concurrency: 5 }
+    { connection: createRedisConnection(), concurrency: 2 }
   );
 
   worker.on('completed', (job) => {
@@ -48,7 +48,7 @@ export function startAllWorkers() {
     }
   });
 
-  console.log(`[workers] Unified worker started on queue "${QUEUE_NAME}" (concurrency: 5)`);
+  console.log(`[workers] Unified worker started on queue "${QUEUE_NAME}" (concurrency: 2)`);
 
   const shutdown = async () => {
     console.log('[workers] Shutting down...');
