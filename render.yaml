@@ -1,8 +1,22 @@
 services:
   - type: worker
-    name: momentreel-worker
-    env: docker
-    repo: https://github.com/JoaquinDW/momentreel
+    name: clipwise-worker
+    runtime: docker
+    repo: https://github.com/JoaquinDW/clipwise
     branch: main
-    plan: starter
-    dockerfilePath: docker/worker/Dockerfile
+    # standard = 2GB RAM / 1 CPU. starter (512MB) hace OOM con FFmpeg.
+    plan: standard
+    dockerfilePath: ./docker/worker/Dockerfile
+    dockerContext: .
+    envVars:
+      # Set the values in the Render dashboard (sync: false = not stored in the repo)
+      - key: REDIS_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

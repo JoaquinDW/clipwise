@@ -96,7 +96,7 @@ export default function VideoGrid({ videos }: VideoGridProps) {
         onSortChange={setSortBy}
       />
 
-      <div className="mb-4 text-sm" style={{ color: '#555' }}>
+      <div className="mb-4 text-sm" style={{ color: 'var(--dash-text-secondary)' }}>
         Showing {filteredAndSortedVideos.length} of {videos.length} videos
       </div>
 
@@ -106,7 +106,7 @@ export default function VideoGrid({ videos }: VideoGridProps) {
           <h3 className="mt-3 text-sm font-medium" style={{ color: '#f2ede8' }}>
             {videos.length === 0 ? 'No videos yet' : 'No videos found'}
           </h3>
-          <p className="mt-1 text-sm" style={{ color: '#555' }}>
+          <p className="mt-1 text-sm" style={{ color: 'var(--dash-text-secondary)' }}>
             {videos.length === 0
               ? 'Get started by uploading your first video.'
               : 'Try adjusting your search or filters.'}
@@ -157,11 +157,11 @@ export default function VideoGrid({ videos }: VideoGridProps) {
                     {video.title}
                   </h3>
                   {video.description && (
-                    <p className="mt-1 text-sm line-clamp-2" style={{ color: '#555' }}>
+                    <p className="mt-1 text-sm line-clamp-2" style={{ color: 'var(--dash-text-secondary)' }}>
                       {video.description}
                     </p>
                   )}
-                  <div className="mt-3 flex items-center justify-between text-xs" style={{ color: '#555' }}>
+                  <div className="mt-3 flex items-center justify-between text-xs" style={{ color: 'var(--dash-text-secondary)' }}>
                     <span>
                       {video.duration
                         ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}`

@@ -7,7 +7,8 @@
     "lint": "next lint",
     "start": "next start",
     "seed": "tsx prisma/seed.ts",
-    "worker": "tsx --env-file=.env scripts/worker.ts"
+    "worker": "tsx --env-file=.env scripts/worker.ts",
+    "worker:prod": "tsx scripts/worker.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

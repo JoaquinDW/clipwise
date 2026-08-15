@@ -22,7 +22,7 @@ export default function VideoFilters({
       <div className="flex gap-3">
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="h-5 w-5" style={{ color: '#444' }} />
+            <MagnifyingGlassIcon className="h-5 w-5" style={{ color: 'var(--dash-text-muted)' }} />
           </div>
           <input
             type="text"

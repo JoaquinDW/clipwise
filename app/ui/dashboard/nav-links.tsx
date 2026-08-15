@@ -29,11 +29,12 @@ export default function NavLinks() {
           <Link
             key={link.name}
             href={link.href}
+            aria-current={isActive ? 'page' : undefined}
             className={clsx(
-              'flex h-[44px] grow items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors md:flex-none md:justify-start',
+              'flex h-[44px] grow items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF3B5C] md:flex-none md:justify-start',
               {
                 'border-l-2 border-[#FF3B5C] bg-[rgba(255,59,92,0.08)] text-[#f2ede8]': isActive,
-                'text-[#555] hover:text-[#f2ede8] hover:bg-[rgba(255,255,255,0.04)]': !isActive,
+                'text-[#8a8a8a] hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f2ede8]': !isActive,
               },
             )}
           >

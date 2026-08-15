@@ -2,80 +2,32 @@
 const shimmer =
   "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
 
-export function CardSkeleton() {
+export function StatCardSkeleton() {
   return (
     <div
-      className={`${shimmer} relative overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15161a] p-2 shadow-sm`}
+      className={`${shimmer} relative overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15161a] p-5`}
     >
-      <div className="flex p-4">
-        <div className="h-5 w-5 rounded-md bg-white/10" />
-        <div className="ml-2 h-6 w-16 rounded-md bg-white/10 text-sm font-medium" />
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-[10px] bg-white/10" />
+        <div className="h-4 w-24 rounded-md bg-white/10" />
       </div>
-      <div className="flex items-center justify-center truncate rounded-xl bg-[#0e0f11] px-4 py-8">
-        <div className="h-7 w-20 rounded-md bg-white/10" />
-      </div>
+      <div className="mt-4 h-8 w-16 rounded-md bg-white/10" />
+      <div className="mt-2 h-3 w-20 rounded-md bg-white/10" />
     </div>
   )
 }
 
-export function CardsSkeleton() {
-  return (
-    <>
-      <CardSkeleton />
-      <CardSkeleton />
-      <CardSkeleton />
-      <CardSkeleton />
-    </>
-  )
-}
-
-export function RevenueChartSkeleton() {
-  return (
-    <div className={`${shimmer} relative w-full overflow-hidden md:col-span-4`}>
-      <div className="mb-4 h-8 w-36 rounded-md bg-white/10" />
-      <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15161a] p-4">
-        <div className="mt-0 grid h-[410px] grid-cols-12 items-end gap-2 rounded-md bg-[#0e0f11] p-4 sm:grid-cols-13 md:gap-4" />
-        <div className="flex items-center pb-2 pt-6">
-          <div className="h-5 w-5 rounded-full bg-white/10" />
-          <div className="ml-2 h-4 w-20 rounded-md bg-white/10" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export function InvoiceSkeleton() {
-  return (
-    <div className="flex flex-row items-center justify-between border-b border-white/8 py-4">
-      <div className="flex items-center">
-        <div className="mr-2 h-8 w-8 rounded-full bg-white/10" />
-        <div className="min-w-0">
-          <div className="h-5 w-40 rounded-md bg-white/10" />
-          <div className="mt-2 h-4 w-12 rounded-md bg-white/10" />
-        </div>
-      </div>
-      <div className="mt-2 h-4 w-12 rounded-md bg-white/10" />
-    </div>
-  )
-}
-
-export function LatestInvoicesSkeleton() {
+export function VideoCardSkeleton() {
   return (
     <div
-      className={`${shimmer} relative flex w-full flex-col overflow-hidden md:col-span-4`}
+      className={`${shimmer} relative overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15161a]`}
     >
-      <div className="mb-4 h-8 w-36 rounded-md bg-white/10" />
-      <div className="flex grow flex-col justify-between rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#15161a] p-4">
-        <div className="bg-[#0e0f11] px-6">
-          <InvoiceSkeleton />
-          <InvoiceSkeleton />
-          <InvoiceSkeleton />
-          <InvoiceSkeleton />
-          <InvoiceSkeleton />
-        </div>
-        <div className="flex items-center pb-2 pt-6">
-          <div className="h-5 w-5 rounded-full bg-white/10" />
-          <div className="ml-2 h-4 w-20 rounded-md bg-white/10" />
+      <div className="aspect-video bg-white/5" />
+      <div className="p-4">
+        <div className="h-5 w-3/4 rounded-md bg-white/10" />
+        <div className="mt-3 flex items-center justify-between">
+          <div className="h-3 w-12 rounded-md bg-white/10" />
+          <div className="h-3 w-16 rounded-md bg-white/10" />
         </div>
       </div>
     </div>
@@ -84,21 +36,27 @@ export function LatestInvoicesSkeleton() {
 
 export default function DashboardSkeleton() {
   return (
-    <>
-      <div
-        className={`${shimmer} relative mb-4 h-8 w-36 overflow-hidden rounded-md bg-white/10`}
-      />
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
+    <div className="mx-auto max-w-7xl px-4 py-6 md:px-2 md:py-2">
+      {/* Header */}
+      <div className={`${shimmer} relative mb-8 overflow-hidden`}>
+        <div className="h-8 w-64 rounded-md bg-white/10" />
+        <div className="mt-3 h-4 w-80 rounded-md bg-white/10" />
       </div>
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-4 lg:grid-cols-8">
-        <RevenueChartSkeleton />
-        <LatestInvoicesSkeleton />
+      {/* Stat cards */}
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
       </div>
-    </>
+      {/* Recent videos */}
+      <div className={`${shimmer} relative mb-4 h-6 w-36 overflow-hidden rounded-md bg-white/10`} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <VideoCardSkeleton />
+        <VideoCardSkeleton />
+        <VideoCardSkeleton />
+      </div>
+    </div>
   )
 }
 

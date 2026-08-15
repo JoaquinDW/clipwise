@@ -140,7 +140,7 @@ export default function NewVideoPage() {
           <Link
             href="/dashboard/videos"
             className="text-sm flex items-center mb-4 transition-colors"
-            style={{ color: '#555' }}
+            style={{ color: 'var(--dash-text-secondary)' }}
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -153,7 +153,7 @@ export default function NewVideoPage() {
           >
             Upload Video
           </h1>
-          <p className="mt-2" style={{ color: '#555' }}>
+          <p className="mt-2" style={{ color: 'var(--dash-text-secondary)' }}>
             Upload from your computer or paste a YouTube URL
           </p>
         </div>
@@ -172,7 +172,7 @@ export default function NewVideoPage() {
                   style={
                     mode === m
                       ? { borderColor: '#FF3B5C', color: '#FF3B5C' }
-                      : { borderColor: 'transparent', color: '#555' }
+                      : { borderColor: 'transparent', color: 'var(--dash-text-secondary)' }
                   }
                 >
                   {m === 'file' ? '📁 Upload File' : m === 'youtube' ? '🎥 YouTube URL' : '🎮 Stream URL'}
@@ -215,7 +215,7 @@ export default function NewVideoPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   <p className="text-lg font-medium" style={{ color: '#f2ede8' }}>{file.name}</p>
-                  <p className="text-sm" style={{ color: '#555' }}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="text-sm" style={{ color: 'var(--dash-text-secondary)' }}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                   <button
                     type="button"
                     onClick={() => setFile(null)}
@@ -230,10 +230,10 @@ export default function NewVideoPage() {
                   <svg className="mx-auto h-12 w-12" style={{ color: '#333' }} stroke="currentColor" fill="none" viewBox="0 0 48 48">
                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <div className="text-sm" style={{ color: '#555' }}>
+                  <div className="text-sm" style={{ color: 'var(--dash-text-secondary)' }}>
                     <span className="font-medium" style={{ color: '#FF3B5C' }}>Click to upload</span>{' '}or drag and drop
                   </div>
-                  <p className="text-xs" style={{ color: '#444' }}>MP4, MOV, AVI, or MKV up to 500MB</p>
+                  <p className="text-xs" style={{ color: 'var(--dash-text-muted)' }}>MP4, MOV, AVI, or MKV up to 500MB</p>
                 </div>
               )}
             </div>
@@ -268,7 +268,7 @@ export default function NewVideoPage() {
                 </div>
               )}
               {!youtubeThumbnail && (
-                <p className="mt-2 text-xs" style={{ color: '#444' }}>Paste the full URL of a YouTube video</p>
+                <p className="mt-2 text-xs" style={{ color: 'var(--dash-text-muted)' }}>Paste the full URL of a YouTube video</p>
               )}
             </div>
           )}
@@ -292,7 +292,7 @@ export default function NewVideoPage() {
                 disabled={uploading}
                 required={mode === 'stream'}
               />
-              <p className="mt-2 text-xs" style={{ color: '#444' }}>
+              <p className="mt-2 text-xs" style={{ color: 'var(--dash-text-muted)' }}>
                 Paste a Twitch VOD URL or Kick VOD URL. Clips appear progressively as the stream is processed.
               </p>
             </div>
@@ -320,7 +320,7 @@ export default function NewVideoPage() {
                 Title *
               </label>
               {fetchingMeta && (
-                <span className="text-xs flex items-center gap-1" style={{ color: '#555' }}>
+                <span className="text-xs flex items-center gap-1" style={{ color: 'var(--dash-text-secondary)' }}>
                   <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
@@ -329,7 +329,7 @@ export default function NewVideoPage() {
                 </span>
               )}
               {!fetchingMeta && title && title === autoFilledTitle.current && (
-                <span className="text-xs" style={{ color: '#444' }}>Auto-filled · editable</span>
+                <span className="text-xs" style={{ color: 'var(--dash-text-muted)' }}>Auto-filled · editable</span>
               )}
             </div>
             <input
@@ -383,7 +383,7 @@ export default function NewVideoPage() {
                   style={{ background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)', width: `${progress}%`, transition: 'width 0.3s ease' }}
                 />
               </div>
-              <p className="mt-2 text-xs" style={{ color: '#555' }}>
+              <p className="mt-2 text-xs" style={{ color: 'var(--dash-text-secondary)' }}>
                 Processing will continue in the background — you&apos;ll be redirected automatically.
               </p>
             </div>

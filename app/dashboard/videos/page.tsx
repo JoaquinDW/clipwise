@@ -49,7 +49,7 @@ export default async function VideosPage() {
             >
               My Videos
             </h1>
-            <p className="mt-2" style={{ color: '#555' }}>
+            <p className="mt-2" style={{ color: 'var(--dash-text-secondary)' }}>
               Upload videos and generate viral clips with AI
             </p>
           </div>
