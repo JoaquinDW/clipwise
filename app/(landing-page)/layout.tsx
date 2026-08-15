@@ -1,5 +1,6 @@
 import './style.css';
 import { Syne, DM_Sans } from 'next/font/google';
+import { auth } from '@/auth';
 import Header from './components/header';
 import Footer from './components/footer';
 
@@ -22,20 +23,18 @@ export const metadata = {
   description: 'Our AI detects the best moments from your streams and long videos, trims them, and optimizes them for TikTok, YouTube Shorts, and more — automatically.',
 };
 
-export default function RootLayout({
+export default async function LandingLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const session = await auth();
+
   return (
-    <html lang="en">
-      <body>
-        <div className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`} style={{ background: '#0a0a0a', color: '#f2ede8' }}>
-          <Header lang="en" />
-          {children}
-          <Footer lang="en" />
-        </div>
-      </body>
-    </html>
+    <div className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`} style={{ background: '#0a0a0a', color: '#f2ede8' }}>
+      <Header lang="en" isLoggedIn={!!session?.user} />
+      {children}
+      <Footer lang="en" />
+    </div>
   );
 }

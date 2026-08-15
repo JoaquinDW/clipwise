@@ -28,6 +28,50 @@ try {
 }
 
 /**
+ * Publish-quality x264 settings for the final clip.
+ *
+ * Explicit on purpose: ffmpeg's defaults (crf 23, preset medium, no pix_fmt)
+ * visibly soften faces and burned-in captions, and this file is the deliverable
+ * the user posts to TikTok/Reels.
+ */
+const PUBLISH_VIDEO_OPTIONS = [
+  '-c:v', 'libx264',
+  '-crf', '18',
+  '-preset', 'slow',
+  '-profile:v', 'high',
+  '-pix_fmt', 'yuv420p',
+  '-movflags', '+faststart',
+];
+
+/**
+ * Near-transparent settings for intermediate files that get re-encoded again.
+ * Speed matters more than size here; quality must not be the bottleneck.
+ */
+const INTERMEDIATE_VIDEO_OPTIONS = [
+  '-c:v', 'libx264',
+  '-crf', '16',
+  '-preset', 'veryfast',
+  '-pix_fmt', 'yuv420p',
+];
+
+/**
+ * Escape a filesystem path for use as a value inside a filtergraph.
+ * Unescaped colons and backslashes are read as filter syntax.
+ */
+function escapeFilterPath(p: string): string {
+  return p.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/'/g, "\\'");
+}
+
+/**
+ * Filters every filtergraph ends with: square pixels, then optional captions.
+ */
+function buildOutputTail(assPath?: string): string {
+  const filters = ['setsar=1'];
+  if (assPath) filters.push(`ass=${escapeFilterPath(assPath)}`);
+  return filters.join(',');
+}
+
+/**
  * Extract a clip from a video
  */
 export async function extractClip(
@@ -43,8 +87,9 @@ export async function extractClip(
       .setStartTime(startTime)
       .setDuration(duration)
       .output(outputPath)
-      .videoCodec('libx264')
+      .outputOptions(INTERMEDIATE_VIDEO_OPTIONS)
       .audioCodec('aac')
+      .audioBitrate('192k')
       .on('end', () => resolve())
       .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
       .run();
@@ -61,9 +106,15 @@ export async function cropToVertical(
     width?: number; // Default: 1080
     height?: number; // Default: 1920
     position?: 'center' | 'top' | 'bottom'; // Default: center
+    assPath?: string; // Burn these captions in the same pass as the crop
   }
 ): Promise<void> {
-  const { width = 1080, height = 1920, position = 'center' } = options || {};
+  const { width = 1080, height = 1920, position = 'center', assPath } = options || {};
+
+  // Appended to the crop/scale chain so captions cost no extra re-encode
+  const captionFilter = assPath
+    ? [{ filter: 'ass', options: escapeFilterPath(assPath) }]
+    : [];
 
   return new Promise((resolve, reject) => {
     // Get video info first to determine crop position
@@ -110,10 +161,16 @@ export async function cropToVertical(
               options: {
                 w: width,
                 h: height,
+                flags: 'lanczos',
               },
             },
+            { filter: 'setsar', options: '1' },
+            ...captionFilter,
           ])
           .output(outputPath)
+          .outputOptions(PUBLISH_VIDEO_OPTIONS)
+          .audioCodec('aac')
+          .audioBitrate('192k')
           .on('end', () => resolve())
           .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
           .run();
@@ -148,10 +205,16 @@ export async function cropToVertical(
               options: {
                 w: width,
                 h: height,
+                flags: 'lanczos',
               },
             },
+            { filter: 'setsar', options: '1' },
+            ...captionFilter,
           ])
           .output(outputPath)
+          .outputOptions(PUBLISH_VIDEO_OPTIONS)
+          .audioCodec('aac')
+          .audioBitrate('192k')
           .on('end', () => resolve())
           .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
           .run();
@@ -191,6 +254,7 @@ export interface SmartCropOptions {
   width?: number; // Default: 1080
   height?: number; // Default: 1920
   compositeLayout?: CompositeLayoutOptions;
+  assPath?: string; // Burn these captions in the same pass as the crop
 }
 
 /**
@@ -207,13 +271,13 @@ export async function cropToVerticalSmart(
   outputPath: string,
   options: SmartCropOptions
 ): Promise<void> {
-  const { method, subjectPosition, width = 1080, height = 1920 } = options;
+  const { method, subjectPosition, width = 1080, height = 1920, assPath } = options;
 
   console.log(`🎬 Smart Crop: Using "${method}" strategy with subject at "${subjectPosition}"`);
 
   // For wide_shot, use existing cropToVertical function
   if (method === 'wide_shot') {
-    return cropToVertical(inputPath, outputPath, { width, height, position: 'center' });
+    return cropToVertical(inputPath, outputPath, { width, height, position: 'center', assPath });
   }
 
   return new Promise((resolve, reject) => {
@@ -233,7 +297,7 @@ export async function cropToVerticalSmart(
 
       // Composite layout takes priority over single-region crop strategies
       if (options.compositeLayout && options.compositeLayout.layoutType !== 'standard') {
-        return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight)
+        return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, assPath)
           .then(resolve)
           .catch(reject);
       }
@@ -256,18 +320,25 @@ export async function cropToVerticalSmart(
 
           default:
             // Fallback to simple center crop
-            return cropToVertical(inputPath, outputPath, { width, height, position: 'center' })
+            return cropToVertical(inputPath, outputPath, { width, height, position: 'center', assPath })
               .then(resolve)
               .catch(reject);
         }
+
+        // setsar=1 is not optional: scale inside these graphs rewrites SAR to
+        // preserve the source display aspect, which leaves 1080x1920 output
+        // playing back stretched. Captions ride along on the same graph — a
+        // separate ffmpeg run would re-encode the whole clip for nothing.
+        filterComplex = `${filterComplex};[out]${buildOutputTail(assPath)}[final]`;
 
         console.log(`📐 Applying filter: ${filterComplex.substring(0, 100)}...`);
 
         ffmpeg(inputPath)
           .complexFilter(filterComplex)
+          // '0:a?' — an explicit -map drops every other stream, and the '?'
+          // keeps silent sources from failing outright
+          .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
           .output(outputPath)
-          .outputOptions(['-map', '[out]'])
-          .videoCodec('libx264')
           .audioCodec('copy')
           .on('end', () => {
             console.log(`✅ Smart crop completed: ${method}`);
@@ -275,7 +346,7 @@ export async function cropToVerticalSmart(
           })
           .on('error', (err) => {
             console.warn(`⚠️  Smart crop (${method}) failed, falling back to wide_shot: ${err.message}`);
-            cropToVertical(inputPath, outputPath, { width, height, position: 'center' })
+            cropToVertical(inputPath, outputPath, { width, height, position: 'center', assPath })
               .then(resolve)
               .catch(reject);
           })
@@ -419,9 +490,11 @@ export async function burnCaptions(
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .outputOptions([
-        `-vf ass=${assPath}`,
+        '-vf', `ass=${escapeFilterPath(assPath)}`,
+        ...PUBLISH_VIDEO_OPTIONS,
       ])
       .output(outputPath)
+      .audioCodec('copy')
       .on('end', async () => {
         // Clean up temp ASS file
         try {
@@ -598,7 +671,8 @@ export async function cropToVerticalComposite(
   outputPath: string,
   layout: CompositeLayoutOptions,
   sourceWidth: number,
-  sourceHeight: number
+  sourceHeight: number,
+  assPath?: string
 ): Promise<void> {
   const { layoutType, layoutRegions = [], width = 1080, height = 1920 } = layout;
 
@@ -621,12 +695,14 @@ export async function cropToVerticalComposite(
       filterComplex = buildBlurSidesFilter(sourceWidth, sourceHeight, width, height);
   }
 
+  // Square pixels + captions on the same graph — see cropToVerticalSmart
+  filterComplex = `${filterComplex};[out]${buildOutputTail(assPath)}[final]`;
+
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .complexFilter(filterComplex)
+      .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
       .output(outputPath)
-      .outputOptions(['-map', '[out]'])
-      .videoCodec('libx264')
       .audioCodec('copy')
       .on('end', () => {
         console.log(`✅ Composite layout completed: ${layoutType}`);
@@ -726,62 +802,67 @@ export async function createClipSmart(
 
   const tempDir = os.tmpdir();
   const timestamp = Date.now();
+  const extractedPath = path.join(tempDir, `clip-${timestamp}-extracted.mp4`);
+  const assPath = path.join(tempDir, `clip-${timestamp}-captions.ass`);
+
+  // Every step below that touches pixels is a generation of quality loss, so
+  // the clip is encoded exactly once: crop and captions share one filtergraph,
+  // and extraction is skipped when the caller already cut the segment.
+  const needsExtraction = startTime > 0.01;
+  const willBurnCaptions = shouldBurnCaptions && !!captionsResult;
 
   try {
-    // Step 1: Extract clip
-    console.log(`  📹 Extracting clip segment (${startTime}s - ${endTime}s)...`);
-    const extractedPath = path.join(tempDir, `clip-${timestamp}-extracted.mp4`);
-    await extractClip(inputVideoPath, startTime, endTime, extractedPath);
+    let cropInput = inputVideoPath;
 
-    // Step 2: Smart crop to vertical with AI strategy
-    console.log(`  ✂️  Applying smart crop: ${cropStrategy.method}...`);
-    const croppedPath = path.join(tempDir, `clip-${timestamp}-cropped.mp4`);
-    await cropToVerticalSmart(extractedPath, croppedPath, cropStrategy);
-    await fs.unlink(extractedPath); // Clean up
-
-    // Step 3: Burn captions with word-by-word highlighting (optional)
-    if (shouldBurnCaptions && captionsResult) {
-      console.log(`  💬 Burning captions with word-level timing...`);
-      await burnCaptions(croppedPath, captionsResult, outputPath, stylePreset, { captionPosition, captionSize });
-      await fs.unlink(croppedPath); // Clean up
-    } else {
-      // Just move the file to output
-      await fs.rename(croppedPath, outputPath);
+    if (needsExtraction) {
+      console.log(`  📹 Extracting clip segment (${startTime}s - ${endTime}s)...`);
+      await extractClip(inputVideoPath, startTime, endTime, extractedPath);
+      cropInput = extractedPath;
     }
+
+    if (willBurnCaptions) {
+      console.log(`  💬 Preparing captions with word-level timing...`);
+      const sizeMultiplier = CAPTION_SIZE_MULTIPLIERS[captionSize ?? 'medium'];
+      const assContent = captionsToASS(captionsResult!, stylePreset as any, {
+        fontSizeOverride: Math.round(captionsResult!.style.fontSize * sizeMultiplier),
+        positionOverride: captionPosition,
+      });
+      await fs.writeFile(assPath, assContent, 'utf-8');
+    }
+
+    console.log(`  ✂️  Applying smart crop: ${cropStrategy.method}...`);
+    await cropToVerticalSmart(cropInput, outputPath, {
+      ...cropStrategy,
+      ...(willBurnCaptions && { assPath }),
+    });
 
     console.log(`  ✅ Clip created successfully with ${cropStrategy.method} strategy`);
-  } catch (error) {
-    // Clean up temp files on error
-    const tempFiles = [
-      path.join(tempDir, `clip-${timestamp}-extracted.mp4`),
-      path.join(tempDir, `clip-${timestamp}-cropped.mp4`),
-    ];
-
-    for (const file of tempFiles) {
-      try {
-        await fs.unlink(file);
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    }
-
-    throw error;
+  } finally {
+    // inputVideoPath belongs to the caller — only our own temp files go here
+    if (needsExtraction) await fs.unlink(extractedPath).catch(() => {});
+    if (willBurnCaptions) await fs.unlink(assPath).catch(() => {});
   }
 }
 
 /**
  * Generate a lightweight proxy video for fast editor loading
- * 480p, low bitrate, veryfast preset — not intended for publishing
+ * 720x1280, veryfast preset — not intended for publishing
+ *
+ * The proxy is what the editor actually plays, so it has to look like the clip:
+ * the previous 854x480 was landscape (anamorphic once the player restored the
+ * 9:16 display aspect) and crf 32 blocked up faces badly.
  */
 export async function generateProxy(inputPath: string, outputPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
-      .videoFilters('scale=854:480')
+      .videoFilters('scale=720:1280:flags=lanczos,setsar=1')
       .videoCodec('libx264')
-      .addOption('-crf', '32')
+      .addOption('-crf', '24')
       .addOption('-preset', 'veryfast')
+      .addOption('-pix_fmt', 'yuv420p')
+      .addOption('-movflags', '+faststart')
       .audioCodec('aac')
-      .audioBitrate('64k')
+      .audioBitrate('128k')
       .output(outputPath)
       .on('end', () => {
         console.log(`  📦 Proxy generated: ${outputPath}`);

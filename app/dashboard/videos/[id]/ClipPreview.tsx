@@ -50,6 +50,7 @@ function EditableVideoPlayer({
   captionPosition,
   captionSize,
   showSafeAreas,
+  draggingHandle,
   onTimeUpdate,
   videoRef,
 }: {
@@ -62,6 +63,7 @@ function EditableVideoPlayer({
   captionPosition: "top" | "center" | "bottom"
   captionSize: "small" | "medium" | "large"
   showSafeAreas: boolean
+  draggingHandle: "start" | "end" | null
   onTimeUpdate: (t: number) => void
   videoRef: React.RefObject<HTMLVideoElement>
 }) {
@@ -70,13 +72,16 @@ function EditableVideoPlayer({
 
   const toProxy = (originalTime: number) => Math.max(0, originalTime - clipStartTime)
 
-  // Seek to editedStart when it changes
+  // While a timeline handle is being dragged, the frame under the handle is the
+  // frame on screen. Outside a drag the timeline seeks explicitly (on release,
+  // on keyboard nudge), so seeking here too would fight it.
   useEffect(() => {
     const video = videoRef.current
-    if (!video) return
-    video.currentTime = toProxy(editedStart)
+    if (!video || !draggingHandle) return
+    video.pause()
+    video.currentTime = toProxy(draggingHandle === "end" ? editedEnd : editedStart)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editedStart, clipStartTime])
+  }, [editedStart, editedEnd, draggingHandle, clipStartTime])
 
   // Pause at editedEnd boundary
   useEffect(() => {
@@ -176,7 +181,7 @@ export default function ClipPreview({
 
   const isGenerating = activeClip.status !== "READY" || !activeClip.storageUrl
 
-  const { captionStyle, captionPosition, captionSize, showSafeAreas, deltaStart, deltaEnd } = store
+  const { captionStyle, captionPosition, captionSize, showSafeAreas, deltaStart, deltaEnd, draggingHandle } = store
   const editedStart = activeClip.startTime + deltaStart
   const editedEnd = activeClip.endTime + deltaEnd
   const videoSrc = activeClip.proxyUrl ?? activeClip.storageUrl!
@@ -188,7 +193,7 @@ export default function ClipPreview({
         <div
           style={{
             aspectRatio: "9/16",
-            height: "calc(100vh - 16rem)",
+            height: "calc(100vh - 16rem - var(--clip-timeline-h, 0px))",
             maxHeight: "80vh",
             minHeight: 240,
           }}
@@ -247,6 +252,7 @@ export default function ClipPreview({
               captionPosition={captionPosition}
               captionSize={captionSize}
               showSafeAreas={showSafeAreas}
+              draggingHandle={draggingHandle}
               onTimeUpdate={handleTimeUpdate}
               videoRef={videoRef}
             />

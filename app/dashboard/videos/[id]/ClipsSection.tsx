@@ -10,6 +10,7 @@ import {
 import ClipPreview from "./ClipPreview"
 import ClipModal from "./ClipModal"
 import ClipEditor from "./ClipEditor"
+import ClipTimeline, { TIMELINE_HEIGHT } from "./ClipTimeline"
 import TranscriptPanel from "./TranscriptPanel"
 
 interface Clip {
@@ -81,157 +82,197 @@ export default function ClipsSection({
   }
 
   return (
-    <div className="flex w-full overflow-hidden" style={{ height: "100%" }}>
-      {/* Left column — clips list */}
-      <aside
-        className="flex-none overflow-y-auto flex flex-col"
-        style={{
-          width: 440,
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <div
-          className="flex-none px-4 pt-5 pb-3"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+    <div
+      className="flex flex-col w-full overflow-hidden"
+      style={{
+        height: "100%",
+        // Single source of truth for the bottom bar's height; ClipPreview
+        // subtracts it so the player never ends up behind the timeline.
+        ["--clip-timeline-h" as string]: `${TIMELINE_HEIGHT}px`,
+      }}
+    >
+      {/* Row 1 — the three columns */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Left column — clips list */}
+        <aside
+          className="flex-none overflow-y-auto flex flex-col"
+          style={{
+            width: 440,
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+          }}
         >
-          <h2
-            className="text-xs font-semibold uppercase tracking-wider"
-            style={{ color: "var(--dash-text-muted)" }}
+          <div
+            className="flex-none px-4 pt-5 pb-3"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
-            Clips{" "}
-            <span style={{ color: "var(--dash-text-muted)", fontWeight: 400 }}>
-              ({videoClipsCount})
-            </span>
-          </h2>
-        </div>
-
-        <div className="px-3 pb-3 flex-1">
-          {videoClipsCount === 0 ? (
-            <div
-              className="text-center py-12 text-sm px-2"
-              style={{ color: "var(--dash-text-secondary)" }}
-            >
-              {videoStatus === "READY"
-                ? "No clips generated"
-                : "Clips are being generated…"}
-            </div>
-          ) : (
-            <ClipModal
-              clips={clips}
-              initialClipId={activeClipId}
-              onClipSelect={setActiveClipId}
-            />
-          )}
-        </div>
-      </aside>
-
-      {/* Center — large video player */}
-      <main className="flex-1 flex flex-col items-center overflow-y-auto py-4 px-6">
-        <ClipPreview
-          clips={clips}
-          activeClipId={activeClipId}
-          videoRef={videoRef}
-        />
-      </main>
-
-      {/* Right column — editor controls */}
-      <aside
-        className="flex-none flex pt-5 flex-col"
-        style={{
-          width: 320,
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        {/* Sticky label */}
-        <div
-          className="flex-none px-4 pt-5 pb-3"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <h2
-            className="text-xs font-semibold uppercase tracking-wider"
-            style={{ color: "var(--dash-text-muted)" }}
-          >
-            Edit Clip
-          </h2>
-        </div>
-
-        {/* Scrollable controls */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {clipIsReady ? (
-            <ClipEditor
-              clip={{
-                id: activeClip!.id,
-                title: activeClip!.title,
-                storageUrl: activeClip!.storageUrl!,
-                startTime: activeClip!.startTime,
-                endTime: activeClip!.endTime,
-                duration: activeClip!.duration,
-                captions: activeClip!.captions,
-                proxyUrl: activeClip!.proxyUrl,
-                captionStyle: activeClip!.captionStyle,
-                captionPosition: activeClip!.captionPosition,
-                captionSize: activeClip!.captionSize,
-              }}
-              videoRef={videoRef}
-              onExportStart={handleExportStart}
-            />
-          ) : (
-            <div
-              className="flex flex-col items-center justify-center py-16 text-center gap-3"
+            <h2
+              className="text-xs font-semibold uppercase tracking-wider"
               style={{ color: "var(--dash-text-muted)" }}
             >
-              <PlayCircleIcon className="w-8 h-8 opacity-30" />
-              <p className="text-xs">
-                {activeClip
-                  ? activeClip.status === "FAILED"
-                    ? "Clip generation failed"
-                    : "Generating clip…"
-                  : "Select a clip to edit"}
-              </p>
-            </div>
-          )}
-        </div>
+              Clips{" "}
+              <span style={{ color: "var(--dash-text-muted)", fontWeight: 400 }}>
+                ({videoClipsCount})
+              </span>
+            </h2>
+          </div>
 
-        {/* Download & Transcript */}
-        {activeClip && (
-          <div
-            className="flex-none px-4 py-3 flex flex-col gap-2"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            {activeClip.storageUrl && (
-              <a
-                href={activeClip.storageUrl}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg text-white transition-colors"
-                style={{
-                  background: "rgba(255,255,255,0.1)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                }}
+          <div className="px-3 pb-3 flex-1">
+            {videoClipsCount === 0 ? (
+              <div
+                className="text-center py-12 text-sm px-2"
+                style={{ color: "var(--dash-text-secondary)" }}
               >
-                <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                Download
-              </a>
-            )}
-            {transcription && (
-              <button
-                type="button"
-                onClick={() => setTranscriptOpen(true)}
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  color: "var(--dash-text-secondary)",
-                }}
-              >
-                <DocumentTextIcon className="w-3.5 h-3.5" />
-                Transcript
-              </button>
+                {videoStatus === "READY"
+                  ? "No clips generated"
+                  : "Clips are being generated…"}
+              </div>
+            ) : (
+              <ClipModal
+                clips={clips}
+                initialClipId={activeClipId}
+                onClipSelect={setActiveClipId}
+              />
             )}
           </div>
-        )}
-      </aside>
+        </aside>
+
+        {/* Center — large video player */}
+        <main className="flex-1 flex flex-col items-center overflow-y-auto py-4 px-6">
+          <ClipPreview
+            clips={clips}
+            activeClipId={activeClipId}
+            videoRef={videoRef}
+          />
+        </main>
+
+        {/* Right column — editor controls */}
+        <aside
+          className="flex-none flex pt-5 flex-col"
+          style={{
+            width: 320,
+            borderLeft: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          {/* Sticky label */}
+          <div
+            className="flex-none px-4 pt-5 pb-3"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <h2
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: "var(--dash-text-muted)" }}
+            >
+              Edit Clip
+            </h2>
+          </div>
+
+          {/* Scrollable controls */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {clipIsReady ? (
+              <ClipEditor
+                clip={{
+                  id: activeClip!.id,
+                  title: activeClip!.title,
+                  storageUrl: activeClip!.storageUrl!,
+                  startTime: activeClip!.startTime,
+                  endTime: activeClip!.endTime,
+                  duration: activeClip!.duration,
+                  captions: activeClip!.captions,
+                  proxyUrl: activeClip!.proxyUrl,
+                  captionStyle: activeClip!.captionStyle,
+                  captionPosition: activeClip!.captionPosition,
+                  captionSize: activeClip!.captionSize,
+                }}
+                onExportStart={handleExportStart}
+              />
+            ) : (
+              <div
+                className="flex flex-col items-center justify-center py-16 text-center gap-3"
+                style={{ color: "var(--dash-text-muted)" }}
+              >
+                <PlayCircleIcon className="w-8 h-8 opacity-30" />
+                <p className="text-xs">
+                  {activeClip
+                    ? activeClip.status === "FAILED"
+                      ? "Clip generation failed"
+                      : "Generating clip…"
+                    : "Select a clip to edit"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Download & Transcript */}
+          {activeClip && (
+            <div
+              className="flex-none px-4 py-3 flex flex-col gap-2"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              {activeClip.storageUrl && (
+                <a
+                  href={activeClip.storageUrl}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg text-white transition-colors"
+                  style={{
+                    background: "rgba(255,255,255,0.1)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                  }}
+                >
+                  <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                  Download
+                </a>
+              )}
+              {transcription && (
+                <button
+                  type="button"
+                  onClick={() => setTranscriptOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg transition-colors"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    color: "var(--dash-text-secondary)",
+                  }}
+                >
+                  <DocumentTextIcon className="w-3.5 h-3.5" />
+                  Transcript
+                </button>
+              )}
+            </div>
+          )}
+        </aside>
+      </div>
+
+      {/* Row 2 — full-width trim timeline pinned to the bottom edge */}
+      {clipIsReady ? (
+        <ClipTimeline
+          clip={{
+            id: activeClip!.id,
+            startTime: activeClip!.startTime,
+            endTime: activeClip!.endTime,
+            proxyUrl: activeClip!.proxyUrl,
+            storageUrl: activeClip!.storageUrl,
+            thumbnailUrl: activeClip!.thumbnailUrl,
+            captions: activeClip!.captions,
+          }}
+          videoRef={videoRef}
+        />
+      ) : (
+        // Same height either way, so selecting a clip never resizes the player.
+        <div
+          className="flex-none w-full flex items-center justify-center"
+          style={{
+            height: TIMELINE_HEIGHT,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            background: "#0e0f11",
+          }}
+        >
+          <p className="text-xs" style={{ color: "var(--dash-text-muted)" }}>
+            {activeClip ? "Timeline available once the clip is ready" : "Select a clip to trim it"}
+          </p>
+        </div>
+      )}
 
       {transcription && (
         <TranscriptPanel

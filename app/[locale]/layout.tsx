@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Syne, DM_Sans } from 'next/font/google';
+import { auth } from '@/auth';
 import Header from '../(landing-page)/components/header';
 import Footer from '../(landing-page)/components/footer';
 import type { Lang } from '../(landing-page)/components/use-lang';
@@ -53,21 +54,19 @@ export default async function LocaleLayout({
   }
 
   const messages = await getMessages({ locale });
+  const session = await auth();
 
   return (
-    <html lang={locale}>
-      <body>
-        <NextIntlClientProvider messages={messages}>
-          <div
-            className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`}
-            style={{ background: '#0a0a0a', color: '#f2ede8' }}
-          >
-            <Header lang={locale as Lang} />
-            {children}
-            <Footer lang={locale as Lang} />
-          </div>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <div
+        lang={locale}
+        className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`}
+        style={{ background: '#0a0a0a', color: '#f2ede8' }}
+      >
+        <Header lang={locale as Lang} isLoggedIn={!!session?.user} />
+        {children}
+        <Footer lang={locale as Lang} />
+      </div>
+    </NextIntlClientProvider>
   );
 }

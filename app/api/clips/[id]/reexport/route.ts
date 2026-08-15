@@ -3,13 +3,10 @@ import { prismaClientGlobal } from '@/infra/prisma';
 import { enqueueClip } from '@/lib/queue/queue';
 import { isValidCaptionStyleName } from '@/lib/ai/caption-styles';
 import { requireBillableUser } from '@/lib/billing/guard';
+import { MAX_DELTA, MIN_DURATION, MAX_DURATION } from '@/lib/video/trim-limits';
 
 const VALID_POSITIONS = new Set(['top', 'center', 'bottom']);
 const VALID_SIZES = new Set(['small', 'medium', 'large']);
-
-const MAX_DELTA_SECONDS = 15;
-const MIN_DURATION = 10;
-const MAX_DURATION = 90;
 
 export async function POST(
   request: NextRequest,
@@ -42,9 +39,9 @@ export async function POST(
     const captionPosition: string | undefined = body.captionPosition ?? undefined;
     const captionSize: string | undefined = body.captionSize ?? undefined;
 
-    if (Math.abs(deltaStart) > MAX_DELTA_SECONDS || Math.abs(deltaEnd) > MAX_DELTA_SECONDS) {
+    if (Math.abs(deltaStart) > MAX_DELTA || Math.abs(deltaEnd) > MAX_DELTA) {
       return NextResponse.json(
-        { error: `Adjustments must be within ±${MAX_DELTA_SECONDS} seconds` },
+        { error: `Adjustments must be within ±${MAX_DELTA} seconds` },
         { status: 422 }
       );
     }
