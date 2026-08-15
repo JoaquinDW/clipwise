@@ -16,22 +16,22 @@ export class RegisterTransaction {
 
 export class SyncSubscription {
   /**
-   * Mirror Stripe subscription state onto the company. Returns false when the
+   * Mirror provider subscription state onto the company. Returns false when the
    * event could not be matched to a company, so the caller can log and ack.
    */
   async sync(
     params: {
-      stripeCustomerId?: string | null;
+      billingCustomerId?: string | null;
       fallbackCompanyId?: string | null;
     } & SubscriptionProps
   ): Promise<boolean> {
-    const { stripeCustomerId, fallbackCompanyId, ...subscription } = params;
+    const { billingCustomerId, fallbackCompanyId, ...subscription } = params;
     const repository = new CompanyRepository();
 
-    const companyId = await repository.findCompanyIdForStripe(stripeCustomerId, fallbackCompanyId);
+    const companyId = await repository.findCompanyIdForBilling(billingCustomerId, fallbackCompanyId);
     if (!companyId) return false;
 
-    await repository.syncSubscription(companyId, { ...subscription, stripeCustomerId });
+    await repository.syncSubscription(companyId, { ...subscription, billingCustomerId });
     return true;
   }
 }

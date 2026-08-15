@@ -1,9 +1,9 @@
 /**
  * Single source of truth for subscription plans.
  *
- * Everything that needs to know about pricing, quotas or Stripe price IDs
+ * Everything that needs to know about pricing, quotas or provider product IDs
  * reads from here: the landing pricing section, /billing, the checkout route,
- * the Stripe webhook, the access gate and the queue workers.
+ * the billing webhook, the access gate and the queue workers.
  */
 
 export type PlanId = 'starter' | 'pro';
@@ -19,8 +19,8 @@ export interface Plan {
   minutesPerMonth: number;
   maxClipsPerVideo: number;
   maxVideoDurationSeconds: number;
-  /** Stripe price ID for the monthly cadence. Undefined until configured. */
-  stripePriceId?: string;
+  /** Polar product ID (a UUID). Undefined until configured. */
+  polarProductId?: string;
 }
 
 /** Days of free trial granted by Stripe on the first subscription. */
@@ -41,7 +41,7 @@ export const PLANS: Record<PlanId, Plan> = {
     minutesPerMonth: 120,
     maxClipsPerVideo: 5,
     maxVideoDurationSeconds: 3600,
-    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID,
+    polarProductId: process.env.NEXT_PUBLIC_POLAR_STARTER_PRODUCT_ID,
   },
   pro: {
     id: 'pro',
@@ -51,7 +51,7 @@ export const PLANS: Record<PlanId, Plan> = {
     minutesPerMonth: 300,
     maxClipsPerVideo: 10,
     maxVideoDurationSeconds: 3600,
-    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
+    polarProductId: process.env.NEXT_PUBLIC_POLAR_PRO_PRODUCT_ID,
   },
 };
 
@@ -59,22 +59,22 @@ export const PLANS: Record<PlanId, Plan> = {
 export const ALL_PLANS: Plan[] = [PLANS.starter, PLANS.pro];
 
 /**
- * Stripe price IDs we are willing to start a checkout with. Anything else
- * posted to the checkout route is rejected.
+ * Product IDs we are willing to start a checkout with. Anything else posted to
+ * the checkout route is rejected.
  */
-export function getAllowedPriceIds(): string[] {
-  return ALL_PLANS.map(p => p.stripePriceId).filter(
+export function getAllowedProductIds(): string[] {
+  return ALL_PLANS.map(p => p.polarProductId).filter(
     (id): id is string => typeof id === 'string' && id.length > 0
   );
 }
 
-export function isAllowedPriceId(priceId: string): boolean {
-  return getAllowedPriceIds().includes(priceId);
+export function isAllowedProductId(productId: string): boolean {
+  return getAllowedProductIds().includes(productId);
 }
 
-export function getPlanByPriceId(priceId: string | null | undefined): Plan | null {
-  if (!priceId) return null;
-  return ALL_PLANS.find(p => p.stripePriceId && p.stripePriceId === priceId) ?? null;
+export function getPlanByProductId(productId: string | null | undefined): Plan | null {
+  if (!productId) return null;
+  return ALL_PLANS.find(p => p.polarProductId && p.polarProductId === productId) ?? null;
 }
 
 export function getPlanById(planId: string | null | undefined): Plan | null {

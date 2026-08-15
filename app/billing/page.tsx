@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import SubscribeComponent from "../ui/stripe"
+import SubscribeButton from "../ui/subscribe-button"
 import ManageBillingButton from "../ui/manage-billing-button"
 import Popup from "../ui/popup"
 import { getSessionUserWithCompany } from "@/lib/auth/session"
@@ -212,15 +212,15 @@ export default async function Page({
                   </span>
                 </p>
 
-                {!plan.stripePriceId ? (
+                {!plan.polarProductId ? (
                   <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-                    Set the Stripe price ID for {plan.name} to enable checkout.
+                    Set the Polar product ID for {plan.name} to enable checkout.
                   </div>
                 ) : isCurrent ? (
                   <ManageBillingButton label="Change or cancel" />
                 ) : (
-                  <SubscribeComponent
-                    priceId={plan.stripePriceId}
+                  <SubscribeButton
+                    productId={plan.polarProductId}
                     buttonLabel={
                       access.hasSubscription
                         ? `Switch to ${plan.name}`
@@ -233,6 +233,12 @@ export default async function Page({
           })}
         </div>
       </section>
+
+      <p className="text-xs text-[var(--dash-text-muted)]">
+        Payments are processed by Polar, our merchant of record. Polar handles
+        billing and applicable sales tax or VAT, so charges appear on your
+        statement as Polar rather than Momentreel.
+      </p>
 
       <Popup
         btnCloseText="Close"

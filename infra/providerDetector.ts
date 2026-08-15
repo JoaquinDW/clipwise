@@ -31,9 +31,9 @@ export const providersList = {
     isAvailable: true,
     optional: false,
   },
-  stripe: {
-    name: "Stripe",
-    isAvailable: process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY !== undefined,
+  polar: {
+    name: "Polar",
+    isAvailable: process.env.NEXT_PUBLIC_POLAR_STARTER_PRODUCT_ID !== undefined,
     optional: true,
   },
   mailgun: {

@@ -6,29 +6,20 @@ export interface CompanyProps {
 }
 
 export interface CustomerDetails {
-  address?: {
-    city?: string | null;
-    country?: string;
-    line1?: string | null;
-    line2?: string | null;
-    postal_code?: string | null;
-    state?: string | null;
-  };
-  email?: string;
-  name?: string;
-  phone?: string | null;
-  tax_exempt?: string;
-  tax_ids?: string[];
+  email?: string | null;
+  name?: string | null;
+  country?: string | null;
 }
 
 /**
- * Subscription state mirrored from Stripe. Every field is optional so a
- * webhook handler can patch only what its event actually carries.
+ * Subscription state mirrored from the billing provider. Every field is
+ * optional so a webhook handler can patch only what its event actually carries.
  */
 export interface SubscriptionProps {
-  stripeCustomerId?: string | null;
-  stripeSubscriptionId?: string | null;
-  stripePriceId?: string | null;
+  billingProvider?: string | null;
+  billingCustomerId?: string | null;
+  billingSubscriptionId?: string | null;
+  billingProductId?: string | null;
   plan?: string | null;
   subscriptionStatus?: string | null;
   trialEndsAt?: Date | null;
@@ -37,15 +28,19 @@ export interface SubscriptionProps {
   resetMinutes?: boolean;
 }
 
+/** Audit trail of a settled payment, stored as JSON in PaymentTransaction.raw. */
 export interface TransactionProps {
-    userId?: string;
-    companyId?: string;
-    priceId?: string;
-    created?: number;
-    currency?: string;
-    customerDetails?: CustomerDetails;
-    amount?: number;
-  }
+  userId?: string;
+  companyId?: string;
+  productId?: string;
+  orderId?: string;
+  billingReason?: string;
+  created?: number;
+  currency?: string;
+  customerDetails?: CustomerDetails;
+  /** Total charged, in the currency's smallest unit. */
+  amount?: number;
+}
 
 export class Company {
   public props: CompanyProps;

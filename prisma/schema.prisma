@@ -30,14 +30,17 @@ model Company {
   transactions PaymentTransaction[]
   videos      Video[]
 
-  // Billing / subscription state, kept in sync from the Stripe webhook
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
-  stripePriceId        String?
-  plan                 String?   // starter | pro | teams
-  subscriptionStatus   String?   // trialing | active | past_due | canceled | incomplete
-  trialEndsAt          DateTime?
-  currentPeriodEnd     DateTime?
+  // Billing / subscription state, kept in sync from the provider's webhook.
+  // Deliberately provider-neutral: Polar and Stripe share the same status
+  // vocabulary, so switching providers is config, not a migration.
+  billingProvider       String?   // polar | stripe
+  billingCustomerId     String?   @unique
+  billingSubscriptionId String?   @unique
+  billingProductId      String?
+  plan                  String?   // starter | pro
+  subscriptionStatus    String?   // trialing | active | past_due | canceled | incomplete | unpaid | paused
+  trialEndsAt           DateTime?
+  currentPeriodEnd      DateTime?
 
   minutesUsed    Float     @default(0) // Track video processing minutes
   minutesResetAt DateTime? // Start of the current metering period

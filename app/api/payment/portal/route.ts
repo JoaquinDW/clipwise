@@ -1,44 +1,31 @@
-import Stripe from "stripe"
 import { NextResponse } from "next/server"
-import { auth } from "@/auth"
-import { prismaClientGlobal } from "@/infra/prisma"
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
+import { PolarError } from "@polar-sh/sdk/models/errors/polarerror.js"
+import { polar } from "@/infra/polar"
+import { getSessionUserWithCompany } from "@/lib/auth/session"
 
 /**
- * Opens the Stripe billing portal so the user can change plan, update their
- * card or cancel without us building any of that UI.
+ * Opens the Polar customer portal so the user can change plan, update their
+ * card, download invoices or cancel — without us building any of that UI.
+ *
+ * Keyed by our own company id (`externalCustomerId`), so there is no stored
+ * provider customer id that can go stale.
  */
 export async function POST() {
   try {
-    const session = await auth()
-    const userId = session?.user?.id
-    if (!userId) return new NextResponse("Unauthorized", { status: 401 })
+    const user = await getSessionUserWithCompany()
+    if (!user) return new NextResponse("Unauthorized", { status: 401 })
 
-    const user = await prismaClientGlobal.user.findUnique({
-      where: { id: userId },
-      include: { company: true },
+    const session = await polar.customerSessions.create({
+      externalCustomerId: user.companyId,
+      returnUrl: `${process.env.NEXT_BASE_URL}/billing`,
     })
 
-    const customerId = user?.company?.stripeCustomerId
-    if (!customerId) {
-      return NextResponse.json(
-        { ok: false, message: "No billing account yet" },
-        { status: 400 },
-      )
-    }
-
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${process.env.NEXT_BASE_URL}/billing`,
-    })
-
-    return NextResponse.json({ ok: true, url: portalSession.url })
+    return NextResponse.json({ ok: true, url: session.customerPortalUrl })
   } catch (error) {
     console.error("[payment/portal]", error)
 
     const message =
-      error instanceof Stripe.errors.StripeError
+      error instanceof PolarError
         ? error.message
         : "Could not open the billing portal."
 

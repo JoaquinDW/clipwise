@@ -43,17 +43,17 @@ export class CompanyRepository implements CompanyPort {
   }
 
   /**
-   * Resolve the company a Stripe event belongs to. The customer id is the
-   * durable link; the metadata companyId is the fallback for the very first
-   * checkout, before the customer has been persisted.
+   * Resolve the company a billing event belongs to. With Polar the company id
+   * travels as the customer's `externalId`, so the fallback path is usually the
+   * one that hits; the provider customer id is kept as a secondary link.
    */
-  async findCompanyIdForStripe(
-    stripeCustomerId: string | null | undefined,
+  async findCompanyIdForBilling(
+    billingCustomerId: string | null | undefined,
     fallbackCompanyId?: string | null
   ): Promise<string | null> {
-    if (stripeCustomerId) {
+    if (billingCustomerId) {
       const byCustomer = await prismaClientGlobal.company.findUnique({
-        where: { stripeCustomerId },
+        where: { billingCustomerId },
         select: { id: true },
       });
       if (byCustomer) return byCustomer.id;

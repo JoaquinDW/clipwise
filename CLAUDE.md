@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Momentreel is a SaaS platform that automatically converts long-form videos into short, vertical clips optimized for TikTok, YouTube Shorts, and Instagram Reels using AI. Users upload videos or paste YouTube links, and Momentreel handles transcription (OpenAI Whisper v3), highlight detection (GPT), clip generation, and caption generation.
 
-The project is built on a Next.js boilerplate designed for solopreneurs, with Google SSO authentication, Stripe payments, and Postgres database with Prisma ORM.
+The project is built on a Next.js boilerplate designed for solopreneurs, with Google SSO authentication, Polar payments, and Postgres database with Prisma ORM.
 
 ## Development Commands
 
@@ -76,7 +76,7 @@ pnpm run start
 **Backend:**
 - NextAuth v5 (beta) for authentication
 - Prisma ORM with PostgreSQL (hosted on Neon)
-- Stripe for payments and subscriptions
+- Polar (merchant of record) for payments and subscriptions
 - Mailgun for transactional emails
 
 **AI & Media Processing:**
@@ -91,11 +91,11 @@ pnpm run start
   /(landing-page)/       # Public landing page
   /dashboard/            # Authenticated user dashboard
   /account/              # User account management
-  /billing/              # Stripe billing & subscriptions
+  /billing/              # Billing & subscriptions
   /login/                # Auth pages (including /impersonate)
   /api/                  # API route handlers
     /[...nextauth]/      # NextAuth handlers
-    /payment/            # Stripe checkout & webhooks
+    /payment/            # Polar checkout, webhook & customer portal
     /impersonate/        # Admin impersonation endpoint
   /ui/                   # Shared UI components
   /lib/                  # App-specific utilities
@@ -106,7 +106,7 @@ pnpm run start
 
 /infra                   # Infrastructure layer
   /prisma.ts             # Global Prisma client singleton
-  /stripe.ts             # Stripe client wrapper
+  /polar.ts              # Polar client wrapper
   /mailgun.ts            # Mailgun client wrapper
   /providerDetector.ts   # Service availability detection
 
@@ -132,16 +132,21 @@ The codebase uses a domain layer (`/domain`) with repositories, entities, ports,
 
 **Database Schema:**
 - `User` - NextAuth user with optional Company relation
-- `Company` - Each user gets a company; holds Stripe customer/subscription state, plan, trial end and `minutesUsed`
+- `Company` - Each user gets a company; holds provider-neutral billing state (`billingProvider`, `billingCustomerId`, …), plan, trial end and `minutesUsed`
 - `Account`, `Session`, `VerificationToken` - NextAuth adapter tables
-- `PaymentTransaction` - Stores raw Stripe webhook events
+- `PaymentTransaction` - Audit trail of settled payments (written from `order.paid`)
 
-**Stripe Integration:**
+**Billing — Polar (merchant of record):**
+Stripe was retired: it has no payouts to Argentina, and activating the US account would have required a US entity. Polar is the legal seller, handles VAT/sales tax, and pays out via Stripe Connect Express. The working Stripe code is archived in [legacy/stripe/](legacy/stripe/) with a README on how to revive it.
+
 - **[lib/plans.ts](lib/plans.ts) is the single source of truth** for plans, prices, minute quotas and clip limits. Never hardcode a tier anywhere else.
-- Checkout sessions created via `/api/payment/checkout_sessions`: subscription mode, `trial_period_days` on the first subscription, card required (`payment_method_collection: 'always'`), price IDs validated against the allowlist, Stripe customer reused via `Company.stripeCustomerId`
-- Billing portal opened server-side via `/api/payment/portal` (there is no `NEXT_PUBLIC_STRIPE_PORTAL_URL`)
-- Webhooks at `/api/payment/webhook` handle `checkout.session.*`, `customer.subscription.*` and `invoice.paid` / `invoice.payment_failed`; unknown events are acknowledged with 200 so Stripe does not retry them
-- Subscription state is mirrored onto `Company` (`plan`, `subscriptionStatus`, `trialEndsAt`, `currentPeriodEnd`) by the `SyncSubscription` use-case
+- Checkout created via `/api/payment/checkout_sessions` using [infra/polar.ts](infra/polar.ts): product IDs validated against the allowlist, `allowTrial` + `trialIntervalCount: TRIAL_DAYS` on the first subscription only
+- **`externalCustomerId` is the company id.** Polar is keyed off our own id, so there is no foreign customer id to store or revalidate — the class of bug where a stale customer permanently breaks checkout cannot happen
+- Customer portal opened server-side via `/api/payment/portal` (a customer session by `externalCustomerId`)
+- Webhooks at `/api/payment/webhook` verify the signature with `validateEvent` from `@polar-sh/sdk/webhooks` and handle `subscription.*` plus `order.paid`; unknown events are acknowledged with 200 so Polar does not retry them
+- Subscription state is mirrored onto `Company` by the `SyncSubscription` use-case. **Polar and Stripe share the same status vocabulary** (`trialing`, `active`, `past_due`, `canceled`, `incomplete`, `unpaid`, `paused`), so the access gate needs no translation layer
+- The `Company` billing columns are provider-neutral on purpose (`billingProvider`, `billingCustomerId`, `billingSubscriptionId`, `billingProductId`) — switching provider is a code change, not a migration
+- **Sandbox and production are separate Polar instances**: tokens and product IDs from one do not exist in the other
 
 **Billing gate & metering:**
 - [lib/billing/access.ts](lib/billing/access.ts) — `getCompanyAccess()` answers "may this company process video?" and feeds the `/billing` UI
@@ -156,7 +161,7 @@ Files never pass through a serverless function — Vercel caps request bodies at
 **Singleton Pattern:**
 Global singletons are used for infrastructure clients:
 - `prismaClientGlobal` in [infra/prisma.ts](infra/prisma.ts)
-- `stripeInstance` in [infra/stripe.ts](infra/stripe.ts)
+- `polar` in [infra/polar.ts](infra/polar.ts)
 - `mailgunClientGlobal` in [infra/mailgun.ts](infra/mailgun.ts)
 
 These prevent multiple client instantiations during development hot-reloading.
@@ -253,8 +258,8 @@ Critical environment variables (see [.env.example](.env.example)):
 - `MAX_CLIPS_PER_VIDEO` - Maximum clips per video (default: 10)
 
 **Payments & Analytics:**
-- `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_SECRET_WEBHOOK_KEY` - Stripe keys
-- `NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID`, `NEXT_PUBLIC_STRIPE_PRO_PRICE_ID` - recurring monthly price IDs, must match [lib/plans.ts](lib/plans.ts)
+- `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER` (`sandbox` | `production`) - Polar credentials
+- `NEXT_PUBLIC_POLAR_STARTER_PRODUCT_ID`, `NEXT_PUBLIC_POLAR_PRO_PRODUCT_ID` - recurring monthly product IDs, must match [lib/plans.ts](lib/plans.ts)
 - `SUBSCRIPTION_BYPASS_EMAILS` - comma-separated emails that skip subscription and quota checks
 - `NEXT_BASE_URL` - Base URL for redirects (e.g., `http://localhost:3000`)
 - `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` - Google Analytics tracking
@@ -274,6 +279,6 @@ The project is designed for Vercel deployment with automatic deployments on git 
 
 - No free plan
 - 7-day trial (credit card required at signup)
-- Monthly subscriptions: Starter $15 (120 min/mo) / Pro $29 (300 min/mo)
+- Monthly subscriptions: Starter $15 (120 min/mo) / Pro $29 (300 min/mo), billed through Polar as merchant of record
 - Usage tracked by processed video minutes (`Company.minutesUsed`, reset on each billing cycle)
 - Trial ends after 7 days OR 30 processed minutes (whichever comes first)
