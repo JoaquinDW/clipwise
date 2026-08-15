@@ -279,6 +279,6 @@ The project is designed for Vercel deployment with automatic deployments on git 
 
 - No free plan
 - 7-day trial (credit card required at signup)
-- Monthly subscriptions: Starter $15 (120 min/mo) / Pro $29 (300 min/mo), billed through Polar as merchant of record
+- Monthly subscriptions: Starter $8 (120 min/mo) / Pro $15 (300 min/mo), billed through Polar as merchant of record
 - Usage tracked by processed video minutes (`Company.minutesUsed`, reset on each billing cycle)
 - Trial ends after 7 days OR 30 processed minutes (whichever comes first)

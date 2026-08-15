@@ -3,7 +3,8 @@
     "allow": [
       "Bash(ps -o pid,ppid,command -p 6551)",
       "Bash(node --env-file=.env -e ' *)",
-      "Bash(node --env-file=.env scripts/tmp-stale-customer.mjs)"
+      "Bash(node --env-file=.env scripts/tmp-stale-customer.mjs)",
+      "WebFetch(domain:platform.openai.com)"
     ]
   }
 }

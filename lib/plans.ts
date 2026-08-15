@@ -36,7 +36,7 @@ export const PLANS: Record<PlanId, Plan> = {
   starter: {
     id: 'starter',
     name: 'Starter',
-    priceMonthly: 15,
+    priceMonthly: 8,
     priceAnnual: null,
     minutesPerMonth: 120,
     maxClipsPerVideo: 5,
@@ -46,7 +46,7 @@ export const PLANS: Record<PlanId, Plan> = {
   pro: {
     id: 'pro',
     name: 'Pro',
-    priceMonthly: 29,
+    priceMonthly: 15,
     priceAnnual: null,
     minutesPerMonth: 300,
     maxClipsPerVideo: 10,
