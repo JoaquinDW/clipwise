@@ -11,12 +11,13 @@ const i18n = {
     productLinks: [
       ["Características", "#features"],
       ["Cómo funciona", "#demo"],
-      ["Lista de espera", "#waitlist"],
+      ["Precios", "#pricing"],
       ["FAQ", "#faq"],
     ] as const,
     account: "Cuenta",
     accountLinks: [
-      ["Unirme a la lista", "#waitlist"],
+      ["Empezar gratis", "/login"],
+      ["Iniciar sesión", "/login"],
       ["Dashboard", "/dashboard"],
     ] as const,
     copyright: "© 2026 Momentreel. Todos los derechos reservados.",
@@ -28,12 +29,13 @@ const i18n = {
     productLinks: [
       ["Features", "#features"],
       ["How it works", "#demo"],
-      ["Waitlist", "#waitlist"],
+      ["Pricing", "#pricing"],
       ["FAQ", "#faq"],
     ] as const,
     account: "Account",
     accountLinks: [
-      ["Join the waitlist", "#waitlist"],
+      ["Start free trial", "/login"],
+      ["Sign in", "/login"],
       ["Dashboard", "/dashboard"],
     ] as const,
     copyright: "© 2026 Momentreel. All rights reserved.",

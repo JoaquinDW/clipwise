@@ -1,9 +1,10 @@
 import { prismaClientGlobal } from "@/infra/prisma"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import VideoActions from "./VideoActions"
 import VideoStatusPoller from "./VideoStatusPoller"
 import ClipsSection from "./ClipsSection"
+import { getSessionUserWithCompany } from "@/lib/auth/session"
 
 export default async function VideoDetailPage({
   params,
@@ -14,6 +15,9 @@ export default async function VideoDetailPage({
 }) {
   const { id } = params
 
+  const user = await getSessionUserWithCompany()
+  if (!user) redirect("/login")
+
   const video = await prismaClientGlobal.video.findUnique({
     where: { id },
     include: {
@@ -22,7 +26,9 @@ export default async function VideoDetailPage({
     },
   })
 
-  if (!video) notFound()
+  // Scoped to the caller's company: a cuid from another tenant must 404, not
+  // hand over their transcript and clips.
+  if (!video || video.companyId !== user.companyId) notFound()
 
   const isProcessing = !["READY", "FAILED"].includes(video.status)
   const isStream =

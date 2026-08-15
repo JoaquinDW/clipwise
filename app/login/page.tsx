@@ -19,11 +19,26 @@ const dmSans = DM_Sans({
   display: 'swap',
 });
 
-export default async function LoginPage() {
+import { getPlanById } from '@/lib/plans';
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const session = await auth();
 
+  // Carry the plan picked on the landing page through the OAuth round-trip so
+  // the user lands straight on checkout instead of a generic billing page.
+  const requestedPlan = getPlanById(
+    typeof searchParams.plan === 'string' ? searchParams.plan : null
+  );
+  const redirectTo = requestedPlan
+    ? `/billing?plan=${requestedPlan.id}`
+    : '/dashboard';
+
   if (session?.user) {
-    redirect('/dashboard');
+    redirect(redirectTo);
   }
 
   return (
@@ -60,7 +75,7 @@ export default async function LoginPage() {
             <form
               action={async () => {
                 'use server';
-                await signIn('google', { redirectTo: '/dashboard' });
+                await signIn('google', { redirectTo });
               }}
               style={{ width: '100%' }}
             >

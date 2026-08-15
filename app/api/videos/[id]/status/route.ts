@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClientGlobal } from '@/infra/prisma';
+import { requireUser } from '@/lib/billing/guard';
 
 export async function GET(
   _request: NextRequest,
@@ -7,10 +8,14 @@ export async function GET(
 ) {
   const videoId = params.id;
 
+  const guard = await requireUser();
+  if (!guard.ok) return guard.response;
+
   const video = await prismaClientGlobal.video.findUnique({
     where: { id: videoId },
     select: {
       id: true,
+      companyId: true,
       status: true,
       errorMessage: true,
       clips: {
@@ -33,6 +38,9 @@ export async function GET(
 
   if (!video) {
     return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+  }
+  if (video.companyId !== guard.user.companyId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const totalClips = video.clips.length;

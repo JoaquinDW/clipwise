@@ -7,6 +7,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { transcribeChunk } from '@/lib/ai/transcribe-chunk';
+import { meterVideoDuration } from '@/lib/billing/metering';
 import { createRedisConnection, QUEUE_NAME, enqueueAnalyze, type TranscribeJobData } from '../queue';
 import type { TranscriptionSegment, WordTimestamp } from '@/lib/ai/transcribe';
 
@@ -43,6 +44,9 @@ export async function processTranscribe(job: Job<TranscribeJobData>) {
     );
     const totalDuration = parseFloat(stdout.trim());
     console.log(`[transcribe] Total duration: ${totalDuration}s`);
+
+    // Safety net: idempotent, so this only charges when the ingest probe failed
+    await meterVideoDuration(videoId, totalDuration);
 
     // 3. Split into chunks
     await execAsync(`mkdir -p "${chunkDir}"`);

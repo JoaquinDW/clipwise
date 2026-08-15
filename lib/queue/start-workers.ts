@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, indent, no-multi-spaces */
-import { Worker } from 'bullmq';
+import { UnrecoverableError, Worker } from 'bullmq';
 import { createRedisConnection, QUEUE_NAME } from './queue';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { processIngest } from './workers/ingest.worker';
@@ -14,14 +14,22 @@ export function startAllWorkers() {
   const worker = new Worker(
     QUEUE_NAME,
     async (job) => {
-      switch (job.name) {
-        case 'ingest':            return processIngest(job as any);
-        case 'transcribe':        return processTranscribe(job as any);
-        case 'transcribe-chunk':  return processTranscribeChunk(job as any);
-        case 'analyze':           return processAnalyze(job as any);
-        case 'clip':              return processClip(job as any);
-        default:
-          console.warn(`[worker] Unknown job type: ${job.name}`);
+      try {
+        switch (job.name) {
+          case 'ingest':            return await processIngest(job as any);
+          case 'transcribe':        return await processTranscribe(job as any);
+          case 'transcribe-chunk':  return await processTranscribeChunk(job as any);
+          case 'analyze':           return await processAnalyze(job as any);
+          case 'clip':              return await processClip(job as any);
+          default:
+            console.warn(`[worker] Unknown job type: ${job.name}`);
+        }
+      } catch (err: any) {
+        // Billing rejections will never succeed on retry — fail them once.
+        if (err?.name === 'QuotaExceededError' || err?.name === 'VideoTooLongError') {
+          throw new UnrecoverableError(err.message);
+        }
+        throw err;
       }
     },
     { connection: createRedisConnection(), concurrency: 2 }

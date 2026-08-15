@@ -10,7 +10,7 @@ const i18n = {
     h1b: "en clips",
     h1c: "virales",
     sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Momentreel los detecta, recorta a 9:16 y agrega los subtítulos — sin tocar el timeline, listo en minutos.",
-    cta: "Unirme a la lista →",
+    cta: "Empezar gratis →",
     stats: [
       { value: "94%", label: "Precisión IA" },
       { value: "<5min", label: "Tiempo de proceso" },
@@ -24,7 +24,7 @@ const i18n = {
     h1b: "content into",
     h1c: "viral clips",
     sub: "Every podcast, stream, or video has viral moments buried inside it. Momentreel finds them, crops to 9:16, and burns captions — no timeline, no editor, done in minutes.",
-    cta: "Join the waitlist →",
+    cta: "Start free trial →",
     stats: [
       { value: "94%", label: "AI accuracy" },
       { value: "<5min", label: "Processing time" },
@@ -383,7 +383,7 @@ export default function Hero({ lang }: { lang: Lang }) {
             {t.sub}
           </p>
           <div className="fu d4" style={{ marginBottom: 44 }}>
-            <a href="#waitlist" className="cta-btn">
+            <a href="/login" className="cta-btn">
               {t.cta}
             </a>
           </div>

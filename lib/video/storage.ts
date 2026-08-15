@@ -123,6 +123,54 @@ class SupabaseStorage {
     };
   }
 
+  /**
+   * Hand the browser a one-shot upload URL so large files never pass through a
+   * serverless function (Vercel caps request bodies at 4.5 MB).
+   */
+  async createSignedVideoUpload(
+    companyId: string,
+    videoId: string,
+    extension = 'mp4'
+  ): Promise<{ uploadUrl: string; token: string; path: string; publicUrl: string }> {
+    const fileName = `${companyId}/${videoId}/original.${extension}`;
+    const { data, error } = await this.client.storage
+      .from(this.buckets.videos)
+      .createSignedUploadUrl(fileName);
+
+    if (error || !data) {
+      throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+    }
+
+    const {
+      data: { publicUrl },
+    } = this.client.storage.from(this.buckets.videos).getPublicUrl(fileName);
+
+    return {
+      uploadUrl: data.signedUrl,
+      token: data.token,
+      path: data.path ?? fileName,
+      publicUrl,
+    };
+  }
+
+  getVideoPublicUrl(companyId: string, videoId: string, extension = 'mp4'): string {
+    const fileName = `${companyId}/${videoId}/original.${extension}`;
+    const {
+      data: { publicUrl },
+    } = this.client.storage.from(this.buckets.videos).getPublicUrl(fileName);
+    return publicUrl;
+  }
+
+  /** Confirm an object actually landed in the bucket before we enqueue work. */
+  async videoObjectExists(companyId: string, videoId: string, extension = 'mp4'): Promise<boolean> {
+    const { data, error } = await this.client.storage
+      .from(this.buckets.videos)
+      .list(`${companyId}/${videoId}`, { search: `original.${extension}` });
+
+    if (error) return false;
+    return (data ?? []).some(item => item.name === `original.${extension}`);
+  }
+
   async uploadClip(
     file: File | Blob,
     companyId: string,
@@ -351,6 +399,18 @@ export function getStorageClient() {
   }
 
   throw new Error('Invalid storage configuration');
+}
+
+/**
+ * Storage client narrowed to the provider that supports direct browser uploads.
+ * Only Supabase implements them today.
+ */
+export function getDirectUploadStorage(): SupabaseStorage {
+  const storage = getStorageClient();
+  if (!(storage instanceof SupabaseStorage)) {
+    throw new Error('Direct uploads require Supabase Storage');
+  }
+  return storage;
 }
 
 /**

@@ -7,6 +7,7 @@ import { rankCandidates, rankedCandidateToHighlight } from '@/lib/ai/rank-candid
 import { createRedisConnection, QUEUE_NAME, enqueueClip, type AnalyzeJobData } from '../queue';
 import type { TranscriptionSegment } from '@/lib/ai/transcribe';
 import type { Highlight } from '@/lib/ai/highlights';
+import { getPlanLimits } from '@/lib/plans';
 
 export async function processAnalyze(job: Job<AnalyzeJobData>) {
   const { videoId } = job.data;
@@ -15,7 +16,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
 
   const video = await prismaClientGlobal.video.findUnique({
     where: { id: videoId },
-    include: { transcription: true },
+    include: { transcription: true, company: { select: { plan: true } } },
   });
 
   if (!video?.transcription) throw new Error('No transcription found for video');
@@ -23,6 +24,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
   const segments = video.transcription.segments as unknown as TranscriptionSegment[];
   const videoDuration = segments.length > 0 ? segments[segments.length - 1].end : 0;
   const captionStyle = (video.metadata as any)?.captionStyle;
+  const maxClips = getPlanLimits(video.company.plan).maxClipsPerVideo;
 
   let highlights: Highlight[];
 
@@ -36,7 +38,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     });
 
     const result = await detectHighlights(segments, {
-      maxHighlights: 5,
+      maxHighlights: maxClips,
       minDuration: 15,
       maxDuration: 60,
       targetAudience: 'TikTok, Instagram Reels, YouTube Shorts users',
@@ -91,7 +93,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     console.log(`[analyze] RANKING phase — sending ${expandedWindows.length} candidates to GPT`);
 
     const rankingResult = await rankCandidates(expandedWindows, {
-      maxClips: 5,
+      maxClips,
       minDuration: 15,
       maxDuration: 60,
       targetAudience: 'TikTok, Instagram Reels, YouTube Shorts users',
@@ -154,7 +156,10 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     data: { status: 'PROCESSING' },
   });
 
-  console.log(`[analyze] Found ${highlights.length} highlights`);
+  // The model can overshoot; the plan limit is the hard cap.
+  highlights = highlights.slice(0, maxClips);
+
+  console.log(`[analyze] Found ${highlights.length} highlights (plan cap: ${maxClips})`);
 
   await Promise.all(
     highlights.map(async (highlight) => {

@@ -13,28 +13,58 @@ class MailgunWrapper {
       console.log('Mailgun not available. Missing API key');
     }
   }
-  // quote the line abouth api.eu if your mailgun mail server is in the US
+  // MAILGUN_BASE_URL picks the region: https://api.mailgun.net (US) or
+  // https://api.eu.mailgun.net (EU). Sending to the wrong region 401s.
   private async initialize(){
     const mailgunClass = new Mailgun(FormData);
     this.mailgun = mailgunClass.client({
-      username: 'api', 
-      key: process.env.MAILGUN_API_KEY || '', 
-      url: 'https://api.eu.mailgun.net'
+      username: 'api',
+      key: process.env.MAILGUN_API_KEY || '',
+      url: process.env.MAILGUN_BASE_URL || 'https://api.eu.mailgun.net'
     });
   }
   public getMailgun(){
     return this.mailgun;
   }
+  /** Verified sending domain, or the sandbox one while the real domain is pending. */
+  public getDomain(){
+    return process.env.MAILGUN_DOMAIN || process.env.MAILGUN_SANDBOX_DOMAIN || '';
+  }
   public getDefaultValues(){
+    const domain = this.getDomain();
     return {
-      from: "Paul <contact@acme.com>",
+      from: `Momentreel <postmaster@${domain}>`,
       subject: "Hello",
-      to: [],
+      to: [] as string[],
       text: "This is me testing emails!"
       // html: "<h1>Testing some Mailgun awesomness!</h1>"
     }
   }
-} 
+  /**
+   * Sends one message. Throws when Mailgun is not configured so callers can
+   * decide whether that is fatal — never silently drops the mail.
+   */
+  public async send(message: {
+    to: string[];
+    subject: string;
+    text: string;
+    from?: string;
+    html?: string;
+    'h:Reply-To'?: string;
+  }){
+    const domain = this.getDomain();
+    if (!this.mailgun) {
+      throw new Error('Mailgun is not configured (missing MAILGUN_API_KEY)');
+    }
+    if (!domain) {
+      throw new Error('Mailgun is not configured (missing MAILGUN_DOMAIN)');
+    }
+    return this.mailgun.messages.create(domain, {
+      ...this.getDefaultValues(),
+      ...message,
+    });
+  }
+}
 
 // making only one instace of MailgunWrapper for the whole project
 const globalForMailgun = globalThis as unknown as { mailgun: MailgunWrapper }

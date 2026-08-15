@@ -1,5 +1,5 @@
 import { prismaClientGlobal } from '@/infra/prisma';
-import { Company, TransactionProps } from './company.entity';
+import { Company, SubscriptionProps, TransactionProps } from './company.entity';
 import { CompanyPort } from './company.port';
 
 export class CompanyRepository implements CompanyPort {
@@ -34,10 +34,58 @@ export class CompanyRepository implements CompanyPort {
     await prismaClientGlobal.paymentTransaction.create({
       data: {
         companyId: transactionDetails.companyId,
-        raw: JSON.stringify(transactionDetails),
+        // `raw` is a Json column: store the object, not a stringified blob
+        raw: transactionDetails as unknown as object,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
     });
+  }
+
+  /**
+   * Resolve the company a Stripe event belongs to. The customer id is the
+   * durable link; the metadata companyId is the fallback for the very first
+   * checkout, before the customer has been persisted.
+   */
+  async findCompanyIdForStripe(
+    stripeCustomerId: string | null | undefined,
+    fallbackCompanyId?: string | null
+  ): Promise<string | null> {
+    if (stripeCustomerId) {
+      const byCustomer = await prismaClientGlobal.company.findUnique({
+        where: { stripeCustomerId },
+        select: { id: true },
+      });
+      if (byCustomer) return byCustomer.id;
+    }
+
+    if (fallbackCompanyId) {
+      const byId = await prismaClientGlobal.company.findUnique({
+        where: { id: fallbackCompanyId },
+        select: { id: true },
+      });
+      if (byId) return byId.id;
+    }
+
+    return null;
+  }
+
+  async syncSubscription(companyId: string, subscription: SubscriptionProps): Promise<void> {
+    const { resetMinutes, ...fields } = subscription;
+
+    // Only patch what the event actually carried, so a partial event never
+    // wipes state written by a more complete one.
+    const data = Object.fromEntries(
+      Object.entries(fields).filter(([, value]) => value !== undefined)
+    ) as Record<string, unknown>;
+
+    if (resetMinutes) {
+      data.minutesUsed = 0;
+      data.minutesResetAt = new Date();
+    }
+
+    if (Object.keys(data).length === 0) return;
+
+    await prismaClientGlobal.company.update({ where: { id: companyId }, data });
   }
 }

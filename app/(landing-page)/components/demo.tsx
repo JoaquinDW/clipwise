@@ -500,7 +500,7 @@ export default function Demo({ lang }: { lang: Lang }) {
               </Reveal>
             ))}
             <Reveal delay={0.4} style={{ marginTop: 8 }}>
-              <a href="#waitlist" className="cta-btn">
+              <a href="/login" className="cta-btn">
                 {t.cta}
               </a>
             </Reveal>

@@ -1,16 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Worker, Job } from 'bullmq';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { readFile, unlink, readdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { getStorageClient } from '@/lib/video/storage';
-import { generateThumbnail } from '@/lib/video/processor';
+import { generateThumbnail, getVideoMetadata } from '@/lib/video/processor';
+import { meterVideoDuration } from '@/lib/billing/metering';
 import { createRedisConnection, QUEUE_NAME, enqueueTranscribe, enqueueTranscribeChunk, type IngestJobData } from '../queue';
 
-const execAsync = promisify(exec);
+// argv form: user-supplied URLs must never be spliced into a shell string
+const execFileAsync = promisify(execFile);
 
 async function processStreamIngest(
   videoId: string,
@@ -22,8 +24,9 @@ async function processStreamIngest(
   // Fetch stream metadata (duration, thumbnail) without downloading
   let metadata: { duration: number; thumbnail?: string };
   try {
-    const { stdout } = await execAsync(
-      `yt-dlp --dump-json --no-download "${sourceUrl}"`,
+    const { stdout } = await execFileAsync(
+      'yt-dlp',
+      ['--dump-json', '--no-download', sourceUrl],
       { maxBuffer: 1024 * 1024 * 10, timeout: 60_000 }
     );
     metadata = JSON.parse(stdout);
@@ -37,6 +40,9 @@ async function processStreamIngest(
   if (!totalDuration || totalDuration <= 0) {
     throw new Error('Could not determine stream duration. The VOD may still be live.');
   }
+
+  // Charge the allowance before downloading anything expensive.
+  await meterVideoDuration(videoId, totalDuration);
 
   await prismaClientGlobal.video.update({
     where: { id: videoId },
@@ -78,17 +84,18 @@ async function processStreamIngest(
     const chunkTmpPath = join(tmpdir(), `stream-chunk-${videoId}-${i}.m4a`);
 
     try {
-      const cmd = [
+      await execFileAsync(
         'yt-dlp',
-        `--download-sections "*${chunk.startTime}-${chunk.endTime}"`,
-        '--format "bestaudio[ext=m4a]/bestaudio"',
-        '--no-playlist',
-        `--force-keyframes-at-cuts`,
-        `-o "${chunkTmpPath}"`,
-        `"${sourceUrl}"`,
-      ].join(' ');
-
-      await execAsync(cmd, { maxBuffer: 1024 * 1024 * 200, timeout: 120_000 });
+        [
+          '--download-sections', `*${chunk.startTime}-${chunk.endTime}`,
+          '--format', 'bestaudio[ext=m4a]/bestaudio',
+          '--no-playlist',
+          '--force-keyframes-at-cuts',
+          '-o', chunkTmpPath,
+          sourceUrl,
+        ],
+        { maxBuffer: 1024 * 1024 * 200, timeout: 120_000 }
+      );
 
       const chunkBuffer = await readFile(chunkTmpPath);
       const chunkArrayBuffer = chunkBuffer.buffer.slice(chunkBuffer.byteOffset, chunkBuffer.byteOffset + chunkBuffer.byteLength) as ArrayBuffer;
@@ -141,9 +148,27 @@ export async function processIngest(job: Job<IngestJobData>) {
 
   try {
     if (source === 'YOUTUBE') {
+      // Probe first: metering rejects over-quota videos before we spend bandwidth
+      try {
+        const { stdout } = await execFileAsync(
+          'yt-dlp',
+          ['--dump-json', '--no-download', sourceUrl],
+          { maxBuffer: 1024 * 1024 * 10, timeout: 60_000 }
+        );
+        const ytMeta = JSON.parse(stdout) as { duration?: number };
+        if (ytMeta.duration) await meterVideoDuration(videoId, ytMeta.duration);
+      } catch (err: any) {
+        // Quota/length errors must fail the job; a failed probe must not.
+        if (err?.name === 'QuotaExceededError' || err?.name === 'VideoTooLongError') throw err;
+        console.warn(`[ingest] Could not probe YouTube duration, continuing:`, err?.message);
+      }
+
       // Download only audio stream — much faster and smaller than full video
-      const cmd = `yt-dlp --format "bestaudio[ext=m4a]/bestaudio" --no-playlist -o "${audioTemplate}" "${sourceUrl}"`;
-      await execAsync(cmd, { maxBuffer: 1024 * 1024 * 50 });
+      await execFileAsync(
+        'yt-dlp',
+        ['--format', 'bestaudio[ext=m4a]/bestaudio', '--no-playlist', '-o', audioTemplate, sourceUrl],
+        { maxBuffer: 1024 * 1024 * 50 }
+      );
 
       // Find the actual downloaded file (extension may differ)
       const tmpFiles = await readdir(tmpdir());
@@ -177,8 +202,20 @@ export async function processIngest(job: Job<IngestJobData>) {
       const { writeFile } = await import('fs/promises');
       await writeFile(tempVideoPath, Buffer.from(videoBuffer));
 
+      // First point where an upload's real duration is known
+      try {
+        const uploadMeta = await getVideoMetadata(tempVideoPath);
+        if (uploadMeta.duration) await meterVideoDuration(videoId, uploadMeta.duration);
+      } catch (err: any) {
+        if (err?.name === 'QuotaExceededError' || err?.name === 'VideoTooLongError') {
+          await unlink(tempVideoPath).catch(() => {});
+          throw err;
+        }
+        console.warn(`[ingest] Could not probe upload duration, continuing:`, err?.message);
+      }
+
       // Extract and transcode audio to AAC (works regardless of source codec)
-      await execAsync(`ffmpeg -i "${tempVideoPath}" -vn -c:a aac -b:a 128k "${audioPath}" -y`);
+      await execFileAsync('ffmpeg', ['-i', tempVideoPath, '-vn', '-c:a', 'aac', '-b:a', '128k', audioPath, '-y']);
 
       // Generate thumbnail from uploaded video
       const thumbPath = join(tmpdir(), `thumb-${videoId}.jpg`);

@@ -21,6 +21,22 @@ export interface CustomerDetails {
   tax_ids?: string[];
 }
 
+/**
+ * Subscription state mirrored from Stripe. Every field is optional so a
+ * webhook handler can patch only what its event actually carries.
+ */
+export interface SubscriptionProps {
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripePriceId?: string | null;
+  plan?: string | null;
+  subscriptionStatus?: string | null;
+  trialEndsAt?: Date | null;
+  currentPeriodEnd?: Date | null;
+  /** Set on a period rollover so metered minutes start from zero again. */
+  resetMinutes?: boolean;
+}
+
 export interface TransactionProps {
     userId?: string;
     companyId?: string;

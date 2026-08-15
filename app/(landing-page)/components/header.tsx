@@ -7,18 +7,18 @@ import type { Lang } from './use-lang';
 
 const i18n = {
   es: {
-    links: [['Características', '#features'], ['Demo', '#demo'], ['Lista de espera', '#waitlist'], ['FAQ', '#faq']] as const,
+    links: [['Características', '#features'], ['Demo', '#demo'], ['Precios', '#pricing'], ['FAQ', '#faq']] as const,
     signIn: 'Iniciar sesión',
-    cta: 'Unirme →',
-    ctaHref: '#waitlist',
+    cta: 'Empezar gratis →',
+    ctaHref: '/login',
     switchLabel: 'EN',
     switchLocale: '/',
   },
   en: {
-    links: [['Features', '#features'], ['Demo', '#demo'], ['Waitlist', '#waitlist'], ['FAQ', '#faq']] as const,
+    links: [['Features', '#features'], ['Demo', '#demo'], ['Pricing', '#pricing'], ['FAQ', '#faq']] as const,
     signIn: 'Sign in',
-    cta: 'Join waitlist →',
-    ctaHref: '#waitlist',
+    cta: 'Start free trial →',
+    ctaHref: '/login',
     switchLabel: 'ES',
     switchLocale: '/es',
   },
@@ -79,9 +79,12 @@ export default function Header({ lang }: { lang: Lang }) {
         >
           {t.switchLabel}
         </button>
-        <a href={t.ctaHref} className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
+        <Link href="/login" className="nav-link" style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, marginRight: 4 }}>
+          {t.signIn}
+        </Link>
+        <Link href={t.ctaHref} className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
           {t.cta}
-        </a>
+        </Link>
       </div>
 
       {/* Mobile menu button */}
@@ -115,8 +118,11 @@ export default function Header({ lang }: { lang: Lang }) {
               {label}
             </a>
           ))}
+          <Link href="/login" onClick={() => setMenuOpen(false)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#888', textDecoration: 'none' }}>
+            {t.signIn}
+          </Link>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
-            <a href={t.ctaHref} className="cta-btn" style={{ alignSelf: 'flex-start' }}>{t.cta}</a>
+            <Link href={t.ctaHref} onClick={() => setMenuOpen(false)} className="cta-btn" style={{ alignSelf: 'flex-start' }}>{t.cta}</Link>
             <button onClick={() => router.push(t.switchLocale)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 6, border: '1px solid #242424', background: 'transparent', color: '#444', cursor: 'pointer' }}>
               {t.switchLabel}
             </button>

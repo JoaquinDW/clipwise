@@ -54,8 +54,11 @@ npx prisma studio
 # Lint the codebase
 pnpm run lint
 
-# Build for production (includes prisma generate)
+# Build for production (runs prisma generate + prisma migrate deploy)
 pnpm run build
+
+# Export the pre-launch waitlist emails
+pnpm run waitlist:export > waitlist.csv
 
 # Start production server
 pnpm run start
@@ -129,15 +132,26 @@ The codebase uses a domain layer (`/domain`) with repositories, entities, ports,
 
 **Database Schema:**
 - `User` - NextAuth user with optional Company relation
-- `Company` - Each user gets a company (used for Stripe billing)
+- `Company` - Each user gets a company; holds Stripe customer/subscription state, plan, trial end and `minutesUsed`
 - `Account`, `Session`, `VerificationToken` - NextAuth adapter tables
 - `PaymentTransaction` - Stores raw Stripe webhook events
 
 **Stripe Integration:**
-- Checkout sessions created via `/api/payment/checkout_sessions`
-- Webhooks handled at `/api/payment/webhook` (listens for `checkout.session.completed` and `checkout.session.async_payment_succeeded`)
-- Webhook stores transaction in database using `RegisterTransaction` use-case
-- Customer portal URL configured in environment variables for subscription management
+- **[lib/plans.ts](lib/plans.ts) is the single source of truth** for plans, prices, minute quotas and clip limits. Never hardcode a tier anywhere else.
+- Checkout sessions created via `/api/payment/checkout_sessions`: subscription mode, `trial_period_days` on the first subscription, card required (`payment_method_collection: 'always'`), price IDs validated against the allowlist, Stripe customer reused via `Company.stripeCustomerId`
+- Billing portal opened server-side via `/api/payment/portal` (there is no `NEXT_PUBLIC_STRIPE_PORTAL_URL`)
+- Webhooks at `/api/payment/webhook` handle `checkout.session.*`, `customer.subscription.*` and `invoice.paid` / `invoice.payment_failed`; unknown events are acknowledged with 200 so Stripe does not retry them
+- Subscription state is mirrored onto `Company` (`plan`, `subscriptionStatus`, `trialEndsAt`, `currentPeriodEnd`) by the `SyncSubscription` use-case
+
+**Billing gate & metering:**
+- [lib/billing/access.ts](lib/billing/access.ts) — `getCompanyAccess()` answers "may this company process video?" and feeds the `/billing` UI
+- [lib/billing/guard.ts](lib/billing/guard.ts) — `requireBillableUser()` / `requireUser()` are the only auth entry points for API routes; they return 401 / 402
+- [lib/billing/metering.ts](lib/billing/metering.ts) — `meterVideoDuration()` charges minutes in the worker, where the real duration is first known. Idempotent via `Video.minutesMetered` so retries never double-bill
+- `app/dashboard/layout.tsx` redirects to `/billing` without an active subscription or trial
+- `SUBSCRIPTION_BYPASS_EMAILS` bypasses all of the above, at the API door and in the worker
+
+**Uploads:**
+Files never pass through a serverless function — Vercel caps request bodies at 4.5 MB. The browser calls `/api/videos/upload/sign` for a Supabase signed URL, PUTs the file directly, then calls `/api/videos/upload/confirm` to start the pipeline.
 
 **Singleton Pattern:**
 Global singletons are used for infrastructure clients:
@@ -240,8 +254,9 @@ Critical environment variables (see [.env.example](.env.example)):
 
 **Payments & Analytics:**
 - `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_SECRET_WEBHOOK_KEY` - Stripe keys
+- `NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID`, `NEXT_PUBLIC_STRIPE_PRO_PRICE_ID` - recurring monthly price IDs, must match [lib/plans.ts](lib/plans.ts)
+- `SUBSCRIPTION_BYPASS_EMAILS` - comma-separated emails that skip subscription and quota checks
 - `NEXT_BASE_URL` - Base URL for redirects (e.g., `http://localhost:3000`)
-- `NEXT_PUBLIC_STRIPE_PORTAL_URL` - Stripe customer portal link
 - `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` - Google Analytics tracking
 - `NEXT_PUBLIC_GOOGLE_TAG_MANAGER_ID` - Google Tag Manager
 - `MAILGUN_API_KEY` - Mailgun API key for emails
@@ -259,6 +274,6 @@ The project is designed for Vercel deployment with automatic deployments on git 
 
 - No free plan
 - 7-day trial (credit card required at signup)
-- Monthly subscriptions: Starter / Pro / Agency
-- Usage tracked by processed video minutes
-- Trial ends after 7 days OR limited minutes (whichever comes first)
+- Monthly subscriptions: Starter $15 (120 min/mo) / Pro $29 (300 min/mo)
+- Usage tracked by processed video minutes (`Company.minutesUsed`, reset on each billing cycle)
+- Trial ends after 7 days OR 30 processed minutes (whichever comes first)

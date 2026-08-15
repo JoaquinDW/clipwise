@@ -8,6 +8,35 @@ const YT_URL_RE = /^https?:\/\/(www\.)?(youtube\.com\/watch\?.*v=|youtu\.be\/)[\
 
 type UploadMode = 'file' | 'youtube' | 'stream';
 
+/**
+ * PUT the file at the Supabase signed URL. XHR rather than fetch because it is
+ * the only way to get upload progress events.
+ */
+function uploadToSignedUrl(
+  uploadUrl: string,
+  file: File,
+  onProgress: (percent: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+    xhr.upload.onprogress = event => {
+      if (event.lengthComputable) {
+        // Leave the last slice of the bar for the confirm round-trip.
+        onProgress(Math.round((event.loaded / event.total) * 90));
+      }
+    };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error(`Upload failed (${xhr.status})`));
+    xhr.onerror = () => reject(new Error('Upload failed. Check your connection and try again.'));
+    xhr.send(file);
+  });
+}
+
 export default function NewVideoPage() {
   const router = useRouter();
   const [mode, setMode] = useState<UploadMode>('file');
@@ -94,14 +123,35 @@ export default function NewVideoPage() {
       let videoId: string;
 
       if (mode === 'file') {
-        const formData = new FormData();
-        formData.append('file', file!);
-        formData.append('title', title);
-        if (description) formData.append('description', description);
-        const res = await fetch('/api/videos/upload', { method: 'POST', body: formData });
-        if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
-        videoId = (await res.json()).videoId;
-        setProgress(30);
+        // 1. Ask the API for a signed URL. The file goes straight to storage:
+        //    routing it through a serverless function would hit the 4.5 MB
+        //    request body limit.
+        const signRes = await fetch('/api/videos/upload/sign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description,
+            fileName: file!.name,
+            fileSize: file!.size,
+          }),
+        });
+        if (!signRes.ok) throw new Error((await signRes.json()).error || 'Upload failed');
+        const signed = await signRes.json();
+
+        // 2. Upload directly, reporting real progress.
+        await uploadToSignedUrl(signed.uploadUrl, file!, setProgress);
+
+        // 3. Tell the API the object landed so the pipeline can start.
+        const confirmRes = await fetch('/api/videos/upload/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ videoId: signed.videoId, extension: signed.extension }),
+        });
+        if (!confirmRes.ok) throw new Error((await confirmRes.json()).error || 'Upload failed');
+
+        videoId = signed.videoId;
+        setProgress(95);
       } else if (mode === 'youtube') {
         const res = await fetch('/api/videos/youtube', {
           method: 'POST',

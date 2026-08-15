@@ -1,25 +1,13 @@
-import { auth } from '@/auth';
 import { GetCompanyVideos } from '@/domain/video/use-case';
 import Link from 'next/link';
-import { prismaClientGlobal } from '@/infra/prisma';
+import { redirect } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import VideoGrid from './VideoGrid';
+import { getSessionUserWithCompany } from '@/lib/auth/session';
 
 export default async function VideosPage() {
-  const session = await auth();
-
-  // For testing: use test user if no session
-  const userId = session?.user?.id || 'test-user-id';
-
-  // Get user's company
-  const user = await prismaClientGlobal.user.findUnique({
-    where: { id: userId },
-    include: { company: true },
-  });
-
-  if (!user?.companyId) {
-    return <div className="p-8">No company found for user</div>;
-  }
+  const user = await getSessionUserWithCompany();
+  if (!user) redirect('/login');
 
   // Get all videos for this company
   const getVideos = new GetCompanyVideos();

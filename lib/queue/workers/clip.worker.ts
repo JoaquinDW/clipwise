@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Worker, Job } from 'bullmq';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { readFile, unlink } from 'fs/promises';
 import { join } from 'path';
@@ -13,7 +13,8 @@ import { createRedisConnection, QUEUE_NAME, type ClipJobData } from '../queue';
 import type { WordTimestamp } from '@/lib/ai/transcribe';
 import type { CaptionStyleName } from '@/lib/ai/caption-styles';
 
-const execAsync = promisify(exec);
+// argv form: user-supplied URLs must never be spliced into a shell string
+const execFileAsync = promisify(execFile);
 
 export async function processClip(job: Job<ClipJobData>) {
   const { videoId, clipId } = job.data;
@@ -45,21 +46,26 @@ export async function processClip(job: Job<ClipJobData>) {
     if ((videoSource === 'YOUTUBE' || videoSource === 'TWITCH' || videoSource === 'KICK') && video.sourceUrl) {
       const startTime = Math.floor(clip.startTime);
       const endTime = Math.ceil(clip.endTime);
-      const cmd = [
+      await execFileAsync(
         'yt-dlp',
-        `--download-sections "*${startTime}-${endTime}"`,
-        '--force-keyframes-at-cuts',
-        '--format "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]"',
-        '--merge-output-format mp4',
-        `-o "${segmentPath}"`,
-        `"${video.sourceUrl}"`,
-      ].join(' ');
-      await execAsync(cmd, { maxBuffer: 1024 * 1024 * 100 });
+        [
+          '--download-sections', `*${startTime}-${endTime}`,
+          '--force-keyframes-at-cuts',
+          '--format', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+          '--merge-output-format', 'mp4',
+          '-o', segmentPath,
+          video.sourceUrl,
+        ],
+        { maxBuffer: 1024 * 1024 * 100 }
+      );
       console.log(`[clip] YouTube segment downloaded for clip ${clipId}`);
     } else if (video.storageUrl) {
       // For uploads: fast seek cut without re-encode (stream copy)
-      const cmd = `ffmpeg -ss ${clip.startTime} -to ${clip.endTime} -i "${video.storageUrl}" -c copy "${segmentPath}" -y`;
-      await execAsync(cmd, { maxBuffer: 1024 * 1024 * 50 });
+      await execFileAsync(
+        'ffmpeg',
+        ['-ss', String(clip.startTime), '-to', String(clip.endTime), '-i', video.storageUrl, '-c', 'copy', segmentPath, '-y'],
+        { maxBuffer: 1024 * 1024 * 50 }
+      );
       console.log(`[clip] Segment extracted from upload for clip ${clipId}`);
     } else {
       throw new Error('No source URL available for clip extraction');

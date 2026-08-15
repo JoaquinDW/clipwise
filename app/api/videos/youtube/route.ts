@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
 import { CreateVideo } from '@/domain/video/use-case';
-import { prismaClientGlobal } from '@/infra/prisma';
 import { enqueueIngest } from '@/lib/queue/queue';
+import { requireBillableUser } from '@/lib/billing/guard';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    const userId = session?.user?.id || 'test-user-id';
-
-    const user = await prismaClientGlobal.user.findUnique({
-      where: { id: userId },
-      include: { company: true },
-    });
-
-    if (!user?.companyId) {
-      return NextResponse.json({ error: 'User has no company' }, { status: 400 });
-    }
+    const guard = await requireBillableUser();
+    if (!guard.ok) return guard.response;
+    const { user } = guard;
 
     const { url, title, description, captionStyle } = await request.json();
 

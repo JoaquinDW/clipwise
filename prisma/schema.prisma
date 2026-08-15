@@ -29,7 +29,19 @@ model Company {
   users       User[]    @relation
   transactions PaymentTransaction[]
   videos      Video[]
-  minutesUsed Int       @default(0) // Track video processing minutes
+
+  // Billing / subscription state, kept in sync from the Stripe webhook
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  plan                 String?   // starter | pro | teams
+  subscriptionStatus   String?   // trialing | active | past_due | canceled | incomplete
+  trialEndsAt          DateTime?
+  currentPeriodEnd     DateTime?
+
+  minutesUsed    Float     @default(0) // Track video processing minutes
+  minutesResetAt DateTime? // Start of the current metering period
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt @default(now())
 }
@@ -134,6 +146,7 @@ model Video {
   audioUrl      String?       // URL of extracted audio (Supabase)
   thumbnailUrl  String?
   duration      Int?          // Duration in seconds
+  minutesMetered Boolean      @default(false) // Guard so a retry never double-bills
   status        VideoStatus   @default(UPLOADING)
   errorMessage  String?
   metadata         Json?         // Additional video metadata

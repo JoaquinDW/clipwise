@@ -79,7 +79,8 @@ export class UpdateVideoMetadata {
   async execute(params: {
     videoId: string;
     storageUrl: string;
-    duration: number;
+    /** Omitted for direct uploads: the ingest worker probes and meters it. */
+    duration?: number;
     thumbnailUrl?: string;
   }): Promise<Video> {
     return await this.repository.update(params.videoId, {

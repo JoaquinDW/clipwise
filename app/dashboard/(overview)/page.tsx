@@ -12,8 +12,11 @@ import {
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { VideoStatus } from '@prisma/client';
+import { getSessionUserWithCompany } from '@/lib/auth/session';
+import { getCompanyAccess } from '@/lib/billing/access';
 
 const statusBadge: Record<string, { className: string; label: string }> = {
   READY: { className: 'dash-badge dash-badge--success', label: 'Ready' },
@@ -42,15 +45,12 @@ function formatDuration(seconds: number) {
 export default async function Page() {
   const session = await auth();
   const name = session?.user?.name || session?.user?.email;
-  const userId = session?.user?.id;
 
-  const user = await prismaClientGlobal.user.findUnique({
-    where: { id: userId },
-    include: { company: true },
-  });
+  const user = await getSessionUserWithCompany();
+  if (!user) redirect('/login');
 
-  const company = user?.company;
-  const companyId = company?.id;
+  const companyId = user.companyId;
+  const access = await getCompanyAccess(companyId, user.email);
 
   const [totalVideos, readyVideos, totalClips, recentVideos] = companyId
     ? await Promise.all([
@@ -66,7 +66,6 @@ export default async function Page() {
     ])
     : [0, 0, 0, []];
 
-  const minutesUsed = company?.minutesUsed || 0;
   const hasVideos = totalVideos > 0;
 
   const statCards = [
@@ -88,8 +87,8 @@ export default async function Page() {
     },
     {
       label: 'Minutes Used',
-      value: minutesUsed.toFixed(1),
-      sub: 'Processing time',
+      value: access.minutesUsed.toFixed(1),
+      sub: `${access.minutesRemaining.toFixed(1)} of ${access.minutesLimit} left`,
       Icon: ClockIcon,
       accent: '#38BDF8',
       tint: 'rgba(56, 189, 248, 0.12)',

@@ -1,8 +1,6 @@
 import NavLinks from "@/app/ui/dashboard/nav-links"
-import {
-  ChatBubbleLeftEllipsisIcon,
-  ArrowRightStartOnRectangleIcon,
-} from "@heroicons/react/24/outline"
+import FeedbackDialog from "@/app/ui/dashboard/feedback-dialog"
+import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline"
 import { signOut, auth } from "@/auth"
 import Link from "next/link"
 
@@ -31,13 +29,7 @@ export default async function SideNav() {
         <NavLinks />
         <div className="hidden h-auto w-full grow md:block" />
 
-        <Link
-          href="mailto:contact@example.com"
-          className="dash-nav-footer-btn"
-        >
-          <ChatBubbleLeftEllipsisIcon className="w-5 flex-none" aria-hidden="true" />
-          <span className="hidden md:block">Feedback</span>
-        </Link>
+        <FeedbackDialog />
 
         {!!session && (
           <div
