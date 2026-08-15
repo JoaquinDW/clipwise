@@ -71,6 +71,7 @@ export default function RootLayout({
         <GoogleAnalyticsWrapper />
         <GoogleTagManagerWrapper />
         <ToastProvider>{children}</ToastProvider>
+        <Analytics />
       </body>
     </html>
   )
