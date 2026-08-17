@@ -11,8 +11,8 @@ const RankedCandidateSchema = z.object({
   candidateIndex: z.number().int().min(1).describe('1-based index from the candidate list'),
   title: z.string().describe('Catchy title for this clip (max 100 chars)'),
   description: z.string().describe('Brief description of why this moment is viral'),
-  startTime: z.number().describe('Refined start time in seconds (must be within the candidate window)'),
-  endTime: z.number().describe('Refined end time in seconds (must be within the candidate window)'),
+  startTime: z.number().describe('Refined start time in SECONDS, absolute from the start of the video (e.g. 2010.0, not 33:30). Must be within the candidate window.'),
+  endTime: z.number().describe('Refined end time in SECONDS, absolute from the start of the video (e.g. 2040.0, not 34:00). Must be within the candidate window.'),
   hookText: z.string().describe('The hook or key phrase that makes this viral'),
   score: z.number().min(0).max(100).describe('Virality score 0-100'),
   tags: z.array(z.string()).describe('Relevant tags (funny, emotional, educational, etc.)'),
@@ -66,29 +66,72 @@ export async function rankCandidates(
     console.log(`  ${i + 1}. [Candidate ${rc.candidateIndex}] "${rc.title}" — ${rc.startTime.toFixed(1)}s–${rc.endTime.toFixed(1)}s (score: ${rc.score})`);
   });
 
-  // Validate: startTime/endTime must lie within the candidate's expanded window
-  const validated = result.object.rankedClips
-    .filter((rc) => {
-      const candidate = candidates[rc.candidateIndex - 1];
-      if (!candidate) {
-        console.warn(`⚠️ Skipping ranked clip with out-of-range candidateIndex ${rc.candidateIndex}`);
-        return false;
-      }
-      const duration = rc.endTime - rc.startTime;
-      if (duration < minDuration || duration > maxDuration) {
-        console.warn(`⚠️ Skipping clip "${rc.title}" — duration ${duration.toFixed(1)}s out of [${minDuration}, ${maxDuration}]`);
-        return false;
-      }
-      if (rc.startTime < candidate.expandedStart - 1 || rc.endTime > candidate.expandedEnd + 1) {
-        console.warn(`⚠️ Skipping clip "${rc.title}" — timestamps outside expanded window`);
-        return false;
-      }
-      return true;
-    })
-    .slice(0, maxClips);
+  const validated = repairRankedClips(result.object.rankedClips, candidates, {
+    minDuration,
+    maxDuration,
+    maxClips,
+  });
 
   console.log(`✅ ${validated.length} clips passed validation`);
   return { rankedClips: validated };
+}
+
+/**
+ * Validate the model's timestamps, falling back to the candidate's own window
+ * where they are unusable instead of dropping the clip.
+ *
+ * GPT's refinement of the boundaries is a bonus; its *ranking* is what we
+ * actually asked for. Dropping a clip on every bad timestamp is how one
+ * systematic mistake — such as answering in minutes — turns into zero clips for
+ * an entire video.
+ *
+ * Exported so the repair can be tested without spending a model call.
+ */
+export function repairRankedClips(
+  rankedClips: RankedCandidate[],
+  candidates: ExpandedWindow[],
+  options: { minDuration: number; maxDuration: number; maxClips: number }
+): RankedCandidate[] {
+  const { minDuration, maxDuration, maxClips } = options;
+  let repaired = 0;
+
+  const validated = rankedClips
+    .map((rc): RankedCandidate | null => {
+      const candidate = candidates[rc.candidateIndex - 1];
+      if (!candidate) {
+        // The only irreparable case — there is no window to fall back to
+        console.warn(`⚠️ Dropping ranked clip with out-of-range candidateIndex ${rc.candidateIndex}`);
+        return null;
+      }
+
+      const duration = rc.endTime - rc.startTime;
+      const badDuration = duration < minDuration || duration > maxDuration;
+      const outsideWindow =
+        rc.startTime < candidate.expandedStart - 1 || rc.endTime > candidate.expandedEnd + 1;
+
+      if (!badDuration && !outsideWindow) return rc;
+
+      // The heuristic window is within [minDuration, maxDuration] by
+      // construction, so it is always a valid substitute
+      const why = badDuration
+        ? `duration ${duration.toFixed(1)}s out of [${minDuration}, ${maxDuration}]`
+        : 'timestamps outside expanded window';
+      console.warn(
+        `🔧 Repairing clip "${rc.title}" — ${why}; using candidate window ` +
+          `${candidate.startTime.toFixed(1)}s–${candidate.endTime.toFixed(1)}s`
+      );
+      repaired++;
+      return { ...rc, startTime: candidate.startTime, endTime: candidate.endTime };
+    })
+    .filter((rc): rc is RankedCandidate => rc !== null)
+    .slice(0, maxClips);
+
+  if (repaired > 0) {
+    // A handful is normal; most of them means the prompt has drifted again
+    console.warn(`⚠️ ${repaired}/${rankedClips.length} clips needed timestamp repair`);
+  }
+
+  return validated;
 }
 
 // ── Converter to Highlight (for downstream Clip record creation) ──────────────
@@ -181,17 +224,27 @@ function buildUserPrompt(
   minDuration: number,
   maxDuration: number
 ): string {
+  // Seconds are the primary number and M:SS is only a readable annotation: given
+  // a bare "33:30" window the model answers 33.5, reading the clock as decimal
+  // minutes, and every clip is then rejected for being ~1.4 "seconds" long.
   const candidateList = candidates
     .map(
-      (c, i) => `Candidate ${i + 1} [${formatTime(c.expandedStart)}–${formatTime(c.expandedEnd)}] (heuristic score: ${(c.heuristicScore * 100).toFixed(0)}/100)
+      (c, i) => `Candidate ${i + 1} [${c.expandedStart.toFixed(1)}s–${c.expandedEnd.toFixed(1)}s] (clock: ${formatTime(c.expandedStart)}–${formatTime(c.expandedEnd)}) (heuristic score: ${(c.heuristicScore * 100).toFixed(0)}/100)
 ${c.text.trim()}`
     )
     .join('\n\n---\n\n');
 
   return `Rank these ${candidates.length} pre-selected video candidates and return the top ${maxClips} as clips.
 
+⚠️ TIME FORMAT — read carefully:
+- ALL times are in SECONDS, absolute from the start of the video.
+- Candidate windows are given in seconds, e.g. [2010.0s–2094.0s]. The "clock:" value
+  in parentheses is only for readability — never answer in M:SS or in minutes.
+- ✓ CORRECT: startTime=2010.0, endTime=2040.0 (a 30 second clip)
+- ✗ WRONG: startTime=33.5, endTime=34.9 (that is the clock read as minutes)
+
 ⚠️ Requirements:
-- Each clip must be ${minDuration}–${maxDuration} seconds
+- Each clip must be ${minDuration}–${maxDuration} seconds, i.e. endTime - startTime is between ${minDuration} and ${maxDuration}
 - startTime and endTime must be within each candidate's time window
 - Complete sentences only — never cut mid-sentence
 - Order by virality score (highest first)

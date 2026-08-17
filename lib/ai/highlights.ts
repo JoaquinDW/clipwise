@@ -411,7 +411,7 @@ function buildUserPrompt(
 4. CROP STRATEGY: For EACH highlight, analyze the scene and select the appropriate crop method with reasoning
 5. LAYOUT TYPE: Select the composite layoutType based on content clues (gaming vocab → gameplay_cam, two-person dialogue → interview_split, screen tutorial → tutorial_pip, single person → talking_head, educational visual [whiteboard/diagrams/CS terms, no click instructions] → standard with cropStrategy blur_sides, uncertain → standard). Use default layoutRegions unless evidence suggests otherwise.
 
-TRANSCRIPTION (with timestamps in seconds):
+TRANSCRIPTION (segments labelled with M:SS clock times — answer in SECONDS, e.g. 2:30 is startTime=150.0):
 ${transcription}
 
 INSTRUCTIONS FOR TIMESTAMP SELECTION:

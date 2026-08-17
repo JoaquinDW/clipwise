@@ -9,6 +9,7 @@ import { prismaClientGlobal } from '@/infra/prisma';
 import { getStorageClient } from '@/lib/video/storage';
 import { generateThumbnail, getVideoMetadata } from '@/lib/video/processor';
 import { meterVideoDuration } from '@/lib/billing/metering';
+import { ytdlpArgs } from '@/lib/video/ytdlp';
 import { createRedisConnection, QUEUE_NAME, enqueueTranscribe, enqueueTranscribeChunk, type IngestJobData } from '../queue';
 
 // argv form: user-supplied URLs must never be spliced into a shell string
@@ -26,7 +27,7 @@ async function processStreamIngest(
   try {
     const { stdout } = await execFileAsync(
       'yt-dlp',
-      ['--dump-json', '--no-download', sourceUrl],
+      ytdlpArgs('--dump-json', '--no-download', sourceUrl),
       { maxBuffer: 1024 * 1024 * 10, timeout: 60_000 }
     );
     metadata = JSON.parse(stdout);
@@ -86,14 +87,14 @@ async function processStreamIngest(
     try {
       await execFileAsync(
         'yt-dlp',
-        [
+        ytdlpArgs(
           '--download-sections', `*${chunk.startTime}-${chunk.endTime}`,
           '--format', 'bestaudio[ext=m4a]/bestaudio',
           '--no-playlist',
           '--force-keyframes-at-cuts',
           '-o', chunkTmpPath,
           sourceUrl,
-        ],
+        ),
         { maxBuffer: 1024 * 1024 * 200, timeout: 120_000 }
       );
 
@@ -152,7 +153,7 @@ export async function processIngest(job: Job<IngestJobData>) {
       try {
         const { stdout } = await execFileAsync(
           'yt-dlp',
-          ['--dump-json', '--no-download', sourceUrl],
+          ytdlpArgs('--dump-json', '--no-download', sourceUrl),
           { maxBuffer: 1024 * 1024 * 10, timeout: 60_000 }
         );
         const ytMeta = JSON.parse(stdout) as { duration?: number };
@@ -166,7 +167,7 @@ export async function processIngest(job: Job<IngestJobData>) {
       // Download only audio stream — much faster and smaller than full video
       await execFileAsync(
         'yt-dlp',
-        ['--format', 'bestaudio[ext=m4a]/bestaudio', '--no-playlist', '-o', audioTemplate, sourceUrl],
+        ytdlpArgs('--format', 'bestaudio[ext=m4a]/bestaudio', '--no-playlist', '-o', audioTemplate, sourceUrl),
         { maxBuffer: 1024 * 1024 * 50 }
       );
 
@@ -220,7 +221,7 @@ export async function processIngest(job: Job<IngestJobData>) {
       // Generate thumbnail from uploaded video
       const thumbPath = join(tmpdir(), `thumb-${videoId}.jpg`);
       try {
-        await generateThumbnail(tempVideoPath, thumbPath, 2);
+        await generateThumbnail(tempVideoPath, thumbPath, { timestamp: 2, size: '?x720' });
         const thumbBuffer = await readFile(thumbPath);
         const thumbArrayBuffer = thumbBuffer.buffer.slice(thumbBuffer.byteOffset, thumbBuffer.byteOffset + thumbBuffer.byteLength) as ArrayBuffer;
         const thumbBlob = new Blob([thumbArrayBuffer], { type: 'image/jpeg' });

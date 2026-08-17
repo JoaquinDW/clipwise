@@ -11,6 +11,7 @@
 
 import ffmpeg from 'fluent-ffmpeg';
 import { CaptionsResult, captionsToASS } from '../ai/captions';
+import { buildFaceTrajectory, TRACKING_PROFILES } from './face-track';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
@@ -72,6 +73,50 @@ function buildOutputTail(assPath?: string): string {
 }
 
 /**
+ * Below this much real width in the cropped region, rendering at 1080x1920 is
+ * upscaling for its own sake: it adds weight and softness without adding
+ * detail. 720x1280 still clears the TikTok/Reels minimum.
+ */
+const MIN_WIDTH_FOR_1080 = 720;
+const REDUCED_OUTPUT = { width: 720, height: 1280 };
+
+/**
+ * Pick an output size the source can actually fill.
+ * Only ever reduces — an explicit non-default request is left alone.
+ */
+function fitOutputToSource(
+  cropWidth: number,
+  requestedWidth: number,
+  requestedHeight: number
+): { width: number; height: number } {
+  if (requestedWidth !== 1080 || requestedHeight !== 1920) {
+    return { width: requestedWidth, height: requestedHeight };
+  }
+  if (cropWidth >= MIN_WIDTH_FOR_1080) {
+    return { width: requestedWidth, height: requestedHeight };
+  }
+  console.log(`📉 Source only has ${cropWidth}px across the crop — rendering 720x1280 instead of upscaling`);
+  return REDUCED_OUTPUT;
+}
+
+/** Where the crop window's centre sits, as a fraction of source width. */
+const SUBJECT_POSITION_CENTERS: Record<SubjectPosition, number> = {
+  left: 0.3,
+  center: 0.5,
+  right: 0.7,
+};
+
+/**
+ * Left edge of a static crop window that puts the subject in frame.
+ * Without this the AI's subjectPosition is decided and then thrown away.
+ */
+function staticCropX(sourceWidth: number, cropWidth: number, position: SubjectPosition): number {
+  const center = sourceWidth * SUBJECT_POSITION_CENTERS[position];
+  const maxX = Math.max(0, sourceWidth - cropWidth);
+  return Math.floor(Math.min(maxX, Math.max(0, center - cropWidth / 2)));
+}
+
+/**
  * Extract a clip from a video
  */
 export async function extractClip(
@@ -105,11 +150,13 @@ export async function cropToVertical(
   options?: {
     width?: number; // Default: 1080
     height?: number; // Default: 1920
-    position?: 'center' | 'top' | 'bottom'; // Default: center
+    position?: 'center' | 'top' | 'bottom'; // Default: center — vertical axis only
+    horizontalPosition?: SubjectPosition; // Where the subject sits in a wide source
     assPath?: string; // Burn these captions in the same pass as the crop
   }
 ): Promise<void> {
-  const { width = 1080, height = 1920, position = 'center', assPath } = options || {};
+  let { width = 1080, height = 1920 } = options || {};
+  const { position = 'center', horizontalPosition = 'center', assPath } = options || {};
 
   // Appended to the crop/scale chain so captions cost no extra re-encode
   const captionFilter = assPath
@@ -142,8 +189,10 @@ export async function cropToVertical(
       if (sourceAspect > targetAspect) {
         // Source is wider - crop horizontally
         const cropWidth = Math.floor(sourceHeight * targetAspect);
-        cropX = Math.floor((sourceWidth - cropWidth) / 2);
+        cropX = staticCropX(sourceWidth, cropWidth, horizontalPosition);
         cropY = 0;
+
+        ({ width, height } = fitOutputToSource(cropWidth, width, height));
 
         ffmpeg(inputPath)
           .videoFilters([
@@ -248,6 +297,16 @@ export interface CompositeLayoutOptions {
   height?: number; // default 1920
 }
 
+/**
+ * Reported whenever a render did not use the strategy that was asked for.
+ * A type alias rather than an interface so it stays assignable to Prisma's Json input.
+ */
+export type RenderFallback = {
+  from: CropMethod;
+  to: string;
+  reason: string;
+};
+
 export interface SmartCropOptions {
   method: CropMethod;
   subjectPosition: SubjectPosition;
@@ -255,15 +314,17 @@ export interface SmartCropOptions {
   height?: number; // Default: 1920
   compositeLayout?: CompositeLayoutOptions;
   assPath?: string; // Burn these captions in the same pass as the crop
+  /** Called when the requested strategy could not be used. */
+  onFallback?: (info: RenderFallback) => void;
 }
 
 /**
  * Smart crop video to vertical 9:16 format with AI-driven strategies
  *
  * V2 Engine with multiple crop methods:
- * - track_speaker: Smooth tracking for talking heads (zoompan filter)
- * - track_action: Dynamic tracking for movement (zoompan with motion)
- * - wide_shot: Static center crop (fallback to cropToVertical)
+ * - track_speaker: Face tracking for talking heads (sendcmd-driven crop)
+ * - track_action: Face tracking tuned to follow movement faster
+ * - wide_shot: Static crop placed by subjectPosition
  * - blur_sides: Blurred letterbox for groups (split + blur + overlay)
  */
 export async function cropToVerticalSmart(
@@ -271,91 +332,110 @@ export async function cropToVerticalSmart(
   outputPath: string,
   options: SmartCropOptions
 ): Promise<void> {
-  const { method, subjectPosition, width = 1080, height = 1920, assPath } = options;
+  let { width = 1080, height = 1920 } = options;
+  const { method, subjectPosition, assPath, onFallback } = options;
 
   console.log(`🎬 Smart Crop: Using "${method}" strategy with subject at "${subjectPosition}"`);
 
-  // For wide_shot, use existing cropToVertical function
-  if (method === 'wide_shot') {
-    return cropToVertical(inputPath, outputPath, { width, height, position: 'center', assPath });
+  const staticCrop = (reason?: string) => {
+    if (reason) {
+      console.warn(`⚠️  "${method}" downgraded to a static crop: ${reason}`);
+      onFallback?.({ from: method, to: 'static_crop', reason });
+    }
+    return cropToVertical(inputPath, outputPath, {
+      width,
+      height,
+      position: 'center',
+      horizontalPosition: subjectPosition,
+      assPath,
+    });
+  };
+
+  if (method === 'wide_shot') return staticCrop();
+
+  const metadata = await new Promise<any>((resolve, reject) => {
+    ffmpeg.ffprobe(inputPath, (err, data) => (err ? reject(new Error(`FFprobe error: ${err.message}`)) : resolve(data)));
+  });
+
+  const videoStream = metadata.streams.find((s: any) => s.codec_type === 'video');
+  if (!videoStream?.width || !videoStream?.height) {
+    throw new Error('Could not determine video dimensions');
   }
 
-  return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(inputPath, (err, metadata) => {
-      if (err) {
-        return reject(new Error(`FFprobe error: ${err.message}`));
-      }
+  const sourceWidth: number = videoStream.width;
+  const sourceHeight: number = videoStream.height;
 
-      const videoStream = metadata.streams.find((s) => s.codec_type === 'video');
-      if (!videoStream || !videoStream.width || !videoStream.height) {
-        return reject(new Error('Could not determine video dimensions'));
-      }
+  // Composite layout takes priority over single-region crop strategies
+  if (options.compositeLayout && options.compositeLayout.layoutType !== 'standard') {
+    return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, assPath);
+  }
 
-      const sourceWidth = videoStream.width;
-      const sourceHeight = videoStream.height;
-      const targetAspect = 9 / 16;
+  let filterComplex: string;
+  let cmdFilePath: string | undefined;
 
-      // Composite layout takes priority over single-region crop strategies
-      if (options.compositeLayout && options.compositeLayout.layoutType !== 'standard') {
-        return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, assPath)
-          .then(resolve)
-          .catch(reject);
-      }
+  if (method === 'blur_sides') {
+    filterComplex = buildBlurSidesFilter(sourceWidth, sourceHeight, width, height);
+  } else if (method === 'track_speaker' || method === 'track_action') {
+    const cropWidth = Math.floor(sourceHeight * (9 / 16));
+    if (cropWidth >= sourceWidth) {
+      // Source is already at or narrower than 9:16 — there is nothing to pan across
+      return staticCrop('source is not wider than 9:16');
+    }
 
-      try {
-        let filterComplex: string;
+    ({ width, height } = fitOutputToSource(cropWidth, width, height));
 
-        switch (method) {
-          case 'blur_sides':
-            filterComplex = buildBlurSidesFilter(sourceWidth, sourceHeight, width, height);
-            break;
+    const profile = TRACKING_PROFILES[method === 'track_speaker' ? 'speaker' : 'action'];
+    let trajectory;
+    try {
+      trajectory = await buildFaceTrajectory(inputPath, sourceWidth, cropWidth, profile);
+    } catch (err) {
+      // Detection is best-effort; a broken detector must not fail the clip
+      const reason = err instanceof Error ? err.message : String(err);
+      console.error(`❌ Face tracking failed for ${method}: ${reason}`);
+      return staticCrop(`face tracking failed: ${reason}`);
+    }
 
-          case 'track_speaker':
-            filterComplex = buildTrackSpeakerFilter(sourceWidth, sourceHeight, width, height, subjectPosition);
-            break;
+    if (trajectory.kind === 'static') return staticCrop(trajectory.reason);
 
-          case 'track_action':
-            filterComplex = buildTrackActionFilter(sourceWidth, sourceHeight, width, height, subjectPosition);
-            break;
+    cmdFilePath = trajectory.cmdFilePath;
+    filterComplex = buildTrackingFilter(cropWidth, width, height, trajectory.startX, cmdFilePath);
+  } else {
+    return staticCrop();
+  }
 
-          default:
-            // Fallback to simple center crop
-            return cropToVertical(inputPath, outputPath, { width, height, position: 'center', assPath })
-              .then(resolve)
-              .catch(reject);
-        }
+  // setsar=1 is not optional: scale inside these graphs rewrites SAR to
+  // preserve the source display aspect, which leaves 1080x1920 output
+  // playing back stretched. Captions ride along on the same graph — a
+  // separate ffmpeg run would re-encode the whole clip for nothing.
+  filterComplex = `${filterComplex};[out]${buildOutputTail(assPath)}[final]`;
 
-        // setsar=1 is not optional: scale inside these graphs rewrites SAR to
-        // preserve the source display aspect, which leaves 1080x1920 output
-        // playing back stretched. Captions ride along on the same graph — a
-        // separate ffmpeg run would re-encode the whole clip for nothing.
-        filterComplex = `${filterComplex};[out]${buildOutputTail(assPath)}[final]`;
+  console.log(`📐 Applying filter: ${filterComplex.substring(0, 100)}...`);
 
-        console.log(`📐 Applying filter: ${filterComplex.substring(0, 100)}...`);
-
-        ffmpeg(inputPath)
-          .complexFilter(filterComplex)
-          // '0:a?' — an explicit -map drops every other stream, and the '?'
-          // keeps silent sources from failing outright
-          .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
-          .output(outputPath)
-          .audioCodec('copy')
-          .on('end', () => {
-            console.log(`✅ Smart crop completed: ${method}`);
-            resolve();
-          })
-          .on('error', (err) => {
-            console.warn(`⚠️  Smart crop (${method}) failed, falling back to wide_shot: ${err.message}`);
-            cropToVertical(inputPath, outputPath, { width, height, position: 'center', assPath })
-              .then(resolve)
-              .catch(reject);
-          })
-          .run();
-      } catch (error) {
-        reject(error);
-      }
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(inputPath)
+        .complexFilter(filterComplex)
+        // '0:a?' — an explicit -map drops every other stream, and the '?'
+        // keeps silent sources from failing outright
+        .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
+        .output(outputPath)
+        .audioCodec('copy')
+        .on('end', () => {
+          console.log(`✅ Smart crop completed: ${method}`);
+          resolve();
+        })
+        .on('error', (err) => reject(new Error(err.message)))
+        .run();
     });
-  });
+  } catch (err) {
+    // Loud on purpose: a silent downgrade here hid a completely broken
+    // track_speaker filter for the entire life of the feature
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Smart crop (${method}) failed, falling back to a static crop: ${reason}`);
+    return staticCrop(`render failed: ${reason}`);
+  } finally {
+    if (cmdFilePath) await fs.unlink(cmdFilePath).catch(() => {});
+  }
 }
 
 /**
@@ -381,79 +461,28 @@ function buildBlurSidesFilter(
 }
 
 /**
- * Build track_speaker filter for talking heads
- * Uses smooth panning zoompan filter to follow the speaker
+ * Build the filter that follows a tracked subject across the frame.
+ *
+ * The crop window is labelled `crop@dyn` so the sendcmd script produced by
+ * buildFaceTrajectory can steer its `x` as the clip plays.
+ *
+ * This replaces an earlier zoompan approach that could never have worked: it
+ * asked for a 1080x1920 window out of a 1920x1080 frame at zoom 1, so ffmpeg
+ * aborted with "Error reinitializing filters" on every single clip and the
+ * error handler quietly downgraded the render to a centre crop.
  */
-function buildTrackSpeakerFilter(
-  sourceWidth: number,
-  sourceHeight: number,
+function buildTrackingFilter(
+  cropWidth: number,
   targetWidth: number,
   targetHeight: number,
-  position: SubjectPosition
+  startX: number,
+  cmdFilePath: string
 ): string {
-  const targetAspect = 9 / 16;
-  const cropWidth = Math.floor(sourceHeight * targetAspect);
-
-  // Calculate initial X position based on subject position
-  let initialX: number;
-  if (position === 'left') {
-    initialX = Math.floor(sourceWidth * 0.2); // 20% from left
-  } else if (position === 'right') {
-    initialX = Math.floor(sourceWidth * 0.8 - cropWidth); // 80% from left
-  } else {
-    initialX = Math.floor((sourceWidth - cropWidth) / 2); // center
-  }
-
-  // Normalize to CFR first — zoompan requires constant frame rate (VFR from yt-dlp causes "Error reinitializing filters")
-  return `
-    [0:v]fps=30[cfr];
-    [cfr]zoompan=
-      z='1':
-      x='${initialX}+sin(t/5)*20':
-      y='0':
-      d=1:
-      s=${targetWidth}x${targetHeight}:
-      fps=30
-    [out]
-  `.trim().replace(/\n\s+/g, '');
-}
-
-/**
- * Build track_action filter for dynamic movement
- * Similar to track_speaker but with more responsive tracking
- */
-function buildTrackActionFilter(
-  sourceWidth: number,
-  sourceHeight: number,
-  targetWidth: number,
-  targetHeight: number,
-  position: SubjectPosition
-): string {
-  const targetAspect = 9 / 16;
-  const cropWidth = Math.floor(sourceHeight * targetAspect);
-
-  // Calculate initial X position based on subject position
-  let initialX: number;
-  if (position === 'left') {
-    initialX = Math.floor(sourceWidth * 0.2);
-  } else if (position === 'right') {
-    initialX = Math.floor(sourceWidth * 0.8 - cropWidth);
-  } else {
-    initialX = Math.floor((sourceWidth - cropWidth) / 2);
-  }
-
-  // Normalize to CFR first — zoompan requires constant frame rate (VFR from yt-dlp causes "Error reinitializing filters")
-  return `
-    [0:v]fps=30[cfr];
-    [cfr]zoompan=
-      z='1':
-      x='${initialX}+sin(t/3)*40':
-      y='0':
-      d=1:
-      s=${targetWidth}x${targetHeight}:
-      fps=30
-    [out]
-  `.trim().replace(/\n\s+/g, '');
+  return (
+    `[0:v]sendcmd=f=${escapeFilterPath(cmdFilePath)},` +
+    `crop@dyn=w=${cropWidth}:h=ih:x=${startX}:y=0,` +
+    `scale=${targetWidth}:${targetHeight}:flags=lanczos[out]`
+  );
 }
 
 const CAPTION_SIZE_MULTIPLIERS = { small: 0.75, medium: 1.0, large: 1.3 } as const;
@@ -519,23 +548,29 @@ export async function burnCaptions(
 
 /**
  * Generate thumbnail from video
+ *
+ * `size` uses the `?xHEIGHT` form so the frame keeps the source aspect ratio —
+ * pinning both dimensions squashes anything that is not already that shape.
  */
 export async function generateThumbnail(
   inputPath: string,
   outputPath: string,
-  timestamp: number = 1 // seconds
+  opts: { timestamp?: number; size?: string } = {}
 ): Promise<void> {
+  const { timestamp = 1, size = '?x720' } = opts;
+
   return new Promise((resolve, reject) => {
+    // No .run() here: screenshots() spawns ffmpeg itself, and a trailing .run()
+    // has no output configured, so it throws "No output specified" every time.
     ffmpeg(inputPath)
       .screenshots({
         timestamps: [timestamp],
         filename: path.basename(outputPath),
         folder: path.dirname(outputPath),
-        size: '1080x1920',
+        size,
       })
       .on('end', () => resolve())
-      .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
-      .run();
+      .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)));
   });
 }
 

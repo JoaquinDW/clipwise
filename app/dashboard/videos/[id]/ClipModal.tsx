@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { PlayIcon } from "@heroicons/react/24/outline"
-import Image from "next/image"
 
 interface Clip {
   id: string
@@ -116,12 +115,16 @@ export default function ClipModal({
             {/* Thumbnail */}
             <div
               className="relative flex-none rounded-lg overflow-hidden bg-[rgba(255,255,255,0.06)]"
-              style={{ width: 40, height: 72 }}
+              style={{ width: 56, height: 100 }}
             >
               {clip.thumbnailUrl ? (
-                <Image
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   src={clip.thumbnailUrl}
                   alt=""
+                  width={56}
+                  height={100}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               ) : isGenerating ? (

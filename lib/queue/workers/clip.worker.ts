@@ -7,8 +7,9 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { generateCaptions } from '@/lib/ai/captions';
-import { createClipSmart, generateProxy, generateThumbnail } from '@/lib/video/processor';
+import { createClipSmart, generateProxy, generateThumbnail, type RenderFallback } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
+import { ytdlpArgs } from '@/lib/video/ytdlp';
 import { createRedisConnection, QUEUE_NAME, type ClipJobData } from '../queue';
 import type { WordTimestamp } from '@/lib/ai/transcribe';
 import type { CaptionStyleName } from '@/lib/ai/caption-styles';
@@ -48,14 +49,19 @@ export async function processClip(job: Job<ClipJobData>) {
       const endTime = Math.ceil(clip.endTime);
       await execFileAsync(
         'yt-dlp',
-        [
+        ytdlpArgs(
           '--download-sections', `*${startTime}-${endTime}`,
           '--force-keyframes-at-cuts',
-          '--format', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+          // Not 'ext=mp4': that restricts YouTube to AVC, which caps at 1080p, and a
+          // 9:16 crop of a 1080p frame keeps only 607px of real width. 1440p VP9
+          // gives 810px instead. AV1 is excluded because the bundled ffmpeg 4.4 has
+          // only libaom to decode it, which is far slower than dav1d.
+          '--format',
+          'bestvideo[height<=1440][vcodec!*=av01]+bestaudio/bestvideo[vcodec!*=av01]+bestaudio/best',
           '--merge-output-format', 'mp4',
           '-o', segmentPath,
           video.sourceUrl,
-        ],
+        ),
         { maxBuffer: 1024 * 1024 * 100 }
       );
       console.log(`[clip] YouTube segment downloaded for clip ${clipId}`);
@@ -104,6 +110,10 @@ export async function processClip(job: Job<ClipJobData>) {
     const layoutType = (metadata?.layoutType ?? 'standard') as string;
     const cropStrategy = (metadata?.cropStrategy ?? { method: 'wide_shot' }) as { method: string; subjectPosition?: string };
 
+    // Recorded on the clip so a downgraded render is visible in the database
+    // instead of only in a log line nobody reads
+    let renderFallback: RenderFallback | undefined;
+
     await createClipSmart(
       segmentPath,
       0,
@@ -118,6 +128,10 @@ export async function processClip(job: Job<ClipJobData>) {
             layoutType !== 'standard' && layoutType !== 'talking_head'
               ? { layoutType: layoutType as any, layoutRegions: metadata?.layoutRegions as any }
               : undefined,
+          onFallback: (info) => {
+            renderFallback = info;
+            console.warn(`[clip] ${clipId} fell back from ${info.from}: ${info.reason}`);
+          },
         },
         burnCaptions: shouldBurnCaptions,
         ...(shouldBurnCaptions && { stylePreset: captionStyle, captionPosition, captionSize }),
@@ -146,14 +160,16 @@ export async function processClip(job: Job<ClipJobData>) {
       await unlink(proxyPath).catch(() => {});
     }
 
-    // Explicit cleanup of outputPath now that proxy is done
-    await unlink(outputPath).catch(() => {});
-
-    // 5c. Generate and upload clip thumbnail
+    // 5c. Generate and upload clip thumbnail — from the rendered 9:16 clip, not
+    // the landscape source segment, so the preview matches what plays. Frame is
+    // taken mid-clip to dodge fades and black frames at the cut.
     let clipThumbnailUrl: string | undefined;
     const thumbPath = join(tmpdir(), `thumb-${clipId}.jpg`);
     try {
-      await generateThumbnail(segmentPath, thumbPath, 1);
+      await generateThumbnail(outputPath, thumbPath, {
+        timestamp: (clip.endTime - clip.startTime) / 2,
+        size: '?x960',
+      });
       const thumbBuffer = await readFile(thumbPath);
       const thumbArrayBuffer = thumbBuffer.buffer.slice(thumbBuffer.byteOffset, thumbBuffer.byteOffset + thumbBuffer.byteLength) as ArrayBuffer;
       const thumbBlob = new Blob([thumbArrayBuffer], { type: 'image/jpeg' });
@@ -161,10 +177,14 @@ export async function processClip(job: Job<ClipJobData>) {
       clipThumbnailUrl = thumbResult.url;
       console.log(`[clip] Thumbnail uploaded for clip ${clipId}: ${clipThumbnailUrl}`);
     } catch (thumbErr) {
-      console.warn(`[clip] Thumbnail generation failed (non-fatal) for ${clipId}:`, thumbErr);
+      // Non-fatal, but loud: a silent warn here is how this went unnoticed before
+      console.error(`[clip] Thumbnail generation failed (non-fatal) for ${clipId}:`, thumbErr);
     } finally {
       await unlink(thumbPath).catch(() => {});
     }
+
+    // Explicit cleanup of outputPath now that proxy and thumbnail are done
+    await unlink(outputPath).catch(() => {});
 
     // 6. Save clip record
     await prismaClientGlobal.clip.update({
@@ -177,6 +197,7 @@ export async function processClip(job: Job<ClipJobData>) {
         metadata: {
           ...(metadata ?? {}),
           ...(proxyUrl ? { proxyUrl } : {}),
+          ...(renderFallback ? { renderFallback } : {}),
         },
       },
     });

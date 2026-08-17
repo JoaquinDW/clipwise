@@ -106,19 +106,19 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
       orderBy: { heuristicScore: 'desc' },
     });
 
-    await Promise.all(
-      rankingResult.rankedClips.map(async (rc) => {
-        const record = candidateRecords[rc.candidateIndex - 1];
-        if (!record) return;
-        await prismaClientGlobal.candidate.update({
-          where: { id: record.id },
-          data: {
-            gptScore: rc.score / 100,
-            rank: rankingResult.rankedClips.indexOf(rc) + 1,
-          },
-        });
-      })
-    );
+    // Sequential on purpose: this is analytics metadata off the critical path, and
+    // firing one connection per clip is what exhausted the database pool.
+    for (const [index, rc] of rankingResult.rankedClips.entries()) {
+      const record = candidateRecords[rc.candidateIndex - 1];
+      if (!record) continue;
+      await prismaClientGlobal.candidate.update({
+        where: { id: record.id },
+        data: {
+          gptScore: rc.score / 100,
+          rank: index + 1,
+        },
+      });
+    }
 
     // Metrics logging
     const fullTranscriptTokenEstimate = Math.round(
@@ -161,36 +161,51 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
 
   console.log(`[analyze] Found ${highlights.length} highlights (plan cap: ${maxClips})`);
 
-  await Promise.all(
-    highlights.map(async (highlight) => {
-      const clip = await prismaClientGlobal.clip.create({
-        data: {
-          videoId,
-          title: highlight.title,
-          description: highlight.description,
-          startTime: highlight.startTime,
-          endTime: highlight.endTime,
-          duration: highlight.endTime - highlight.startTime,
-          score: highlight.score,
-          status: 'PENDING',
-          metadata: {
-            hookText: highlight.hookText,
-            tags: highlight.tags,
-            cropStrategy: {
-              method: highlight.cropStrategy.method,
-              subjectPosition: highlight.cropStrategy.subjectPosition,
-              sceneType: highlight.cropStrategy.sceneType,
-              reasoning: highlight.cropStrategy.reasoning,
-            },
-            layoutType: highlight.layoutType ?? 'standard',
-            layoutRegions: highlight.layoutRegions?.length ? highlight.layoutRegions : null,
-            captionStyle: captionStyle ?? null,
-          },
-        },
-      });
+  // Zero clips is a failure, not a quiet success. The video only reaches READY
+  // when its last clip finishes, so with no clips nothing ever moves it off
+  // PROCESSING and the user watches a spinner forever.
+  if (highlights.length === 0) {
+    const message = 'Analysis produced no usable clips. This is a bug, not a property of the video — please retry.';
+    await prismaClientGlobal.video.update({
+      where: { id: videoId },
+      data: { status: 'FAILED', errorMessage: message },
+    });
+    throw new Error(message);
+  }
 
+  // One insert for the whole batch instead of one connection per clip. Creating
+  // them in parallel is what pushed the connection pool over the pooler's limit.
+  const clips = await prismaClientGlobal.clip.createManyAndReturn({
+    data: highlights.map((highlight) => ({
+      videoId,
+      title: highlight.title,
+      description: highlight.description,
+      startTime: highlight.startTime,
+      endTime: highlight.endTime,
+      duration: highlight.endTime - highlight.startTime,
+      score: highlight.score,
+      status: 'PENDING' as const,
+      metadata: {
+        hookText: highlight.hookText,
+        tags: highlight.tags,
+        cropStrategy: {
+          method: highlight.cropStrategy.method,
+          subjectPosition: highlight.cropStrategy.subjectPosition,
+          sceneType: highlight.cropStrategy.sceneType,
+          reasoning: highlight.cropStrategy.reasoning,
+        },
+        layoutType: highlight.layoutType ?? 'standard',
+        layoutRegions: highlight.layoutRegions?.length ? highlight.layoutRegions : null,
+        captionStyle: captionStyle ?? null,
+      },
+    })),
+  });
+
+  // Enqueueing only touches Redis, so it costs no database connections
+  await Promise.all(
+    clips.map(async (clip) => {
       await enqueueClip({ videoId, clipId: clip.id });
-      console.log(`[analyze] Enqueued clip job for: ${highlight.title}`);
+      console.log(`[analyze] Enqueued clip job for: ${clip.title}`);
     })
   );
 }

@@ -4,7 +4,12 @@
       "Bash(ps -o pid,ppid,command -p 6551)",
       "Bash(node --env-file=.env -e ' *)",
       "Bash(node --env-file=.env scripts/tmp-stale-customer.mjs)",
-      "WebFetch(domain:platform.openai.com)"
+      "WebFetch(domain:platform.openai.com)",
+      "Bash(npx next *)",
+      "Bash(rm -rf \"/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad/spike\" \"/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad\"/*.mp4 \"/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad/track/frames\" \"/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad/track\"/cal-*; echo cleaned)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad"
     ]
   }
 }

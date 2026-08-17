@@ -8,6 +8,7 @@
     "start": "next start",
     "seed": "tsx prisma/seed.ts",
     "waitlist:export": "tsx --env-file=.env scripts/export-waitlist.ts",
+    "thumbs:backfill": "tsx --env-file=.env scripts/backfill-clip-thumbnails.ts",
     "worker": "tsx --env-file=.env scripts/worker.ts",
     "worker:prod": "tsx scripts/worker.ts"
   },
@@ -25,7 +26,9 @@
     "@prisma/client": "^5.20.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/forms": "^0.5.7",
+    "@tensorflow/tfjs-node": "^4.22.0",
     "@vercel/analytics": "^2.0.1",
+    "@vladmandic/face-api": "^1.7.15",
     "ai": "^6.0.5",
     "aos": "^2.3.4",
     "autoprefixer": "10.4.19",
@@ -64,6 +67,11 @@
   },
   "engines": {
     "node": ">=20.12.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@tensorflow/tfjs-node"
+    ]
   },
   "packageManager": "pnpm@10.18.2+sha512.9fb969fa749b3ade6035e0f109f0b8a60b5d08a1a87fdf72e337da90dcc93336e2280ca4e44f2358a649b83c17959e9993e777c2080879f3801e6f0d999ad3dd"
 }

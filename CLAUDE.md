@@ -75,7 +75,7 @@ pnpm run start
 
 **Backend:**
 - NextAuth v5 (beta) for authentication
-- Prisma ORM with PostgreSQL (hosted on Neon)
+- Prisma ORM with PostgreSQL (hosted on Supabase, behind the Supavisor pooler)
 - Polar (merchant of record) for payments and subscriptions
 - Mailgun for transactional emails
 
@@ -239,7 +239,10 @@ Critical environment variables (see [.env.example](.env.example)):
 
 **Authentication & Database:**
 - `AUTH_SECRET` - JWT encryption key (generate with `openssl rand -base64 32`)
-- `DATABASE_URL` - PostgreSQL connection string (Neon or other provider)
+- `DATABASE_URL` - PostgreSQL connection string (Supabase pooler). **Must carry
+  `?connection_limit=5&pool_timeout=20`**: Prisma otherwise sizes its pool from the CPU count
+  (`cpus * 2 + 1`), which exceeds the pooler's 15-client cap on any machine with 8+ cores and
+  fails with `EMAXCONNSESSION` as soon as a worker issues several queries at once
 - `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` - Google OAuth credentials
 
 **AI Services (NEW):**
