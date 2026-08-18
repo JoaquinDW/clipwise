@@ -283,21 +283,9 @@ function Phone({
       >
         {score}
       </div>
-      {/* No caption overlay: the captions are burned into the footage by the
-          pipeline, which is exactly the thing worth showing. A heavy scrim
-          would dim them, so this is a light bottom grade only. */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: "22%",
-          background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 100%)",
-          zIndex: 4,
-          pointerEvents: "none",
-        }}
-      />
+      {/* Nothing over the bottom of the frame. The pipeline burns the captions
+          in low, with their own highlight, and that is precisely what this
+          section exists to show — any scrim here dims the payload. */}
     </div>
   )
 }

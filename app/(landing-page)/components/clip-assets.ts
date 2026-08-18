@@ -90,7 +90,7 @@ export const SHOWCASE_CLIPS: ShowcaseClip[] = [
     length: '0:38',
     foundAt: '0:26:15',
     at: 0.41,
-    hook: 'year freedom and',
+    hook: 'freedom and agency',
   },
   {
     poster: '/videos/clip-34.jpg',
