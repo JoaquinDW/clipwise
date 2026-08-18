@@ -2,6 +2,12 @@ export interface ClipMetadata {
   captionStyle?: string;
   captionPosition?: 'top' | 'center' | 'bottom';
   captionSize?: 'small' | 'medium' | 'large';
+  /**
+   * Generation of the caption renderer that burned this file. Absent on clips
+   * rendered before the unified renderer, which is what keeps the reexport cache
+   * from handing back a file drawn by the old one.
+   */
+  captionRenderVersion?: number;
   proxyUrl?: string;
   hookText?: string;
   cropStrategy?: { method: string; subjectPosition?: string };

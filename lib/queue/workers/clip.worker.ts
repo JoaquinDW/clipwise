@@ -6,7 +6,8 @@ import { readFile, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
-import { generateCaptions } from '@/lib/ai/captions';
+import { generateCaptions, type CaptionsResult } from '@/lib/ai/captions';
+import { sliceCaptions } from '@/lib/ai/caption-slice';
 import { burnCaptions as burnCaptionsOnto, createClipSmart, generateProxy, generateThumbnail, type RenderFallback } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
 import { ytdlpArgs } from '@/lib/video/ytdlp';
@@ -21,40 +22,62 @@ const execFileAsync = promisify(execFile);
 const TIME_EPSILON = 0.05;
 
 /**
- * A caption-only edit does not need the source video at all: the clip it was
- * derived from is already stored, already cut to these exact bounds and already
- * cropped to 9:16 — it is only missing the burned-in captions.
+ * The clip this one was edited from, when it can serve as a base.
  *
- * That matters most for YouTube and stream sources, where nothing but the audio
- * is kept, so every render otherwise re-downloads the segment through yt-dlp and
- * inherits its 403s. Taking this path skips the download and the crop entirely.
+ * Two independent things can be inherited from it, and the caller decides each
+ * one separately:
  *
- * Returns null unless the parent is genuinely usable as a base — in particular
- * it must be caption-free, or this would stack a second set of captions on top
- * of the first.
+ *  - its **captions**, whenever it has them, re-timed onto the new range. The
+ *    editor previews the stored captions, so reusing them is the only way the
+ *    burned-in text can match what the user saw — asking generateCaptions again
+ *    runs an LLM whose prompt includes the style preset, and returns a different
+ *    grouping.
+ *  - its **pixels**, only when the trim did not move, since the file is then
+ *    already cut to these bounds and cropped to 9:16, missing nothing but the
+ *    captions. That skips the yt-dlp round trip entirely, which matters for
+ *    YouTube and stream sources where only the audio is kept and every render
+ *    otherwise re-downloads the segment and inherits its 403s.
+ *
+ * Returns null unless the parent is caption-free: burning onto an already
+ * captioned file would stack a second set on top of the first.
  */
-async function findCaptionBase(clip: {
+async function findEditBase(clip: {
   parentClipId: string | null;
   startTime: number;
   endTime: number;
   metadata: unknown;
-}): Promise<string | null> {
+}) {
   if (!clip.parentClipId) return null;
-  // Reusing the parent's pixels only makes sense when the caption pass is the
-  // whole job; without it there would be nothing left to render.
+  // Inheriting only makes sense when the caption pass is the whole job; without
+  // it there would be nothing left to render.
   if ((clip.metadata as Record<string, unknown> | null)?.burnCaptions !== true) return null;
 
   const parent = await prismaClientGlobal.clip.findUnique({
     where: { id: clip.parentClipId },
-    select: { status: true, storageUrl: true, startTime: true, endTime: true, metadata: true },
+    select: {
+      status: true,
+      storageUrl: true,
+      startTime: true,
+      endTime: true,
+      metadata: true,
+      captions: true,
+    },
   });
 
   if (!parent?.storageUrl || parent.status !== 'READY') return null;
   if ((parent.metadata as Record<string, unknown> | null)?.burnCaptions === true) return null;
-  if (Math.abs(parent.startTime - clip.startTime) > TIME_EPSILON) return null;
-  if (Math.abs(parent.endTime - clip.endTime) > TIME_EPSILON) return null;
 
-  return parent.storageUrl;
+  const sameBounds =
+    Math.abs(parent.startTime - clip.startTime) <= TIME_EPSILON &&
+    Math.abs(parent.endTime - clip.endTime) <= TIME_EPSILON;
+
+  return {
+    captions: (parent.captions ?? null) as CaptionsResult | null,
+    /** How far the new clip's start moved, for re-timing the captions. */
+    captionOffset: clip.startTime - parent.startTime,
+    /** Set only when the parent's rendered file can be reused as-is. */
+    pixelUrl: sameBounds ? parent.storageUrl : null,
+  };
 }
 
 export async function processClip(job: Job<ClipJobData>) {
@@ -82,13 +105,13 @@ export async function processClip(job: Job<ClipJobData>) {
   const proxyPath = join(tmpdir(), `proxy-${clipId}.mp4`);
 
   try {
-    // 1. Get the pixels to work from. A caption-only edit reuses the clip it
-    //    came from; everything else goes back to the source video.
-    const captionBaseUrl = await findCaptionBase(clip);
+    // 1. Get the pixels to work from. An edit that left the trim alone reuses
+    //    the clip it came from; everything else goes back to the source video.
+    const editBase = await findEditBase(clip);
 
     const videoSource: string = video.source;
-    if (captionBaseUrl) {
-      const res = await fetch(captionBaseUrl);
+    if (editBase?.pixelUrl) {
+      const res = await fetch(editBase.pixelUrl);
       if (!res.ok) throw new Error(`Could not fetch base clip: ${res.status}`);
       await writeFile(segmentPath, Buffer.from(await res.arrayBuffer()));
       console.log(`[clip] Reusing rendered clip as caption base for ${clipId}`);
@@ -139,18 +162,28 @@ export async function processClip(job: Job<ClipJobData>) {
     const shouldBurnCaptions = metadata?.burnCaptions === true;
     const language = video.transcription.language ?? undefined;
 
-    const captions = await generateCaptions(clipWords, {
-      maxWordsPerSegment: 3,
-      emphasizeKeywords: true,
-      includeHook: true,
-      language,
-      stylePreset: captionStyle,
-    });
+    // An edit re-times the captions the editor was previewing rather than asking
+    // the model for new ones, which is the only way the burned-in text can match
+    // what the user saw. Regenerating is the fallback for a parent that somehow
+    // has none stored.
+    const captions = editBase?.captions
+      ? sliceCaptions(editBase.captions, editBase.captionOffset, clip.endTime - clip.startTime)
+      : await generateCaptions(clipWords, {
+        maxWordsPerSegment: 3,
+        emphasizeKeywords: true,
+        includeHook: true,
+        language,
+        stylePreset: captionStyle,
+      });
 
-    // Apply per-clip caption position override to all segments
-    if (captionPosition) {
-      captions.captions = captions.captions.map((seg) => ({ ...seg, position: captionPosition }));
+    if (editBase?.captions) {
+      console.log(`[clip] Reusing parent captions for ${clipId} (offset ${editBase.captionOffset}s)`);
     }
+
+    // Caption position is not written into the segments any more. It is a
+    // render setting, applied by the layout engine from clip metadata, so
+    // stamping it onto the stored captions only persisted a value nothing reads
+    // and made the saved captions differ by how they were last exported.
 
     // 4. Process clip with smart cropping.
     //    Captions are only burned when this is a re-export (burnCaptions flag in metadata).
@@ -162,11 +195,12 @@ export async function processClip(job: Job<ClipJobData>) {
     // instead of only in a log line nobody reads
     let renderFallback: RenderFallback | undefined;
 
-    if (captionBaseUrl) {
+    if (editBase?.pixelUrl) {
       // Already cropped and cut — the only thing left to do is the caption pass.
       await burnCaptionsOnto(segmentPath, captions, outputPath, captionStyle, {
         captionPosition,
         captionSize,
+        duration: clip.endTime - clip.startTime,
       });
     } else {
       await createClipSmart(
@@ -200,20 +234,27 @@ export async function processClip(job: Job<ClipJobData>) {
     const clipFile = new File([clipBuffer.buffer as ArrayBuffer], `clip-${clipId}.mp4`, { type: 'video/mp4' });
     const uploadResult = await storage.uploadClip(clipFile, video.companyId, videoId, clipId);
 
+    // A burned render is a deliverable: it never appears in the clip list and is
+    // never previewed, so the proxy and thumbnail it would get are two encodes
+    // spent on files nothing ever loads.
+    const isDeliverable = shouldBurnCaptions;
+
     // 5b. Generate and upload proxy video
     let proxyUrl: string | undefined;
-    try {
-      await generateProxy(outputPath, proxyPath);
-      const proxyBuffer = await readFile(proxyPath);
-      const proxyFile = new File([proxyBuffer.buffer as ArrayBuffer], `proxy-${clipId}.mp4`, { type: 'video/mp4' });
-      const proxyResult = await storage.uploadProxy(proxyFile, video.companyId, videoId, clipId);
-      proxyUrl = proxyResult.url;
-      console.log(`[clip] Proxy uploaded for clip ${clipId}: ${proxyUrl}`);
-    } catch (proxyErr) {
-      // Proxy failure is non-fatal — editor falls back to storageUrl
-      console.warn(`[clip] Proxy generation failed (non-fatal) for ${clipId}:`, proxyErr);
-    } finally {
-      await unlink(proxyPath).catch(() => {});
+    if (!isDeliverable) {
+      try {
+        await generateProxy(outputPath, proxyPath);
+        const proxyBuffer = await readFile(proxyPath);
+        const proxyFile = new File([proxyBuffer.buffer as ArrayBuffer], `proxy-${clipId}.mp4`, { type: 'video/mp4' });
+        const proxyResult = await storage.uploadProxy(proxyFile, video.companyId, videoId, clipId);
+        proxyUrl = proxyResult.url;
+        console.log(`[clip] Proxy uploaded for clip ${clipId}: ${proxyUrl}`);
+      } catch (proxyErr) {
+        // Proxy failure is non-fatal — editor falls back to storageUrl
+        console.warn(`[clip] Proxy generation failed (non-fatal) for ${clipId}:`, proxyErr);
+      } finally {
+        await unlink(proxyPath).catch(() => {});
+      }
     }
 
     // 5c. Generate and upload clip thumbnail — from the rendered 9:16 clip, not
@@ -221,22 +262,24 @@ export async function processClip(job: Job<ClipJobData>) {
     // taken mid-clip to dodge fades and black frames at the cut.
     let clipThumbnailUrl: string | undefined;
     const thumbPath = join(tmpdir(), `thumb-${clipId}.jpg`);
-    try {
-      await generateThumbnail(outputPath, thumbPath, {
-        timestamp: (clip.endTime - clip.startTime) / 2,
-        size: '?x960',
-      });
-      const thumbBuffer = await readFile(thumbPath);
-      const thumbArrayBuffer = thumbBuffer.buffer.slice(thumbBuffer.byteOffset, thumbBuffer.byteOffset + thumbBuffer.byteLength) as ArrayBuffer;
-      const thumbBlob = new Blob([thumbArrayBuffer], { type: 'image/jpeg' });
-      const thumbResult = await (storage as any).uploadThumbnail(thumbBlob, video.companyId, videoId, clipId);
-      clipThumbnailUrl = thumbResult.url;
-      console.log(`[clip] Thumbnail uploaded for clip ${clipId}: ${clipThumbnailUrl}`);
-    } catch (thumbErr) {
-      // Non-fatal, but loud: a silent warn here is how this went unnoticed before
-      console.error(`[clip] Thumbnail generation failed (non-fatal) for ${clipId}:`, thumbErr);
-    } finally {
-      await unlink(thumbPath).catch(() => {});
+    if (!isDeliverable) {
+      try {
+        await generateThumbnail(outputPath, thumbPath, {
+          timestamp: (clip.endTime - clip.startTime) / 2,
+          size: '?x960',
+        });
+        const thumbBuffer = await readFile(thumbPath);
+        const thumbArrayBuffer = thumbBuffer.buffer.slice(thumbBuffer.byteOffset, thumbBuffer.byteOffset + thumbBuffer.byteLength) as ArrayBuffer;
+        const thumbBlob = new Blob([thumbArrayBuffer], { type: 'image/jpeg' });
+        const thumbResult = await (storage as any).uploadThumbnail(thumbBlob, video.companyId, videoId, clipId);
+        clipThumbnailUrl = thumbResult.url;
+        console.log(`[clip] Thumbnail uploaded for clip ${clipId}: ${clipThumbnailUrl}`);
+      } catch (thumbErr) {
+        // Non-fatal, but loud: a silent warn here is how this went unnoticed before
+        console.error(`[clip] Thumbnail generation failed (non-fatal) for ${clipId}:`, thumbErr);
+      } finally {
+        await unlink(thumbPath).catch(() => {});
+      }
     }
 
     // Explicit cleanup of outputPath now that proxy and thumbnail are done

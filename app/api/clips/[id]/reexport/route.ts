@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { enqueueClip } from '@/lib/queue/queue';
-import { isValidCaptionStyleName } from '@/lib/ai/caption-styles';
+import { CAPTION_RENDER_VERSION, isValidCaptionStyleName } from '@/lib/captions/presets';
 import { requireBillableUser } from '@/lib/billing/guard';
 import { MAX_DELTA, MIN_DURATION, MAX_DURATION } from '@/lib/video/trim-limits';
 import {
@@ -101,6 +101,7 @@ export async function POST(
         (captionSize as CaptionSize) ??
         (baseMetadata.captionSize as CaptionSize) ??
         DEFAULT_CAPTION_SIZE,
+      captionRenderVersion: CAPTION_RENDER_VERSION,
     };
 
     // Download renders on demand, so the same settings get asked for over and
@@ -149,6 +150,7 @@ export async function POST(
           captionStyle: requested.captionStyle,
           captionPosition: requested.captionPosition,
           captionSize: requested.captionSize,
+          captionRenderVersion: CAPTION_RENDER_VERSION,
           burnCaptions: true,
         },
         // Always hang off the root, never off another edit: a flat lineage is

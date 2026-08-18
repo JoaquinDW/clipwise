@@ -2,17 +2,15 @@
 
 import React from "react"
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline"
-import { getCaptionCSSStyle } from "@/lib/ai/caption-styles"
-import type { CaptionsResult, CaptionSegment } from "@/lib/ai/captions"
 import { useClipEditorStore } from "@/lib/store/clip-editor.store"
+import { getAllCaptionPresets } from "@/lib/captions/presets"
 
-const STYLE_OPTIONS: { key: string; label: string }[] = [
-  { key: "classic", label: "Classic" },
-  { key: "bold", label: "Bold" },
-  { key: "minimal", label: "Minimal" },
-  { key: "viral", label: "Viral" },
-  { key: "podcast", label: "Podcast" },
-]
+// Derived from the presets rather than hand-listed, so a new preset appears in
+// the picker without a second edit.
+const STYLE_OPTIONS = getAllCaptionPresets().map((preset) => ({
+  key: preset.id,
+  label: preset.name,
+}))
 
 const POSITION_OPTIONS: { key: "top" | "center" | "bottom"; label: string }[] = [
   { key: "top", label: "Top" },
@@ -25,49 +23,6 @@ const SIZE_OPTIONS: { key: "small" | "medium" | "large"; label: string }[] = [
   { key: "medium", label: "M" },
   { key: "large", label: "L" },
 ]
-
-// ── Caption overlay (exported for use in EditableVideoPlayer) ─────────────────
-
-export function CaptionOverlay({
-  captions,
-  currentTime,
-  captionStyle,
-  captionPosition,
-  captionSize,
-}: {
-  captions: CaptionsResult | null
-  currentTime: number
-  captionStyle: string
-  captionPosition: "top" | "center" | "bottom"
-  captionSize: "small" | "medium" | "large"
-}) {
-  if (!captions) return null
-
-  const activeSegment: CaptionSegment | null =
-    captions.captions.find(
-      (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime
-    ) ?? null
-
-  if (!activeSegment) return null
-
-  const activeWordIndex = activeSegment.words.findIndex(
-    (w) => currentTime >= w.startTime && currentTime <= w.endTime
-  )
-
-  const cssStyle = getCaptionCSSStyle(captionStyle, { captionPosition, captionSize })
-
-  return (
-    <div style={cssStyle.container}>
-      <div>
-        {activeSegment.words.map((word, i) => (
-          <span key={i} style={i === activeWordIndex ? cssStyle.highlight : cssStyle.word}>
-            {word.word}{" "}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 // ── Safe area overlay (exported for use in EditableVideoPlayer) ───────────────
 

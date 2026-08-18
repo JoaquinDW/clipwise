@@ -1,16 +1,16 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { needsRender, type CaptionEdits, type ClipLike } from "@/lib/video/render-signature"
+import type { CaptionEdits } from "@/lib/video/render-signature"
 
 /**
  * Download hands over exactly what the editor is showing.
  *
- * The preview draws captions as an overlay and trim as client state, so the
- * stored MP4 usually is not that file yet — AI clips are rendered caption-free
- * on purpose. When they differ we render first (reusing the re-export pipeline,
- * which hands back an existing render when the settings already match), poll
- * the clip, and save as soon as it lands.
+ * The clip on screen is always the caption-free original — the preview draws
+ * captions as an overlay and trim as client state — so a render is always
+ * needed. /reexport does it, and answers instantly with an existing render when
+ * one already matches these settings, which is what keeps a repeat download
+ * fast. The render itself is a deliverable: it never becomes the clip on screen.
  */
 
 export type DownloadPhase = "idle" | "rendering" | "downloading" | "error"
@@ -18,9 +18,8 @@ export type DownloadPhase = "idle" | "rendering" | "downloading" | "error"
 const POLL_INTERVAL_MS = 2500
 const POLL_TIMEOUT_MS = 5 * 60 * 1000
 
-interface DownloadableClip extends ClipLike {
+interface DownloadableClip {
   id: string
-  parentClipId?: string | null
 }
 
 async function saveFile(clipId: string) {
@@ -42,11 +41,7 @@ async function saveFile(clipId: string) {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function useClipDownload(
-  clip: DownloadableClip | null,
-  edits: CaptionEdits,
-  onRendered: (newClipId: string, lineageRootId: string) => void
-) {
+export function useClipDownload(clip: DownloadableClip | null, edits: CaptionEdits) {
   const [phase, setPhase] = useState<DownloadPhase>("idle")
   const [error, setError] = useState<string | null>(null)
   const cancelledRef = useRef(false)
@@ -87,39 +82,30 @@ export function useClipDownload(
     setError(null)
 
     try {
-      let targetId = clip.id
+      setPhase("rendering")
+      const res = await fetch(`/api/clips/${clip.id}/reexport`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(edits),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Could not prepare the clip")
 
-      // Only the settings the file was rendered with matter — an untouched AI
-      // clip still needs a pass, because those are stored caption-free.
-      if (needsRender(clip, edits)) {
-        setPhase("rendering")
-        const res = await fetch(`/api/clips/${clip.id}/reexport`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(edits),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || "Could not prepare the clip")
-
-        targetId = data.clipId
-        if (!data.cached) await waitForClip(targetId)
-        if (cancelledRef.current) return
-      }
+      // `cached` means the server matched an earlier render of these exact
+      // settings, so there is nothing to wait for.
+      if (!data.cached) await waitForClip(data.clipId)
+      if (cancelledRef.current) return
 
       setPhase("downloading")
-      await saveFile(targetId)
+      await saveFile(data.clipId)
       if (cancelledRef.current) return
       setPhase("idle")
-
-      if (targetId !== clip.id) {
-        onRendered(targetId, clip.parentClipId ?? clip.id)
-      }
     } catch (err) {
       if (cancelledRef.current) return
       setPhase("error")
       setError(err instanceof Error ? err.message : "Download failed")
     }
-  }, [clip, edits, phase, waitForClip, onRendered])
+  }, [clip, edits, phase, waitForClip])
 
   return { download, phase, error }
 }

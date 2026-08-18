@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   ArrowDownTrayIcon,
   DocumentTextIcon,
@@ -57,47 +56,30 @@ export default function ClipsSection({
   videoStatus,
   transcription,
 }: ClipsSectionProps) {
-  const router = useRouter()
   const [activeClipId, setActiveClipId] = useState<string | null>(initialClipId)
-  // A finished edit replaces its parent in the list, so the id we hold can go
-  // missing for the moment between switching to it and the refresh landing.
-  // Remembering the lineage keeps the panel and the timeline on screen.
-  const [activeRootId, setActiveRootId] = useState<string | null>(null)
   const [transcriptOpen, setTranscriptOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const activeClip =
-    clips.find((c) => c.id === activeClipId) ??
-    (activeRootId
-      ? clips.find((c) => (c.parentClipId ?? c.id) === activeRootId) ?? null
-      : null)
+  // Downloading never changes which clip is on screen: a render is a deliverable
+  // that lands on the user's disk, not a new clip to edit. The card stays the
+  // caption-free original so the next edit starts from clean pixels.
+  const activeClip = clips.find((c) => c.id === activeClipId) ?? null
   const clipIsReady = activeClip?.status === "READY" && !!activeClip?.storageUrl
 
-  const selectClip = useCallback(
-    (id: string | null) => {
-      const clip = id ? clips.find((c) => c.id === id) ?? null : null
-      setActiveClipId(id)
-      setActiveRootId(clip ? clip.parentClipId ?? clip.id : null)
-    },
-    [clips]
-  )
-
-  const activeClipHref = activeClip?.id ?? null
   useEffect(() => {
     const url = new URL(window.location.href)
-    if (activeClipHref) {
-      url.searchParams.set("clip", activeClipHref)
+    if (activeClipId) {
+      url.searchParams.set("clip", activeClipId)
     } else {
       url.searchParams.delete("clip")
     }
     window.history.pushState({}, "", url.toString())
-  }, [activeClipHref])
+  }, [activeClipId])
 
   // Only follow the server's pick when it names one — a refresh that arrives
   // without a ?clip= must not clear what the user is looking at.
   useEffect(() => {
-    if (initialClipId) selectClip(initialClipId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (initialClipId) setActiveClipId(initialClipId)
   }, [initialClipId])
 
   // The editor store belongs to whichever clip is on screen, whether or not the
@@ -118,20 +100,7 @@ export default function ClipsSection({
     [deltaStart, deltaEnd, captionStyle, captionPosition, captionSize]
   )
 
-  const handleRendered = useCallback(
-    (newClipId: string, lineageRootId: string) => {
-      setActiveClipId(newClipId)
-      setActiveRootId(lineageRootId)
-      router.refresh()
-    },
-    [router]
-  )
-
-  const { download, phase, error: downloadError } = useClipDownload(
-    activeClip,
-    edits,
-    handleRendered
-  )
+  const { download, phase, error: downloadError } = useClipDownload(activeClip, edits)
 
   const trimValid = activeClip ? isTrimValid(activeClip, { deltaStart, deltaEnd }) : false
   const busy = phase === "rendering" || phase === "downloading"
@@ -191,7 +160,7 @@ export default function ClipsSection({
               <ClipModal
                 clips={clips}
                 initialClipId={activeClip?.id ?? null}
-                onClipSelect={selectClip}
+                onClipSelect={setActiveClipId}
               />
             )}
           </div>

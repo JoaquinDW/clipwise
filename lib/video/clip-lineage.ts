@@ -3,16 +3,19 @@
  *
  * Every edit is persisted as a new Clip row hanging off the original
  * (`parentClipId`), which keeps the history intact but would otherwise fill the
- * clip list with near-duplicates — and Download now renders on demand, so those
- * pile up fast. The list shows the newest usable version of each lineage; the
- * rest stay in the database, just out of sight.
+ * clip list with near-duplicates — and Download renders on demand, so those pile
+ * up fast. The list shows the original of each lineage; the renders stay in the
+ * database as a cache, out of sight.
+ *
+ * The original is the representative on purpose, not just for tidiness: renders
+ * have captions burned into the pixels, so editing one would stack a second set
+ * of captions on top of the first and the player would draw its live overlay
+ * over the burned-in text. The editable clip must stay caption-free.
  */
 
 export interface LineageClip {
   id: string;
   parentClipId?: string | null;
-  status: string;
-  createdAt: Date;
 }
 
 /** Lineages are flat: the reexport route always parents new renders to the root. */
@@ -21,38 +24,14 @@ export function lineageRootId(clip: LineageClip): string {
 }
 
 /**
- * Collapse each lineage to the version worth showing, preserving the incoming
- * order of the lineages themselves (the caller sorts by score).
+ * Drop the renders, keep the originals — preserving the incoming order (the
+ * caller sorts by score).
  *
- * A finished render always wins over a newer one still in the queue, so the
- * card and the player stay usable while an edit renders in the background.
+ * A render only ever exists once its original reached READY, so discarding them
+ * can never leave a lineage without a card to show.
  */
 export function collapseLineages<T extends LineageClip>(clips: T[]): T[] {
-  const byRoot = new Map<string, T>();
-  const rootOrder: string[] = [];
-
-  for (const clip of clips) {
-    const root = lineageRootId(clip);
-    const current = byRoot.get(root);
-
-    if (!current) {
-      byRoot.set(root, clip);
-      rootOrder.push(root);
-      continue;
-    }
-
-    if (isBetterRepresentative(clip, current)) byRoot.set(root, clip);
-  }
-
-  return rootOrder.map((root) => byRoot.get(root)!);
-}
-
-function isBetterRepresentative(candidate: LineageClip, current: LineageClip): boolean {
-  const candidateReady = candidate.status === 'READY';
-  const currentReady = current.status === 'READY';
-
-  if (candidateReady !== currentReady) return candidateReady;
-  return candidate.createdAt.getTime() > current.createdAt.getTime();
+  return clips.filter((clip) => !clip.parentClipId);
 }
 
 /**

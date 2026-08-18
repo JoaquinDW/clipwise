@@ -2,8 +2,13 @@
 FROM node:20-bookworm-slim
 
 # Install ffmpeg, ca-certificates and yt-dlp (python3 is required by the yt-dlp zipapp)
+#
+# fontconfig is for diagnosis only (fc-list/fc-scan): captions do NOT go through
+# it. The bundled @ffmpeg-installer binary is built without --enable-fontconfig,
+# so libass reads fonts straight out of the `fontsdir` the filter is given, and
+# those ship in public/fonts/captions/ via the COPY below.
 RUN apt-get update \
-    && apt-get install -y ffmpeg ca-certificates curl python3 --no-install-recommends \
+    && apt-get install -y ffmpeg ca-certificates curl python3 fontconfig --no-install-recommends \
     && curl -fsSL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp \
     && rm -rf /var/lib/apt/lists/*

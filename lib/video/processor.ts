@@ -10,8 +10,10 @@
  */
 
 import ffmpeg from 'fluent-ffmpeg';
-import { CaptionsResult, captionsToASS } from '../ai/captions';
+import { CaptionsResult } from '../ai/captions';
 import { buildFaceTrajectory, TRACKING_PROFILES } from './face-track';
+import { ensureCaptionFonts } from '../captions/fonts.node';
+import { prepareCaptions, type PreparedCaptions } from '../captions/render.node';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
@@ -64,12 +66,83 @@ function escapeFilterPath(p: string): string {
 }
 
 /**
- * Filters every filtergraph ends with: square pixels, then optional captions.
+ * Options for the `ass` filter, pinning the font directory.
+ *
+ * `fontsdir` is not optional here. The bundled @ffmpeg-installer binary is built
+ * with `--enable-libass` but *without* `--enable-fontconfig`, so libass uses its
+ * directory provider: it only ever sees fonts in the directory it is handed.
+ * Without this it resolves nothing and renders in a default face or not at all —
+ * which is what has been happening in the worker container, where no font is
+ * installed in the first place.
  */
-function buildOutputTail(assPath?: string): string {
+function assFilterOptions(assPath: string): string {
+  return `filename=${escapeFilterPath(assPath)}:fontsdir=${escapeFilterPath(ensureCaptionFonts())}`;
+}
+
+/**
+ * Index of the caption overlay input. It is always added second, right after
+ * the video, so the filtergraph can name it without threading a count around.
+ */
+const OVERLAY_INPUT = 1;
+
+/**
+ * Attach the overlay track as a second input, when the preset needs one.
+ *
+ * `-safe 0` is not required — the playlist references its images by bare
+ * filename — but the demuxer's safe mode has changed defaults across versions,
+ * and being explicit costs nothing.
+ */
+function attachCaptionInput(
+  command: ReturnType<typeof ffmpeg>,
+  burn?: PreparedCaptions | null
+): ReturnType<typeof ffmpeg> {
+  if (!burn?.overlayConcatPath) return command;
+  return command.input(burn.overlayConcatPath).inputOptions(['-f', 'concat', '-safe', '0']);
+}
+
+/**
+ * Tail every filtergraph ends with: square pixels, then captions.
+ *
+ * setsar=1 is not optional: scale inside these graphs rewrites SAR to preserve
+ * the source display aspect, which leaves 1080x1920 output playing back
+ * stretched. Captions ride along on the same graph — a separate ffmpeg run
+ * would re-encode the whole clip for nothing.
+ */
+function buildOutputTail(
+  inLabel: string,
+  outLabel: string,
+  burn?: PreparedCaptions | null,
+  output?: { width: number; height: number }
+): string {
   const filters = ['setsar=1'];
-  if (assPath) filters.push(`ass=${escapeFilterPath(assPath)}`);
-  return filters.join(',');
+  if (burn?.assPath) filters.push(`ass=${assFilterOptions(burn.assPath)}`);
+
+  const chain = filters.join(',');
+  if (!burn?.overlayConcatPath) return `[${inLabel}]${chain}[${outLabel}]`;
+
+  if (!output) {
+    throw new Error('An overlay caption burn needs the output size to place its plate');
+  }
+
+  // The plate covers only the caption band of the 1080x1920 composition, and the
+  // output is not always that size either — fitOutputToSource drops narrow
+  // sources to 720x1280. Both are resolved here, in absolute pixels.
+  //
+  // Deliberately not scale2ref: in ffmpeg 4.4 its `main_*` variables resolve to
+  // the input being scaled rather than the reference, so `h=main_h*0.13` sized
+  // the plate off its own height and collapsed it to a sliver. Every caller
+  // already knows the real output size, so no expression is needed.
+  const plateWidth = Math.round(output.width);
+  const plateHeight = Math.max(2, Math.round(output.height * (burn.overlayBandHeight ?? 1)));
+  const plateY = Math.round(output.height * (burn.overlayBandY ?? 0));
+
+  // format=auto keeps the alpha channel; without it ffmpeg picks a format that
+  // drops it and the caption plates render as opaque black boxes.
+  return (
+    `[${inLabel}]${chain}[cap_base];` +
+    `[${OVERLAY_INPUT}:v]scale=${plateWidth}:${plateHeight}:flags=lanczos[cap_plate];` +
+    `[cap_base][cap_plate]overlay=x=0:y=${plateY}:format=auto:eof_action=pass[${outLabel}]`
+  );
 }
 
 /**
@@ -152,16 +225,11 @@ export async function cropToVertical(
     height?: number; // Default: 1920
     position?: 'center' | 'top' | 'bottom'; // Default: center — vertical axis only
     horizontalPosition?: SubjectPosition; // Where the subject sits in a wide source
-    assPath?: string; // Burn these captions in the same pass as the crop
+    captions?: PreparedCaptions | null; // Burn these in the same pass as the crop
   }
 ): Promise<void> {
   let { width = 1080, height = 1920 } = options || {};
-  const { position = 'center', horizontalPosition = 'center', assPath } = options || {};
-
-  // Appended to the crop/scale chain so captions cost no extra re-encode
-  const captionFilter = assPath
-    ? [{ filter: 'ass', options: escapeFilterPath(assPath) }]
-    : [];
+  const { position = 'center', horizontalPosition = 'center', captions } = options || {};
 
   return new Promise((resolve, reject) => {
     // Get video info first to determine crop position
@@ -177,57 +245,20 @@ export async function cropToVertical(
 
       const sourceWidth = videoStream.width;
       const sourceHeight = videoStream.height;
+      const targetAspect = 9 / 16;
 
-      // Calculate crop position
+      // Crop the axis the source has to spare, then scale to the target.
+      let cropWidth = sourceWidth;
+      let cropHeight = sourceHeight;
       let cropX = 0;
       let cropY = 0;
 
-      // Calculate target dimensions maintaining 9:16 aspect ratio
-      const targetAspect = 9 / 16;
-      const sourceAspect = sourceWidth / sourceHeight;
-
-      if (sourceAspect > targetAspect) {
-        // Source is wider - crop horizontally
-        const cropWidth = Math.floor(sourceHeight * targetAspect);
+      if (sourceWidth / sourceHeight > targetAspect) {
+        cropWidth = Math.floor(sourceHeight * targetAspect);
         cropX = staticCropX(sourceWidth, cropWidth, horizontalPosition);
-        cropY = 0;
-
         ({ width, height } = fitOutputToSource(cropWidth, width, height));
-
-        ffmpeg(inputPath)
-          .videoFilters([
-            {
-              filter: 'crop',
-              options: {
-                w: cropWidth,
-                h: sourceHeight,
-                x: cropX,
-                y: cropY,
-              },
-            },
-            {
-              filter: 'scale',
-              options: {
-                w: width,
-                h: height,
-                flags: 'lanczos',
-              },
-            },
-            { filter: 'setsar', options: '1' },
-            ...captionFilter,
-          ])
-          .output(outputPath)
-          .outputOptions(PUBLISH_VIDEO_OPTIONS)
-          .audioCodec('aac')
-          .audioBitrate('192k')
-          .on('end', () => resolve())
-          .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
-          .run();
       } else {
-        // Source is taller - crop vertically
-        const cropHeight = Math.floor(sourceWidth / targetAspect);
-
-        // Position crop based on option
+        cropHeight = Math.floor(sourceWidth / targetAspect);
         if (position === 'top') {
           cropY = 0;
         } else if (position === 'bottom') {
@@ -235,39 +266,22 @@ export async function cropToVertical(
         } else {
           cropY = Math.floor((sourceHeight - cropHeight) / 2);
         }
-
-        cropX = 0;
-
-        ffmpeg(inputPath)
-          .videoFilters([
-            {
-              filter: 'crop',
-              options: {
-                w: sourceWidth,
-                h: cropHeight,
-                x: cropX,
-                y: cropY,
-              },
-            },
-            {
-              filter: 'scale',
-              options: {
-                w: width,
-                h: height,
-                flags: 'lanczos',
-              },
-            },
-            { filter: 'setsar', options: '1' },
-            ...captionFilter,
-          ])
-          .output(outputPath)
-          .outputOptions(PUBLISH_VIDEO_OPTIONS)
-          .audioCodec('aac')
-          .audioBitrate('192k')
-          .on('end', () => resolve())
-          .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
-          .run();
       }
+
+      const filterComplex =
+        `[0:v]crop=w=${cropWidth}:h=${cropHeight}:x=${cropX}:y=${cropY},` +
+        `scale=${width}:${height}:flags=lanczos[out];` +
+        buildOutputTail('out', 'final', captions, { width, height });
+
+      attachCaptionInput(ffmpeg(inputPath), captions)
+        .complexFilter(filterComplex)
+        .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
+        .output(outputPath)
+        .audioCodec('aac')
+        .audioBitrate('192k')
+        .on('end', () => resolve())
+        .on('error', (e) => reject(new Error(`FFmpeg error: ${e.message}`)))
+        .run();
     });
   });
 }
@@ -313,7 +327,7 @@ export interface SmartCropOptions {
   width?: number; // Default: 1080
   height?: number; // Default: 1920
   compositeLayout?: CompositeLayoutOptions;
-  assPath?: string; // Burn these captions in the same pass as the crop
+  captions?: PreparedCaptions | null; // Burn these in the same pass as the crop
   /** Called when the requested strategy could not be used. */
   onFallback?: (info: RenderFallback) => void;
 }
@@ -333,7 +347,7 @@ export async function cropToVerticalSmart(
   options: SmartCropOptions
 ): Promise<void> {
   let { width = 1080, height = 1920 } = options;
-  const { method, subjectPosition, assPath, onFallback } = options;
+  const { method, subjectPosition, captions, onFallback } = options;
 
   console.log(`🎬 Smart Crop: Using "${method}" strategy with subject at "${subjectPosition}"`);
 
@@ -347,7 +361,7 @@ export async function cropToVerticalSmart(
       height,
       position: 'center',
       horizontalPosition: subjectPosition,
-      assPath,
+      captions,
     });
   };
 
@@ -367,7 +381,7 @@ export async function cropToVerticalSmart(
 
   // Composite layout takes priority over single-region crop strategies
   if (options.compositeLayout && options.compositeLayout.layoutType !== 'standard') {
-    return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, assPath);
+    return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, captions);
   }
 
   let filterComplex: string;
@@ -407,13 +421,13 @@ export async function cropToVerticalSmart(
   // preserve the source display aspect, which leaves 1080x1920 output
   // playing back stretched. Captions ride along on the same graph — a
   // separate ffmpeg run would re-encode the whole clip for nothing.
-  filterComplex = `${filterComplex};[out]${buildOutputTail(assPath)}[final]`;
+  filterComplex = `${filterComplex};${buildOutputTail('out', 'final', captions, { width, height })}`;
 
   console.log(`📐 Applying filter: ${filterComplex.substring(0, 100)}...`);
 
   try {
     await new Promise<void>((resolve, reject) => {
-      ffmpeg(inputPath)
+      attachCaptionInput(ffmpeg(inputPath), captions)
         .complexFilter(filterComplex)
         // '0:a?' — an explicit -map drops every other stream, and the '?'
         // keeps silent sources from failing outright
@@ -485,12 +499,14 @@ function buildTrackingFilter(
   );
 }
 
-const CAPTION_SIZE_MULTIPLIERS = { small: 0.75, medium: 1.0, large: 1.3 } as const;
-
 /**
- * Burn captions into video with word-by-word karaoke highlighting
+ * Burn captions into video with word-by-word highlighting.
  *
- * Uses ASS (Advanced SubStation Alpha) format for precise word-level highlighting.
+ * Font size, position and colours all come from the preset via the shared
+ * renderer — never from `captionsResult.style`, which holds a snapshot of
+ * whatever preset the captions were first generated under. An edit reuses the
+ * parent's stored captions, so reading that field would leave someone who picks
+ * Viral with Classic's styling.
  */
 export async function burnCaptions(
   inputPath: string,
@@ -500,49 +516,70 @@ export async function burnCaptions(
   opts?: {
     captionPosition?: 'top' | 'center' | 'bottom';
     captionSize?: 'small' | 'medium' | 'large';
+    /** Clip length. The raster renderer needs it to size the overlay track. */
+    duration?: number;
   }
 ): Promise<void> {
-  const sizeMultiplier = CAPTION_SIZE_MULTIPLIERS[opts?.captionSize ?? 'medium'];
-  const fontSizeOverride = Math.round(captionsResult.style.fontSize * sizeMultiplier);
+  const source = await probeVideo(inputPath);
+  const duration = opts?.duration ?? source.duration;
 
-  // Create ASS file for captions with word-by-word highlighting
-  const assPath = path.join(os.tmpdir(), `captions-${Date.now()}.ass`);
-  const assContent = captionsToASS(captionsResult, stylePreset as any, {
-    fontSizeOverride,
-    positionOverride: opts?.captionPosition,
-  });
-  await fs.writeFile(assPath, assContent, 'utf-8');
+  const captions = await prepareCaptions(
+    captionsResult,
+    {
+      captionStyle: stylePreset,
+      captionSize: opts?.captionSize,
+      captionPosition: opts?.captionPosition,
+    },
+    { duration }
+  );
 
-  // Log ASS content for debugging
-  console.log('Generated ASS captions:', assContent);
+  // A clip can legitimately hold no words — a musical intro, or a trim dragged
+  // into a silent stretch. That is an uncaptioned clip, not a failure, and
+  // createClipSmart treats it the same way; throwing here would mark the clip
+  // FAILED and leave Download permanently broken for it.
+  if (!captions) {
+    console.warn('[captions] No caption words in range — rendering without captions');
+  }
 
+  try {
+    await new Promise<void>((resolve, reject) => {
+      attachCaptionInput(ffmpeg(inputPath), captions)
+        .complexFilter(buildOutputTail('0:v', 'final', captions, source))
+        .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
+        .output(outputPath)
+        .audioCodec('copy')
+        .on('end', () => resolve())
+        .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
+        .run();
+    });
+  } finally {
+    await captions?.cleanup();
+  }
+}
+
+/**
+ * Duration and frame size, for callers that did not already know them.
+ *
+ * burnCaptions runs on pixels somebody else already cropped, so unlike the crop
+ * paths it has no output size of its own — it inherits the input's, and an
+ * overlay plate has to be placed against that.
+ */
+async function probeVideo(
+  inputPath: string
+): Promise<{ duration: number; width: number; height: number }> {
   return new Promise((resolve, reject) => {
-    ffmpeg(inputPath)
-      .outputOptions([
-        '-vf', `ass=${escapeFilterPath(assPath)}`,
-        ...PUBLISH_VIDEO_OPTIONS,
-      ])
-      .output(outputPath)
-      .audioCodec('copy')
-      .on('end', async () => {
-        // Clean up temp ASS file
-        try {
-          await fs.unlink(assPath);
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-        resolve();
-      })
-      .on('error', async (err) => {
-        // Clean up temp ASS file
-        try {
-          await fs.unlink(assPath);
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-        reject(new Error(`FFmpeg error: ${err.message}`));
-      })
-      .run();
+    ffmpeg.ffprobe(inputPath, (err, metadata) => {
+      if (err) return reject(new Error(`FFprobe error: ${err.message}`));
+      const stream = metadata.streams.find((s) => s.codec_type === 'video');
+      if (!stream?.width || !stream?.height) {
+        return reject(new Error('Could not determine video dimensions'));
+      }
+      resolve({
+        duration: metadata.format?.duration ?? 0,
+        width: stream.width,
+        height: stream.height,
+      });
+    });
   });
 }
 
@@ -707,7 +744,7 @@ export async function cropToVerticalComposite(
   layout: CompositeLayoutOptions,
   sourceWidth: number,
   sourceHeight: number,
-  assPath?: string
+  captions?: PreparedCaptions | null
 ): Promise<void> {
   const { layoutType, layoutRegions = [], width = 1080, height = 1920 } = layout;
 
@@ -731,10 +768,10 @@ export async function cropToVerticalComposite(
   }
 
   // Square pixels + captions on the same graph — see cropToVerticalSmart
-  filterComplex = `${filterComplex};[out]${buildOutputTail(assPath)}[final]`;
+  filterComplex = `${filterComplex};${buildOutputTail('out', 'final', captions, { width, height })}`;
 
   return new Promise((resolve, reject) => {
-    ffmpeg(inputPath)
+    attachCaptionInput(ffmpeg(inputPath), captions)
       .complexFilter(filterComplex)
       .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
       .output(outputPath)
@@ -838,13 +875,14 @@ export async function createClipSmart(
   const tempDir = os.tmpdir();
   const timestamp = Date.now();
   const extractedPath = path.join(tempDir, `clip-${timestamp}-extracted.mp4`);
-  const assPath = path.join(tempDir, `clip-${timestamp}-captions.ass`);
 
   // Every step below that touches pixels is a generation of quality loss, so
-  // the clip is encoded exactly once: crop and captions share one filtergraph,
-  // and extraction is skipped when the caller already cut the segment.
+  // the clip is encoded exactly once: crop and captions share one filtergraph —
+  // whether the captions arrive as a subtitle track or an overlay input — and
+  // extraction is skipped when the caller already cut the segment.
   const needsExtraction = startTime > 0.01;
   const willBurnCaptions = shouldBurnCaptions && !!captionsResult;
+  let captions: PreparedCaptions | null = null;
 
   try {
     let cropInput = inputVideoPath;
@@ -857,25 +895,24 @@ export async function createClipSmart(
 
     if (willBurnCaptions) {
       console.log(`  💬 Preparing captions with word-level timing...`);
-      const sizeMultiplier = CAPTION_SIZE_MULTIPLIERS[captionSize ?? 'medium'];
-      const assContent = captionsToASS(captionsResult!, stylePreset as any, {
-        fontSizeOverride: Math.round(captionsResult!.style.fontSize * sizeMultiplier),
-        positionOverride: captionPosition,
-      });
-      await fs.writeFile(assPath, assContent, 'utf-8');
+      captions = await prepareCaptions(
+        captionsResult!,
+        { captionStyle: stylePreset, captionSize, captionPosition },
+        { duration: endTime - startTime, tempDir }
+      );
     }
 
     console.log(`  ✂️  Applying smart crop: ${cropStrategy.method}...`);
     await cropToVerticalSmart(cropInput, outputPath, {
       ...cropStrategy,
-      ...(willBurnCaptions && { assPath }),
+      captions,
     });
 
     console.log(`  ✅ Clip created successfully with ${cropStrategy.method} strategy`);
   } finally {
     // inputVideoPath belongs to the caller — only our own temp files go here
     if (needsExtraction) await fs.unlink(extractedPath).catch(() => {});
-    if (willBurnCaptions) await fs.unlink(assPath).catch(() => {});
+    await captions?.cleanup();
   }
 }
 

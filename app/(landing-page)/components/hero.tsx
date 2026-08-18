@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import type { Lang } from "./use-lang"
+import { HERO_CLIP, HERO_STILLS } from "./clip-assets"
+import { useAutoplayOnView } from "./use-autoplay-on-view"
 
 const i18n = {
   es: {
@@ -12,11 +14,14 @@ const i18n = {
     sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Momentreel los detecta, recorta a 9:16 y agrega los subtítulos — sin tocar el timeline, listo en minutos.",
     cta: "Empezar gratis →",
     stats: [
-      { value: "94%", label: "Precisión IA" },
-      { value: "<5min", label: "Tiempo de proceso" },
-      { value: "10x", label: "Más alcance" },
+      { value: "94%", label: "Precisión de transcripción" },
+      { value: "<5min", label: "Hasta el primer clip" },
+      { value: "10", label: "Clips por video" },
       { value: "50+", label: "Idiomas" },
     ],
+    clipAlt: "Un clip real de Momentreel: recorte vertical con subtítulos automáticos",
+    stillAlt: "Fotograma de un clip generado por Momentreel",
+    play: "Reproducir el clip de ejemplo",
   },
   en: {
     badge: "✦ Long videos in. Viral clips out.",
@@ -26,11 +31,14 @@ const i18n = {
     sub: "Every podcast, stream, or video has viral moments buried inside it. Momentreel finds them, crops to 9:16, and burns captions — no timeline, no editor, done in minutes.",
     cta: "Start free trial →",
     stats: [
-      { value: "94%", label: "AI accuracy" },
-      { value: "<5min", label: "Processing time" },
-      { value: "10x", label: "More reach" },
+      { value: "94%", label: "Transcription accuracy" },
+      { value: "<5min", label: "Time to first clip" },
+      { value: "10", label: "Clips per video" },
       { value: "50+", label: "Languages" },
     ],
+    clipAlt: "A real Momentreel clip: vertical crop with auto captions",
+    stillAlt: "A frame from a clip Momentreel generated",
+    play: "Play the sample clip",
   },
 }
 
@@ -77,35 +85,76 @@ function OrbBg() {
   )
 }
 
-function KaraokeCaption({ text }: { text: string }) {
-  const words = text.split(" ")
-  // Two extra ticks create a beat of rest before the loop restarts.
-  const [active, setActive] = useState(0)
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-    const id = setInterval(() => setActive((a) => (a + 1) % (words.length + 2)), 380)
-    return () => clearInterval(id)
-  }, [words.length])
+/**
+ * The real product output, looping in the hero.
+ *
+ * Bytes are deferred behind `preload="none"` so the poster is what paints for
+ * LCP; playback only starts once the clip is actually on screen. Three things
+ * can veto autoplay — being off screen, reduced-motion, and Data Saver — and in
+ * every one of those cases the poster stays put behind a real play button
+ * rather than the section going blank.
+ */
+function ClipVideo({ label, playLabel }: { label: string; playLabel: string }) {
+  const { videoRef, manual, playing, play, handlers } = useAutoplayOnView()
 
   return (
     <>
-      {words.map((w, i) => (
-        <span key={i}>
-          <span
-            style={{
-              background: i === active ? "linear-gradient(135deg,#FF3B5C,#FF8C00)" : "transparent",
-              borderRadius: 3,
-              padding: "0 3px",
-              margin: "0 -3px",
-              transition: "background 0.15s ease",
-            }}
-          >
-            {w}
-          </span>{" "}
-        </span>
-      ))}
+      <video
+        ref={videoRef}
+        poster={HERO_CLIP.poster}
+        preload="none"
+        muted
+        loop
+        playsInline
+        disablePictureInPicture
+        width={HERO_CLIP.width}
+        height={HERO_CLIP.height}
+        aria-label={label}
+        {...handlers}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        }}
+      >
+        <source src={HERO_CLIP.mp4} type="video/mp4" />
+      </video>
+      {manual && !playing && <PlayOverlay label={playLabel} onClick={play} />}
     </>
+  )
+}
+
+/** Shown only when autoplay was vetoed. 52px keeps it over the 44px minimum. */
+export function PlayOverlay({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%,-50%)",
+        width: 52,
+        height: 52,
+        borderRadius: "50%",
+        border: "1px solid rgba(255,255,255,0.25)",
+        background: "rgba(10,10,10,0.72)",
+        backdropFilter: "blur(8px)",
+        color: "#f2ede8",
+        display: "grid",
+        placeItems: "center",
+        cursor: "pointer",
+        zIndex: 6,
+        padding: 0,
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M8 5v14l11-7z" />
+      </svg>
+    </button>
   )
 }
 
@@ -136,21 +185,29 @@ function StatValue({ value }: { value: string }) {
   return <>{display}</>
 }
 
+type PhoneMedia =
+  | { kind: "video"; label: string; playLabel: string }
+  | { kind: "still"; src: string; alt: string }
+
 function Phone({
-  gradient,
-  caption,
+  media,
   score,
   isCenter = false,
+  badgeAlign = "left",
   style,
 }: {
-  gradient: string
-  caption: string
+  media: PhoneMedia
   score: string
   isCenter?: boolean
+  /** The flanking phones tuck under the center one, so their badge has to sit
+   *  on the outward edge or it disappears behind it. */
+  badgeAlign?: "left" | "right"
   style?: React.CSSProperties
 }) {
-  const width = isCenter ? 195 : 164
-  const height = isCenter ? 347 : 291
+  // The center phone carries the playing clip, so it is sized for the burned
+  // captions to read as captions rather than as texture.
+  const width = isCenter ? 260 : 164
+  const height = isCenter ? 462 : 291
 
   return (
     <div
@@ -184,12 +241,27 @@ function Phone({
           }}
         />
       )}
-      <div style={{ position: "absolute", inset: 0, background: gradient }} />
+      <div style={{ position: "absolute", inset: 0 }}>
+        {media.kind === "video" ? (
+          <ClipVideo label={media.label} playLabel={media.playLabel} />
+        ) : (
+          <img
+            src={media.src}
+            alt={media.alt}
+            width={HERO_STILLS.width}
+            height={HERO_STILLS.height}
+            loading="lazy"
+            decoding="async"
+            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        )}
+      </div>
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)",
+          background: "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.35) 100%)",
+          pointerEvents: "none",
         }}
       />
       <div
@@ -197,7 +269,7 @@ function Phone({
         style={{
           position: "absolute",
           top: isCenter ? 32 : 12,
-          left: 10,
+          [badgeAlign]: 10,
           background: score.startsWith("VIRAL") ? "#FF3B5C" : "rgba(255,140,0,0.85)",
           color: "#fff",
           fontFamily: "var(--font-dm-sans), sans-serif",
@@ -211,47 +283,26 @@ function Phone({
       >
         {score}
       </div>
+      {/* No caption overlay: the captions are burned into the footage by the
+          pipeline, which is exactly the thing worth showing. A heavy scrim
+          would dim them, so this is a light bottom grade only. */}
       <div
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          height: "50%",
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)",
+          height: "22%",
+          background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 100%)",
           zIndex: 4,
+          pointerEvents: "none",
         }}
       />
-      <div
-        style={{
-          position: "absolute",
-          bottom: 18,
-          left: 10,
-          right: 10,
-          textAlign: "center",
-          zIndex: 5,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-dm-sans), sans-serif",
-            fontSize: isCenter ? 10.5 : 9,
-            fontWeight: 700,
-            color: "#fff",
-            textShadow: "0 1px 6px rgba(0,0,0,0.9)",
-            lineHeight: 1.45,
-            display: "block",
-          }}
-        >
-          {isCenter ? <KaraokeCaption text={caption} /> : caption}
-        </span>
-      </div>
     </div>
   )
 }
 
-function PhoneStack() {
+function PhoneStack({ t }: { t: (typeof i18n)["en"] }) {
   return (
     <div
       className="phone-stack-wrapper"
@@ -259,7 +310,9 @@ function PhoneStack() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "32px 8px 12px",
+        // No horizontal padding: the 588px stack already fills the hero column
+        // at 1024px, and any extra would clip the outer badges.
+        padding: "32px 0 12px",
         position: "relative",
       }}
     >
@@ -269,37 +322,37 @@ function PhoneStack() {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 260,
-          height: 400,
+          width: 340,
+          height: 520,
           background: "radial-gradient(ellipse, rgba(255,59,92,0.12) 0%, transparent 70%)",
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
-      <div className="float-slow" style={{ zIndex: 1 }}>
+      {/* The two stills are different speakers from the same source — side by
+          side they show the automatic speaker tracking without a word of copy. */}
+      <div className="float-slow phone-side" style={{ zIndex: 1 }}>
         <Phone
-          gradient="linear-gradient(160deg, #1a0620 0%, #33103d 45%, #110418 100%)"
-          caption="The biggest mistake most creators make..."
+          media={{ kind: "still", src: HERO_STILLS.left, alt: t.stillAlt }}
           score="CLIP · 87%"
           style={{
-            transform: "rotate(-8deg) translateX(24px) translateY(10px)",
+            transform: "rotate(-8deg) translateX(36px) translateY(10px)",
           }}
         />
       </div>
       <Phone
-        gradient="linear-gradient(160deg, #200610 0%, #3d1020 45%, #140408 100%)"
-        caption="I went from 0 to 100k in 90 days"
+        media={{ kind: "video", label: t.clipAlt, playLabel: t.play }}
         score="VIRAL · 94%"
         isCenter
         style={{ zIndex: 3, position: "relative" }}
       />
-      <div className="float-slower" style={{ zIndex: 2 }}>
+      <div className="float-slower phone-side" style={{ zIndex: 2 }}>
         <Phone
-          gradient="linear-gradient(160deg, #0e1a06 0%, #1e3510 45%, #090e04 100%)"
-          caption="This strategy changed everything for me"
+          media={{ kind: "still", src: HERO_STILLS.right, alt: t.stillAlt }}
           score="CLIP · 91%"
+          badgeAlign="right"
           style={{
-            transform: "rotate(8deg) translateX(-24px) translateY(10px)",
+            transform: "rotate(8deg) translateX(-36px) translateY(10px)",
           }}
         />
       </div>
@@ -419,7 +472,7 @@ export default function Hero({ lang }: { lang: Lang }) {
               pointerEvents: "none",
             }}
           />
-          <PhoneStack />
+          <PhoneStack t={t} />
           <div
             style={{
               display: "grid",
@@ -455,7 +508,8 @@ export default function Hero({ lang }: { lang: Lang }) {
                   style={{
                     fontFamily: "var(--font-dm-sans), sans-serif",
                     fontSize: 12,
-                    color: "#777",
+                    // #777 on #111 is ~4.0:1 and fails AA for small text.
+                    color: "#9a9a9a",
                     marginTop: 4,
                   }}
                 >

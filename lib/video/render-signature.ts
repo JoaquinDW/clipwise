@@ -1,13 +1,9 @@
 /**
- * Does the file on disk already match what the editor is showing?
+ * What settings was a clip's stored file actually rendered with?
  *
- * The preview draws captions as a live HTML overlay and applies trim as pure
- * client state, so a clip's stored MP4 and its on-screen appearance can differ.
- * Download has to close that gap: it renders only when the answer here is no.
- *
- * Shared by the client (to decide whether to render before saving) and by
- * /api/clips/[id]/reexport (to hand back an existing render instead of
- * queueing a duplicate), so both sides agree on what "already rendered" means.
+ * /api/clips/[id]/reexport uses this to recognise a render it already produced
+ * and hand it straight back, so downloading the same thing twice costs one
+ * request instead of a second ffmpeg pass.
  */
 
 import type { ClipMetadata } from '@/lib/types/clip-metadata';
@@ -27,6 +23,13 @@ export interface RenderSettings {
   captionStyle: string;
   captionPosition: CaptionPosition;
   captionSize: CaptionSize;
+  /**
+   * Which generation of the caption renderer produced the file. The settings
+   * above describe what the user asked for; this describes what we did with it.
+   * A clip burned before a preset change matches on all five and would be handed
+   * back forever without it.
+   */
+  captionRenderVersion: number;
 }
 
 export interface ClipLike {
@@ -61,17 +64,9 @@ export function renderedSettings(clip: ClipLike): RenderSettings | null {
     captionStyle: meta.captionStyle ?? DEFAULT_CAPTION_STYLE,
     captionPosition: meta.captionPosition ?? DEFAULT_CAPTION_POSITION,
     captionSize: meta.captionSize ?? DEFAULT_CAPTION_SIZE,
-  };
-}
-
-/** The settings the editor is currently showing, in source-video seconds. */
-export function desiredSettings(clip: ClipLike, edits: CaptionEdits): RenderSettings {
-  return {
-    startTime: clip.startTime + edits.deltaStart,
-    endTime: clip.endTime + edits.deltaEnd,
-    captionStyle: edits.captionStyle,
-    captionPosition: edits.captionPosition,
-    captionSize: edits.captionSize,
+    // Absent on anything burned before versioning existed, which is exactly the
+    // set of clips that must not be served from cache.
+    captionRenderVersion: meta.captionRenderVersion ?? 0,
   };
 }
 
@@ -86,11 +81,7 @@ export function settingsMatch(
     Math.abs(a.endTime - b.endTime) < TIME_EPSILON &&
     a.captionStyle === b.captionStyle &&
     a.captionPosition === b.captionPosition &&
-    a.captionSize === b.captionSize
+    a.captionSize === b.captionSize &&
+    a.captionRenderVersion === b.captionRenderVersion
   );
-}
-
-/** Whether Download has to render before it can hand over a file. */
-export function needsRender(clip: ClipLike, edits: CaptionEdits): boolean {
-  return !settingsMatch(renderedSettings(clip), desiredSettings(clip, edits));
 }

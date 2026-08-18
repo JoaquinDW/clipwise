@@ -207,6 +207,14 @@
   transform: translateY(-2px);
 }
 
+/* The gradient fill swallows a default outline, so the ring is drawn outside
+   the button and offset off the glow. */
+.cta-btn:focus-visible,
+.cta-ghost:focus-visible {
+  outline: 2px solid #ff8c00;
+  outline-offset: 3px;
+}
+
 .cta-ghost {
   display: inline-flex;
   align-items: center;
@@ -373,15 +381,20 @@ body::after {
   }
 }
 
-/* ── Phone stack hero – scale on narrow screens ─────────────────────────── */
-/* Parent has overflow:hidden so this only needs to make phones visually fit.
-   scale = container_width/523. Targeting 320px (360-px phones): 320/523 ≈ 0.61, use 0.58.
-   margin-bottom collapses the dead layout space: 391px × (1-0.58) ≈ 164px. */
+/* ── Phone stack hero – drop the flanking stills on narrow screens ───────── */
+/* The stack lays out at 164+260+164 = 588px, which does not fit a phone. The
+   old fix scaled the whole group down, but that shrank the center phone — the
+   one actually playing product footage — to ~140px, where the burned captions
+   stop reading at all. Hiding the two stills instead lets the clip keep its
+   full 260px inside a 320px viewport, and the stills' only job (showing that
+   the crop follows different speakers) is one that desktop can carry alone. */
 @media (max-width: 639px) {
+  .phone-side {
+    display: none;
+  }
+
   .phone-stack-wrapper {
-    transform: scale(0.68);
-    transform-origin: top center;
-    margin-bottom: -124px;
+    padding-top: 8px;
   }
 }
 
@@ -455,6 +468,22 @@ body::after {
   display: grid;
   grid-template-columns: 1fr;
   gap: 32px;
+}
+
+/* Before → After output clips. Two up on phones (a single 9:16 column would be
+   taller than the viewport), four across from 1024px so the whole set reads as
+   one row of output under the source timeline rather than a tall stack. */
+.clip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (min-width: 1024px) {
+  .clip-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
 }
 
 @media (min-width: 640px) {

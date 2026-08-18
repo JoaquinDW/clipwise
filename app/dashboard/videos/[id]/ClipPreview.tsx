@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef } from "react"
 import { PlayCircleIcon } from "@heroicons/react/24/outline"
-import { CaptionOverlay, SafeAreaOverlay } from "./ClipEditor"
+import { SafeAreaOverlay } from "./ClipEditor"
+import { CaptionOverlay } from "./CaptionCanvas"
 import { useClipEditorStore } from "@/lib/store/clip-editor.store"
 import type { CaptionsResult } from "@/lib/ai/captions"
 
@@ -129,8 +130,9 @@ function EditableVideoPlayer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clipStartTime, onTimeUpdate])
 
-  const store = useClipEditorStore()
-  const captionTime = store.currentTime - clipStartTime
+  // A selector, not the whole store: currentTime ticks every animation frame,
+  // and subscribing to everything re-rendered this subtree along with it.
+  const captionTime = useClipEditorStore((s) => s.currentTime) - clipStartTime
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: "0.75rem", overflow: "hidden", background: "#000" }}>
@@ -159,13 +161,25 @@ export default function ClipPreview({
   activeClipId,
   videoRef,
 }: ClipPreviewProps) {
-  const store = useClipEditorStore()
+  // Selectors, not the whole store. Subscribing to everything here re-rendered
+  // this component on every currentTime tick, which changed `store`'s identity
+  // ~60x/s and so rebuilt handleTimeUpdate and the player's RAF effect — tearing
+  // down and re-adding its play/pause listeners each frame. currentTime itself
+  // is read one level down, by the only thing that needs it.
+  const captionStyle = useClipEditorStore((s) => s.captionStyle)
+  const captionPosition = useClipEditorStore((s) => s.captionPosition)
+  const captionSize = useClipEditorStore((s) => s.captionSize)
+  const showSafeAreas = useClipEditorStore((s) => s.showSafeAreas)
+  const deltaStart = useClipEditorStore((s) => s.deltaStart)
+  const deltaEnd = useClipEditorStore((s) => s.deltaEnd)
+  const draggingHandle = useClipEditorStore((s) => s.draggingHandle)
+  const setCurrentTime = useClipEditorStore((s) => s.setCurrentTime)
 
   const activeClip = clips.find((c) => c.id === activeClipId) ?? null
 
   const handleTimeUpdate = useCallback((t: number) => {
-    store.setCurrentTime(t)
-  }, [store])
+    setCurrentTime(t)
+  }, [setCurrentTime])
 
   if (!activeClip) {
     return (
@@ -181,10 +195,15 @@ export default function ClipPreview({
 
   const isGenerating = activeClip.status !== "READY" || !activeClip.storageUrl
 
-  const { captionStyle, captionPosition, captionSize, showSafeAreas, deltaStart, deltaEnd, draggingHandle } = store
   const editedStart = activeClip.startTime + deltaStart
   const editedEnd = activeClip.endTime + deltaEnd
   const videoSrc = activeClip.proxyUrl ?? activeClip.storageUrl!
+
+  // A render already has its captions in the pixels; drawing the live overlay on
+  // top of one would show every line twice. The clip list only ever surfaces
+  // caption-free originals, so this is a backstop, not the normal path.
+  const captionsAreBurnedIn =
+    (activeClip.metadata as { burnCaptions?: boolean } | null)?.burnCaptions === true
 
   return (
     <>
@@ -247,7 +266,7 @@ export default function ClipPreview({
               clipStartTime={activeClip.startTime}
               editedStart={editedStart}
               editedEnd={editedEnd}
-              captions={activeClip.captions}
+              captions={captionsAreBurnedIn ? null : activeClip.captions}
               captionStyle={captionStyle}
               captionPosition={captionPosition}
               captionSize={captionSize}
