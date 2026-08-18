@@ -16,13 +16,13 @@ export const providersList = {
   },
   googleAnalytics: {
     name: "Google Analytics",
-    isAvailable: process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID !== undefined,
+    isAvailable: process.env.NODE_ENV === 'production' && !!process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
     optional: true,
     id: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || '',
   },
   googleTagManager: {
     name: "Google Tag Manager",
-    isAvailable: process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GOOGLE_TAG_MANAGER_ID !== undefined,
+    isAvailable: process.env.NODE_ENV === 'production' && !!process.env.NEXT_PUBLIC_GOOGLE_TAG_MANAGER_ID,
     id : process.env.NEXT_PUBLIC_GOOGLE_TAG_MANAGER_ID || '',
     optional: true,
   },
