@@ -4,6 +4,15 @@ import { enqueueClip } from '@/lib/queue/queue';
 import { isValidCaptionStyleName } from '@/lib/ai/caption-styles';
 import { requireBillableUser } from '@/lib/billing/guard';
 import { MAX_DELTA, MIN_DURATION, MAX_DURATION } from '@/lib/video/trim-limits';
+import {
+  renderedSettings,
+  settingsMatch,
+  DEFAULT_CAPTION_STYLE,
+  DEFAULT_CAPTION_POSITION,
+  DEFAULT_CAPTION_SIZE,
+  type CaptionPosition,
+  type CaptionSize,
+} from '@/lib/video/render-signature';
 
 const VALID_POSITIONS = new Set(['top', 'center', 'bottom']);
 const VALID_SIZES = new Set(['small', 'medium', 'large']);
@@ -76,6 +85,56 @@ export async function POST(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { proxyUrl: _proxyUrl, ...inheritedMetadata } = baseMetadata;
 
+    // Resolve omitted settings the same way the stored metadata will record
+    // them — inherit from the parent first, then the editor's defaults — so the
+    // cache lookup below compares like with like.
+    const requested = {
+      startTime: newStart,
+      endTime: newEnd,
+      captionStyle:
+        captionStyle ?? (baseMetadata.captionStyle as string) ?? DEFAULT_CAPTION_STYLE,
+      captionPosition:
+        (captionPosition as CaptionPosition) ??
+        (baseMetadata.captionPosition as CaptionPosition) ??
+        DEFAULT_CAPTION_POSITION,
+      captionSize:
+        (captionSize as CaptionSize) ??
+        (baseMetadata.captionSize as CaptionSize) ??
+        DEFAULT_CAPTION_SIZE,
+    };
+
+    // Download renders on demand, so the same settings get asked for over and
+    // over. If this lineage already holds a finished render of exactly these
+    // settings, hand it back instead of burning another ffmpeg pass on it.
+    // Lineages are flat by construction (see parentClipId below), so the root
+    // plus its direct children is the whole family.
+    const lineageRootId = clip.parentClipId ?? clip.id;
+    const siblings = await prismaClientGlobal.clip.findMany({
+      where: {
+        videoId: clip.videoId,
+        status: 'READY',
+        storageUrl: { not: null },
+        OR: [{ id: lineageRootId }, { parentClipId: lineageRootId }],
+      },
+      select: { id: true, startTime: true, endTime: true, metadata: true },
+    });
+
+    const cached = siblings.find((c) => settingsMatch(renderedSettings(c), requested));
+    if (cached) {
+      console.log(`[reexport] Clip ${clip.id} → reusing existing render ${cached.id}`);
+      return NextResponse.json({ clipId: cached.id, cached: true });
+    }
+
+    // Keep the ±15s window anchored to the clip the AI produced, so repeated
+    // edits cannot walk the boundaries arbitrarily far from it.
+    const lineageRoot = clip.parentClipId
+      ? await prismaClientGlobal.clip.findUnique({
+        where: { id: lineageRootId },
+        select: { startTime: true, endTime: true },
+      })
+      : null;
+    const root = lineageRoot ?? clip;
+
     const newClip = await prismaClientGlobal.clip.create({
       data: {
         videoId: clip.videoId,
@@ -87,14 +146,16 @@ export async function POST(
         score: clip.score,
         metadata: {
           ...inheritedMetadata,
-          ...(captionStyle !== undefined && { captionStyle }),
-          ...(captionPosition !== undefined && { captionPosition }),
-          ...(captionSize !== undefined && { captionSize }),
+          captionStyle: requested.captionStyle,
+          captionPosition: requested.captionPosition,
+          captionSize: requested.captionSize,
           burnCaptions: true,
         },
-        parentClipId: clip.id,
-        originalStart: clip.startTime,
-        originalEnd: clip.endTime,
+        // Always hang off the root, never off another edit: a flat lineage is
+        // what lets the cache lookup and the clip list collapse to one query.
+        parentClipId: lineageRootId,
+        originalStart: root.startTime,
+        originalEnd: root.endTime,
         status: 'PENDING',
       },
     });

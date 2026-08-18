@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowDownTrayIcon,
@@ -12,6 +12,9 @@ import ClipModal from "./ClipModal"
 import ClipEditor from "./ClipEditor"
 import ClipTimeline, { TIMELINE_HEIGHT } from "./ClipTimeline"
 import TranscriptPanel from "./TranscriptPanel"
+import { useClipDownload } from "./useClipDownload"
+import { useClipEditorStore } from "@/lib/store/clip-editor.store"
+import { isTrimValid } from "@/lib/video/trim-limits"
 
 interface Clip {
   id: string
@@ -56,30 +59,88 @@ export default function ClipsSection({
 }: ClipsSectionProps) {
   const router = useRouter()
   const [activeClipId, setActiveClipId] = useState<string | null>(initialClipId)
+  // A finished edit replaces its parent in the list, so the id we hold can go
+  // missing for the moment between switching to it and the refresh landing.
+  // Remembering the lineage keeps the panel and the timeline on screen.
+  const [activeRootId, setActiveRootId] = useState<string | null>(null)
   const [transcriptOpen, setTranscriptOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  const activeClip =
+    clips.find((c) => c.id === activeClipId) ??
+    (activeRootId
+      ? clips.find((c) => (c.parentClipId ?? c.id) === activeRootId) ?? null
+      : null)
+  const clipIsReady = activeClip?.status === "READY" && !!activeClip?.storageUrl
+
+  const selectClip = useCallback(
+    (id: string | null) => {
+      const clip = id ? clips.find((c) => c.id === id) ?? null : null
+      setActiveClipId(id)
+      setActiveRootId(clip ? clip.parentClipId ?? clip.id : null)
+    },
+    [clips]
+  )
+
+  const activeClipHref = activeClip?.id ?? null
   useEffect(() => {
     const url = new URL(window.location.href)
-    if (activeClipId) {
-      url.searchParams.set("clip", activeClipId)
+    if (activeClipHref) {
+      url.searchParams.set("clip", activeClipHref)
     } else {
       url.searchParams.delete("clip")
     }
     window.history.pushState({}, "", url.toString())
-  }, [activeClipId])
+  }, [activeClipHref])
 
+  // Only follow the server's pick when it names one — a refresh that arrives
+  // without a ?clip= must not clear what the user is looking at.
   useEffect(() => {
-    setActiveClipId(initialClipId)
+    if (initialClipId) selectClip(initialClipId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialClipId])
 
-  const activeClip = clips.find((c) => c.id === activeClipId) ?? null
-  const clipIsReady = activeClip?.status === "READY" && !!activeClip?.storageUrl
+  // The editor store belongs to whichever clip is on screen, whether or not the
+  // controls panel is mounted.
+  const resetEditor = useClipEditorStore((s) => s.reset)
+  useEffect(() => {
+    if (activeClip) resetEditor(activeClip)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClip?.id])
 
-  function handleExportStart(newClipId: string) {
-    console.log(`[editor] Re-export queued, new clip: ${newClipId}`)
-    router.refresh()
-  }
+  const deltaStart = useClipEditorStore((s) => s.deltaStart)
+  const deltaEnd = useClipEditorStore((s) => s.deltaEnd)
+  const captionStyle = useClipEditorStore((s) => s.captionStyle)
+  const captionPosition = useClipEditorStore((s) => s.captionPosition)
+  const captionSize = useClipEditorStore((s) => s.captionSize)
+  const edits = useMemo(
+    () => ({ deltaStart, deltaEnd, captionStyle, captionPosition, captionSize }),
+    [deltaStart, deltaEnd, captionStyle, captionPosition, captionSize]
+  )
+
+  const handleRendered = useCallback(
+    (newClipId: string, lineageRootId: string) => {
+      setActiveClipId(newClipId)
+      setActiveRootId(lineageRootId)
+      router.refresh()
+    },
+    [router]
+  )
+
+  const { download, phase, error: downloadError } = useClipDownload(
+    activeClip,
+    edits,
+    handleRendered
+  )
+
+  const trimValid = activeClip ? isTrimValid(activeClip, { deltaStart, deltaEnd }) : false
+  const busy = phase === "rendering" || phase === "downloading"
+  const downloadLabel =
+    phase === "rendering"
+      ? "Preparing your clip…"
+      : phase === "downloading"
+        ? "Downloading…"
+        : "Download"
 
   return (
     <div
@@ -129,8 +190,8 @@ export default function ClipsSection({
             ) : (
               <ClipModal
                 clips={clips}
-                initialClipId={activeClipId}
-                onClipSelect={setActiveClipId}
+                initialClipId={activeClip?.id ?? null}
+                onClipSelect={selectClip}
               />
             )}
           </div>
@@ -140,7 +201,7 @@ export default function ClipsSection({
         <main className="flex-1 flex flex-col items-center overflow-y-auto py-4 px-6">
           <ClipPreview
             clips={clips}
-            activeClipId={activeClipId}
+            activeClipId={activeClip?.id ?? null}
             videoRef={videoRef}
           />
         </main>
@@ -169,22 +230,7 @@ export default function ClipsSection({
           {/* Scrollable controls */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {clipIsReady ? (
-              <ClipEditor
-                clip={{
-                  id: activeClip!.id,
-                  title: activeClip!.title,
-                  storageUrl: activeClip!.storageUrl!,
-                  startTime: activeClip!.startTime,
-                  endTime: activeClip!.endTime,
-                  duration: activeClip!.duration,
-                  captions: activeClip!.captions,
-                  proxyUrl: activeClip!.proxyUrl,
-                  captionStyle: activeClip!.captionStyle,
-                  captionPosition: activeClip!.captionPosition,
-                  captionSize: activeClip!.captionSize,
-                }}
-                onExportStart={handleExportStart}
-              />
+              <ClipEditor />
             ) : (
               <div
                 className="flex flex-col items-center justify-center py-16 text-center gap-3"
@@ -208,21 +254,44 @@ export default function ClipsSection({
               className="flex-none px-4 py-3 flex flex-col gap-2"
               style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
             >
-              {activeClip.storageUrl && (
-                <a
-                  href={activeClip.storageUrl}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg text-white transition-colors"
-                  style={{
-                    background: "rgba(255,255,255,0.1)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                  }}
-                >
-                  <ArrowDownTrayIcon className="w-3.5 h-3.5" />
-                  Download
-                </a>
+              {clipIsReady && (
+                <>
+                  <button
+                    type="button"
+                    onClick={download}
+                    disabled={busy || !trimValid}
+                    className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-medium rounded-lg text-white transition-opacity disabled:opacity-50"
+                    style={{
+                      background: "rgba(255,255,255,0.1)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    {phase === "rendering" ? (
+                      <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                    ) : (
+                      <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                    )}
+                    {downloadLabel}
+                  </button>
+                  {downloadError && (
+                    <p className="text-xs text-red-400 text-center">{downloadError}</p>
+                  )}
+                  {!trimValid && !downloadError && (
+                    <p className="text-xs text-center" style={{ color: "var(--dash-text-muted)" }}>
+                      Adjust the trim handles to a valid length first.
+                    </p>
+                  )}
+                </>
               )}
               {transcription && (
                 <button

@@ -1,30 +1,10 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React from "react"
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline"
 import { getCaptionCSSStyle } from "@/lib/ai/caption-styles"
 import type { CaptionsResult, CaptionSegment } from "@/lib/ai/captions"
 import { useClipEditorStore } from "@/lib/store/clip-editor.store"
-import { isTrimValid } from "@/lib/video/trim-limits"
-
-interface Clip {
-  id: string
-  title: string
-  storageUrl: string
-  startTime: number
-  endTime: number
-  duration: number
-  captions: CaptionsResult | null
-  proxyUrl: string | null
-  captionStyle: string | null
-  captionPosition: "top" | "center" | "bottom" | null
-  captionSize: "small" | "medium" | "large" | null
-}
-
-interface ClipEditorProps {
-  clip: Clip
-  onExportStart: (newClipId: string) => void
-}
 
 const STYLE_OPTIONS: { key: string; label: string }[] = [
   { key: "classic", label: "Classic" },
@@ -131,47 +111,21 @@ export function SafeAreaOverlay({ show }: { show: boolean }) {
 
 // ── Main editor (controls only) ──────────────────────────────────────────────
 
-export default function ClipEditor({ clip, onExportStart }: ClipEditorProps) {
-  const store = useClipEditorStore()
-
-  // Reset store when clip changes
-  useEffect(() => {
-    store.reset(clip)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clip.id])
-
-  const { deltaStart, deltaEnd, captionStyle, captionPosition, captionSize, showSafeAreas } = store
-
-  const timingChanged = deltaStart !== 0 || deltaEnd !== 0
-  const captionChanged =
-    captionStyle !== (clip.captionStyle ?? "classic") ||
-    captionPosition !== (clip.captionPosition ?? "bottom") ||
-    captionSize !== (clip.captionSize ?? "medium")
-
-  // Trimming itself lives in the timeline bar; this only gates the export.
-  const valid = isTrimValid(clip, { deltaStart, deltaEnd })
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleReexport() {
-    setIsSubmitting(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/clips/${clip.id}/reexport`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deltaStart, deltaEnd, captionStyle, captionPosition, captionSize }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Re-export failed")
-      onExportStart(data.clipId)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Re-export failed")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+/**
+ * Controls only. These write to the shared editor store; Download is what turns
+ * the resulting settings into a file, rendering first when it has to.
+ */
+export default function ClipEditor() {
+  // Selectors rather than the whole store: currentTime ticks with playback, and
+  // these controls have no reason to re-render along with it.
+  const captionStyle = useClipEditorStore((s) => s.captionStyle)
+  const captionPosition = useClipEditorStore((s) => s.captionPosition)
+  const captionSize = useClipEditorStore((s) => s.captionSize)
+  const showSafeAreas = useClipEditorStore((s) => s.showSafeAreas)
+  const setCaptionStyle = useClipEditorStore((s) => s.setCaptionStyle)
+  const setCaptionPosition = useClipEditorStore((s) => s.setCaptionPosition)
+  const setCaptionSize = useClipEditorStore((s) => s.setCaptionSize)
+  const setShowSafeAreas = useClipEditorStore((s) => s.setShowSafeAreas)
 
   return (
     <div className="flex flex-col gap-4">
@@ -183,7 +137,7 @@ export default function ClipEditor({ clip, onExportStart }: ClipEditorProps) {
             <button
               key={opt.key}
               type="button"
-              onClick={() => store.setCaptionStyle(opt.key)}
+              onClick={() => setCaptionStyle(opt.key)}
               className="px-2.5 py-1 text-xs font-medium rounded-lg transition-colors"
               style={{
                 background: captionStyle === opt.key ? "rgba(255,59,92,0.15)" : "rgba(255,255,255,0.06)",
@@ -205,7 +159,7 @@ export default function ClipEditor({ clip, onExportStart }: ClipEditorProps) {
             <button
               key={opt.key}
               type="button"
-              onClick={() => store.setCaptionPosition(opt.key)}
+              onClick={() => setCaptionPosition(opt.key)}
               className="flex-1 py-1 text-xs font-medium rounded-lg transition-colors"
               style={{
                 background: captionPosition === opt.key ? "rgba(255,59,92,0.15)" : "rgba(255,255,255,0.06)",
@@ -227,7 +181,7 @@ export default function ClipEditor({ clip, onExportStart }: ClipEditorProps) {
             <button
               key={opt.key}
               type="button"
-              onClick={() => store.setCaptionSize(opt.key)}
+              onClick={() => setCaptionSize(opt.key)}
               className="flex-1 py-1 text-xs font-medium rounded-lg transition-colors"
               style={{
                 background: captionSize === opt.key ? "rgba(255,59,92,0.15)" : "rgba(255,255,255,0.06)",
@@ -244,7 +198,7 @@ export default function ClipEditor({ clip, onExportStart }: ClipEditorProps) {
       {/* Safe areas toggle */}
       <button
         type="button"
-        onClick={() => store.setShowSafeAreas(!showSafeAreas)}
+        onClick={() => setShowSafeAreas(!showSafeAreas)}
         className="flex items-center gap-1.5 text-xs"
         style={{ color: showSafeAreas ? "#FF3B5C" : "var(--dash-text-muted)" }}
       >
@@ -255,22 +209,8 @@ export default function ClipEditor({ clip, onExportStart }: ClipEditorProps) {
       {/* Divider */}
       <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
 
-      {/* Error */}
-      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
-
-      {/* Re-export button */}
-      <button
-        type="button"
-        onClick={handleReexport}
-        disabled={!valid || isSubmitting || (!timingChanged && !captionChanged)}
-        className="w-full py-2 text-sm font-semibold rounded-xl transition-opacity disabled:opacity-40"
-        style={{ background: "#FF3B5C", color: "#fff" }}
-      >
-        {isSubmitting ? "Sending…" : "Re-export Clip"}
-      </button>
-
       <p className="text-xs text-center" style={{ color: "var(--dash-text-muted)" }}>
-        Preview is approximate. Final clip is rendered by the server.
+        Preview is approximate. Download renders the final clip on the server.
       </p>
     </div>
   )

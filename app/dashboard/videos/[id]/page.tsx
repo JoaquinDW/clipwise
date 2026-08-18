@@ -5,6 +5,7 @@ import VideoActions from "./VideoActions"
 import VideoStatusPoller from "./VideoStatusPoller"
 import ClipsSection from "./ClipsSection"
 import { getSessionUserWithCompany } from "@/lib/auth/session"
+import { collapseLineages, resolveVisibleClipId } from "@/lib/video/clip-lineage"
 
 export default async function VideoDetailPage({
   params,
@@ -29,6 +30,10 @@ export default async function VideoDetailPage({
   // Scoped to the caller's company: a cuid from another tenant must 404, not
   // hand over their transcript and clips.
   if (!video || video.companyId !== user.companyId) notFound()
+
+  // One card per clip: edits live on as extra rows, but only the newest usable
+  // version of each lineage reaches the UI.
+  const visibleClips = collapseLineages(video.clips)
 
   const isProcessing = !["READY", "FAILED"].includes(video.status)
   const isStream =
@@ -154,7 +159,7 @@ export default async function VideoDetailPage({
       {/* Main content — 2 columns */}
       <div className="flex flex-1 pt-5 min-h-0">
         <ClipsSection
-          clips={video.clips.map((c) => {
+          clips={visibleClips.map((c) => {
             const meta = c.metadata as Record<string, unknown> | null
             return {
               id: c.id,
@@ -180,8 +185,12 @@ export default async function VideoDetailPage({
                 (meta?.captionSize as "small" | "medium" | "large") ?? null,
             }
           })}
-          initialClipId={searchParams.clip ?? null}
-          videoClipsCount={video.clips.length}
+          initialClipId={resolveVisibleClipId(
+            visibleClips,
+            video.clips,
+            searchParams.clip
+          )}
+          videoClipsCount={visibleClips.length}
           videoStatus={video.status}
           transcription={
             video.transcription

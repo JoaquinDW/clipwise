@@ -2,12 +2,12 @@
 import { Worker, Job } from 'bullmq';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { readFile, unlink } from 'fs/promises';
+import { readFile, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { generateCaptions } from '@/lib/ai/captions';
-import { createClipSmart, generateProxy, generateThumbnail, type RenderFallback } from '@/lib/video/processor';
+import { burnCaptions as burnCaptionsOnto, createClipSmart, generateProxy, generateThumbnail, type RenderFallback } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
 import { ytdlpArgs } from '@/lib/video/ytdlp';
 import { createRedisConnection, QUEUE_NAME, type ClipJobData } from '../queue';
@@ -16,6 +16,46 @@ import type { CaptionStyleName } from '@/lib/ai/caption-styles';
 
 // argv form: user-supplied URLs must never be spliced into a shell string
 const execFileAsync = promisify(execFile);
+
+/** Trim deltas are rounded to 0.1s, so anything tighter is float noise. */
+const TIME_EPSILON = 0.05;
+
+/**
+ * A caption-only edit does not need the source video at all: the clip it was
+ * derived from is already stored, already cut to these exact bounds and already
+ * cropped to 9:16 — it is only missing the burned-in captions.
+ *
+ * That matters most for YouTube and stream sources, where nothing but the audio
+ * is kept, so every render otherwise re-downloads the segment through yt-dlp and
+ * inherits its 403s. Taking this path skips the download and the crop entirely.
+ *
+ * Returns null unless the parent is genuinely usable as a base — in particular
+ * it must be caption-free, or this would stack a second set of captions on top
+ * of the first.
+ */
+async function findCaptionBase(clip: {
+  parentClipId: string | null;
+  startTime: number;
+  endTime: number;
+  metadata: unknown;
+}): Promise<string | null> {
+  if (!clip.parentClipId) return null;
+  // Reusing the parent's pixels only makes sense when the caption pass is the
+  // whole job; without it there would be nothing left to render.
+  if ((clip.metadata as Record<string, unknown> | null)?.burnCaptions !== true) return null;
+
+  const parent = await prismaClientGlobal.clip.findUnique({
+    where: { id: clip.parentClipId },
+    select: { status: true, storageUrl: true, startTime: true, endTime: true, metadata: true },
+  });
+
+  if (!parent?.storageUrl || parent.status !== 'READY') return null;
+  if ((parent.metadata as Record<string, unknown> | null)?.burnCaptions === true) return null;
+  if (Math.abs(parent.startTime - clip.startTime) > TIME_EPSILON) return null;
+  if (Math.abs(parent.endTime - clip.endTime) > TIME_EPSILON) return null;
+
+  return parent.storageUrl;
+}
 
 export async function processClip(job: Job<ClipJobData>) {
   const { videoId, clipId } = job.data;
@@ -42,9 +82,17 @@ export async function processClip(job: Job<ClipJobData>) {
   const proxyPath = join(tmpdir(), `proxy-${clipId}.mp4`);
 
   try {
-    // 1. Download only the clip segment
+    // 1. Get the pixels to work from. A caption-only edit reuses the clip it
+    //    came from; everything else goes back to the source video.
+    const captionBaseUrl = await findCaptionBase(clip);
+
     const videoSource: string = video.source;
-    if ((videoSource === 'YOUTUBE' || videoSource === 'TWITCH' || videoSource === 'KICK') && video.sourceUrl) {
+    if (captionBaseUrl) {
+      const res = await fetch(captionBaseUrl);
+      if (!res.ok) throw new Error(`Could not fetch base clip: ${res.status}`);
+      await writeFile(segmentPath, Buffer.from(await res.arrayBuffer()));
+      console.log(`[clip] Reusing rendered clip as caption base for ${clipId}`);
+    } else if ((videoSource === 'YOUTUBE' || videoSource === 'TWITCH' || videoSource === 'KICK') && video.sourceUrl) {
       const startTime = Math.floor(clip.startTime);
       const endTime = Math.ceil(clip.endTime);
       await execFileAsync(
@@ -114,29 +162,37 @@ export async function processClip(job: Job<ClipJobData>) {
     // instead of only in a log line nobody reads
     let renderFallback: RenderFallback | undefined;
 
-    await createClipSmart(
-      segmentPath,
-      0,
-      clip.endTime - clip.startTime,
-      captions,
-      outputPath,
-      {
-        cropStrategy: {
-          method: cropStrategy.method as any,
-          subjectPosition: (cropStrategy.subjectPosition ?? 'center') as any,
-          compositeLayout:
-            layoutType !== 'standard' && layoutType !== 'talking_head'
-              ? { layoutType: layoutType as any, layoutRegions: metadata?.layoutRegions as any }
-              : undefined,
-          onFallback: (info) => {
-            renderFallback = info;
-            console.warn(`[clip] ${clipId} fell back from ${info.from}: ${info.reason}`);
+    if (captionBaseUrl) {
+      // Already cropped and cut — the only thing left to do is the caption pass.
+      await burnCaptionsOnto(segmentPath, captions, outputPath, captionStyle, {
+        captionPosition,
+        captionSize,
+      });
+    } else {
+      await createClipSmart(
+        segmentPath,
+        0,
+        clip.endTime - clip.startTime,
+        captions,
+        outputPath,
+        {
+          cropStrategy: {
+            method: cropStrategy.method as any,
+            subjectPosition: (cropStrategy.subjectPosition ?? 'center') as any,
+            compositeLayout:
+              layoutType !== 'standard' && layoutType !== 'talking_head'
+                ? { layoutType: layoutType as any, layoutRegions: metadata?.layoutRegions as any }
+                : undefined,
+            onFallback: (info) => {
+              renderFallback = info;
+              console.warn(`[clip] ${clipId} fell back from ${info.from}: ${info.reason}`);
+            },
           },
-        },
-        burnCaptions: shouldBurnCaptions,
-        ...(shouldBurnCaptions && { stylePreset: captionStyle, captionPosition, captionSize }),
-      }
-    );
+          burnCaptions: shouldBurnCaptions,
+          ...(shouldBurnCaptions && { stylePreset: captionStyle, captionPosition, captionSize }),
+        }
+      );
+    }
 
     // 5. Upload clip
     const storage = getStorageClient();

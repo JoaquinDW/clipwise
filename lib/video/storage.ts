@@ -200,6 +200,33 @@ class SupabaseStorage {
     };
   }
 
+  /**
+   * A short-lived URL that makes the browser *save* the clip instead of playing
+   * it. The `download` option is what emits `Content-Disposition: attachment` —
+   * an `<a download>` cannot do this, because that attribute is ignored on
+   * cross-origin URLs and every clip lives on the Supabase domain.
+   */
+  async createClipDownloadUrl(
+    companyId: string,
+    videoId: string,
+    clipId: string,
+    fileName: string,
+    expiresIn = 300
+  ): Promise<string> {
+    // Derived from the ids exactly as uploadClip writes them — never parsed out
+    // of clip.storageUrl, which holds the full public URL rather than a path.
+    const path = `${companyId}/${videoId}/${clipId}.mp4`;
+    const { data, error } = await this.client.storage
+      .from(this.buckets.clips)
+      .createSignedUrl(path, expiresIn, { download: fileName });
+
+    if (error || !data) {
+      throw new Error(`Failed to create clip download URL: ${error?.message}`);
+    }
+
+    return data.signedUrl;
+  }
+
   async uploadThumbnail(
     file: File | Blob,
     companyId: string,
@@ -380,6 +407,16 @@ class S3Storage {
     _videoId: string,
     _clipId: string
   ): Promise<UploadResult> {
+    throw new Error('S3 storage not yet implemented');
+  }
+
+  async createClipDownloadUrl(
+    _companyId: string,
+    _videoId: string,
+    _clipId: string,
+    _fileName: string,
+    _expiresIn?: number
+  ): Promise<string> {
     throw new Error('S3 storage not yet implemented');
   }
 }
