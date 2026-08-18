@@ -11,7 +11,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 
 import { createCaptionCanvas } from '../canvas.node';
-import { createMeasurer, drawCaptionFrame, measureAscentRatio } from '../draw';
+import { createMeasurer, drawCaptionFrame } from '../draw';
 import { buildFramesFromWords } from '../frames.node';
 import type { CaptionWord } from '../layout';
 import { renderCaptionOverlayTrack } from '../renderers/raster.node';
