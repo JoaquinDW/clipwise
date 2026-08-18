@@ -32,7 +32,17 @@ export function startAllWorkers() {
         throw err;
       }
     },
-    { connection: createRedisConnection(), concurrency: 2 }
+    {
+      connection: createRedisConnection(),
+      concurrency: 2,
+      // Upstash bills per command and an idle BullMQ worker is not idle in Redis:
+      // with the defaults (drainDelay 5s, stalledInterval 30s) it burns ~20k
+      // commands/day polling an empty queue — the whole free tier in ~25 days.
+      // drainDelay adds no latency: enqueueing writes the marker key, which
+      // releases the blocking bzpopmin immediately.
+      drainDelay: 30,
+      stalledInterval: 300_000,
+    }
   );
 
   worker.on('completed', (job) => {
@@ -49,9 +59,11 @@ export function startAllWorkers() {
         data: { status: 'FAILED', errorMessage: err.message },
       }).catch(() => {});
     } else if (videoId) {
+      // Clear the stage detail too: leaving "Downloading audio — 2.1MB/s" next
+      // to a FAILED badge reads as if the job were still running.
       await prismaClientGlobal.video.update({
         where: { id: videoId },
-        data: { status: 'FAILED', errorMessage: err.message },
+        data: { status: 'FAILED', errorMessage: err.message, stageProgress: 0, stageDetail: null },
       }).catch(() => {});
     }
   });

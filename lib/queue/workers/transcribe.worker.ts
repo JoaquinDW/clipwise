@@ -8,6 +8,7 @@ import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { transcribeChunk } from '@/lib/ai/transcribe-chunk';
 import { meterVideoDuration } from '@/lib/billing/metering';
+import { makeStageReporter, setStage } from '@/lib/video/progress';
 import { createRedisConnection, QUEUE_NAME, enqueueAnalyze, type TranscribeJobData } from '../queue';
 import type { TranscriptionSegment, WordTimestamp } from '@/lib/ai/transcribe';
 
@@ -22,10 +23,8 @@ export async function processTranscribe(job: Job<TranscribeJobData>) {
   const video = await prismaClientGlobal.video.findUnique({ where: { id: videoId } });
   if (!video?.audioUrl) throw new Error('Video has no audioUrl — run ingest first');
 
-  await prismaClientGlobal.video.update({
-    where: { id: videoId },
-    data: { status: 'TRANSCRIBING' },
-  });
+  const progress = makeStageReporter(videoId);
+  await setStage(videoId, 'TRANSCRIBING', 'Preparing audio…');
 
   const audioLocalPath = join(tmpdir(), `audio-full-${videoId}.m4a`);
   const chunkDir = join(tmpdir(), `chunks-${videoId}`);
@@ -49,6 +48,7 @@ export async function processTranscribe(job: Job<TranscribeJobData>) {
     await meterVideoDuration(videoId, totalDuration);
 
     // 3. Split into chunks
+    progress.report(4, 'Splitting audio into chunks…');
     await execAsync(`mkdir -p "${chunkDir}"`);
     await execAsync(
       `ffmpeg -i "${audioLocalPath}" -f segment -segment_time ${CHUNK_DURATION} -c copy "${chunkDir}/chunk-%d.m4a" -y`
@@ -86,6 +86,13 @@ export async function processTranscribe(job: Job<TranscribeJobData>) {
       const chunkPath = join(chunkDir, chunkFiles[i]);
       const offsetSeconds = i * CHUNK_DURATION;
       console.log(`[transcribe] Chunk ${i + 1}/${chunkFiles.length} (offset ${offsetSeconds}s)`);
+      // Whisper gives no progress inside a chunk, so the bar advances a step per
+      // chunk. The split above is what makes those steps small enough to read as
+      // movement rather than a stall.
+      progress.report(
+        5 + Math.round((i / chunkFiles.length) * 90),
+        `Transcribing — chunk ${i + 1} of ${chunkFiles.length}`
+      );
       const result = await transcribeChunk(chunkPath, offsetSeconds);
 
       await prismaClientGlobal.audioChunk.update({
@@ -129,10 +136,8 @@ export async function processTranscribe(job: Job<TranscribeJobData>) {
       },
     });
 
-    await prismaClientGlobal.video.update({
-      where: { id: videoId },
-      data: { status: 'TRANSCRIBED' },
-    });
+    await progress.flush();
+    await setStage(videoId, 'TRANSCRIBED', 'Looking for the best moments…');
 
     console.log(`[transcribe] Done — ${allSegments.length} segments, ${allWords.length} words`);
     await enqueueAnalyze({ videoId });

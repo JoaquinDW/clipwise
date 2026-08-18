@@ -10,7 +10,8 @@ import { generateCaptions, type CaptionsResult } from '@/lib/ai/captions';
 import { sliceCaptions } from '@/lib/ai/caption-slice';
 import { burnCaptions as burnCaptionsOnto, createClipSmart, generateProxy, generateThumbnail, type RenderFallback } from '@/lib/video/processor';
 import { getStorageClient } from '@/lib/video/storage';
-import { ytdlpArgs } from '@/lib/video/ytdlp';
+import { ytdlpArgs, downloadWithProgress } from '@/lib/video/ytdlp';
+import { makeClipReporter, setStage, subBand } from '@/lib/video/progress';
 import { createRedisConnection, QUEUE_NAME, type ClipJobData } from '../queue';
 import type { WordTimestamp } from '@/lib/ai/transcribe';
 import type { CaptionStyleName } from '@/lib/ai/caption-styles';
@@ -97,8 +98,12 @@ export async function processClip(job: Job<ClipJobData>) {
 
   await prismaClientGlobal.clip.update({
     where: { id: clipId },
-    data: { status: 'GENERATING' },
+    data: { status: 'GENERATING', progress: 0 },
   });
+
+  // Fetching the source pixels owns 0-35, the encode 35-90, the upload the rest.
+  const clipDuration = clip.endTime - clip.startTime;
+  const renderProgress = makeClipReporter(clipId);
 
   const segmentPath = join(tmpdir(), `segment-${clipId}.mp4`);
   const outputPath = join(tmpdir(), `clip-out-${clipId}.mp4`);
@@ -118,8 +123,7 @@ export async function processClip(job: Job<ClipJobData>) {
     } else if ((videoSource === 'YOUTUBE' || videoSource === 'TWITCH' || videoSource === 'KICK') && video.sourceUrl) {
       const startTime = Math.floor(clip.startTime);
       const endTime = Math.ceil(clip.endTime);
-      await execFileAsync(
-        'yt-dlp',
+      await downloadWithProgress(
         ytdlpArgs(
           '--download-sections', `*${startTime}-${endTime}`,
           '--force-keyframes-at-cuts',
@@ -133,7 +137,7 @@ export async function processClip(job: Job<ClipJobData>) {
           '-o', segmentPath,
           video.sourceUrl,
         ),
-        { maxBuffer: 1024 * 1024 * 100 }
+        (p) => renderProgress.report(subBand(0, 35, p.fraction))
       );
       console.log(`[clip] YouTube segment downloaded for clip ${clipId}`);
     } else if (video.storageUrl) {
@@ -147,6 +151,8 @@ export async function processClip(job: Job<ClipJobData>) {
     } else {
       throw new Error('No source URL available for clip extraction');
     }
+
+    renderProgress.report(35);
 
     // 2. Extract words for this clip time range, adjusted to clip-relative time
     const allWords = video.transcription.words as unknown as WordTimestamp[];
@@ -200,7 +206,8 @@ export async function processClip(job: Job<ClipJobData>) {
       await burnCaptionsOnto(segmentPath, captions, outputPath, captionStyle, {
         captionPosition,
         captionSize,
-        duration: clip.endTime - clip.startTime,
+        duration: clipDuration,
+        onProgress: (fraction) => renderProgress.report(subBand(35, 90, fraction)),
       });
     } else {
       await createClipSmart(
@@ -222,6 +229,7 @@ export async function processClip(job: Job<ClipJobData>) {
               console.warn(`[clip] ${clipId} fell back from ${info.from}: ${info.reason}`);
             },
           },
+          onProgress: (fraction) => renderProgress.report(subBand(35, 90, fraction)),
           burnCaptions: shouldBurnCaptions,
           ...(shouldBurnCaptions && { stylePreset: captionStyle, captionPosition, captionSize }),
         }
@@ -229,6 +237,7 @@ export async function processClip(job: Job<ClipJobData>) {
     }
 
     // 5. Upload clip
+    renderProgress.report(90);
     const storage = getStorageClient();
     const clipBuffer = await readFile(outputPath);
     const clipFile = new File([clipBuffer.buffer as ArrayBuffer], `clip-${clipId}.mp4`, { type: 'video/mp4' });
@@ -286,11 +295,15 @@ export async function processClip(job: Job<ClipJobData>) {
     await unlink(outputPath).catch(() => {});
 
     // 6. Save clip record
+    // Drain the throttled writer first: a queued 87% landing after this update
+    // would drag a finished clip's bar backwards.
+    await renderProgress.flush();
     await prismaClientGlobal.clip.update({
       where: { id: clipId },
       data: {
         storageUrl: uploadResult.url,
         status: 'READY',
+        progress: 100,
         captions: captions as any,
         ...(clipThumbnailUrl ? { thumbnailUrl: clipThumbnailUrl } : {}),
         metadata: {
@@ -309,10 +322,7 @@ export async function processClip(job: Job<ClipJobData>) {
     });
 
     if (pendingClips === 0) {
-      await prismaClientGlobal.video.update({
-        where: { id: videoId },
-        data: { status: 'READY' },
-      });
+      await setStage(videoId, 'READY');
       console.log(`[clip] All clips done — video ${videoId} is READY`);
     }
   } finally {

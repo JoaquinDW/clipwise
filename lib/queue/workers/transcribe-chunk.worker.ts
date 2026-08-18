@@ -5,6 +5,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { transcribeChunk } from '@/lib/ai/transcribe-chunk';
+import { setStage } from '@/lib/video/progress';
 import { enqueueAnalyze, type TranscribeChunkJobData } from '../queue';
 import type { TranscriptionSegment, WordTimestamp } from '@/lib/ai/transcribe';
 
@@ -14,10 +15,7 @@ export async function processTranscribeChunk(job: Job<TranscribeChunkJobData>) {
 
   // Mark video as TRANSCRIBING on the first chunk (idempotent if called multiple times)
   if (chunkIndex === 0) {
-    await prismaClientGlobal.video.update({
-      where: { id: videoId },
-      data: { status: 'TRANSCRIBING' },
-    });
+    await setStage(videoId, 'TRANSCRIBING', `Transcribing — 0 of ${totalChunks} chunks done`);
   }
 
   const chunk = await prismaClientGlobal.audioChunk.findUnique({ where: { id: chunkId } });
@@ -52,6 +50,15 @@ export async function processTranscribeChunk(job: Job<TranscribeChunkJobData>) {
   });
 
   if (doneCount < totalChunks) {
+    // One write per completed chunk — no throttling needed, and these arrive
+    // out of order, so the count query is the only honest source.
+    await prismaClientGlobal.video.update({
+      where: { id: videoId },
+      data: {
+        stageProgress: Math.round((doneCount / totalChunks) * 100),
+        stageDetail: `Transcribing — ${doneCount} of ${totalChunks} chunks done`,
+      },
+    });
     console.log(`[transcribe-chunk] ${doneCount}/${totalChunks} chunks done — waiting for remaining`);
     return;
   }
@@ -79,10 +86,7 @@ export async function processTranscribeChunk(job: Job<TranscribeChunkJobData>) {
     update: { text: fullText, language, segments: allSegments as any, words: allWords as any },
   });
 
-  await prismaClientGlobal.video.update({
-    where: { id: videoId },
-    data: { status: 'TRANSCRIBED' },
-  });
+  await setStage(videoId, 'TRANSCRIBED', 'Looking for the best moments…');
 
   await enqueueAnalyze({ videoId });
   console.log(`[transcribe-chunk] Merged transcription saved, analyze enqueued for video ${videoId}`);

@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ProgressBar from '@/app/ui/progress-bar';
+import Spinner from '@/app/ui/spinner';
 
 const YT_URL_RE = /^https?:\/\/(www\.)?(youtube\.com\/watch\?.*v=|youtu\.be\/)[\w-]+/;
 
@@ -160,7 +162,10 @@ export default function NewVideoPage() {
         });
         if (!res.ok) throw new Error((await res.json()).error || 'YouTube download failed');
         videoId = (await res.json()).videoId;
-        setProgress(30);
+        // Nothing local is happening for a link — the download runs in the
+        // worker. The old flat 30% sat there lying until the redirect; the
+        // video page has the real, moving progress.
+        setProgress(100);
       } else {
         const res = await fetch('/api/videos/stream', {
           method: 'POST',
@@ -169,7 +174,7 @@ export default function NewVideoPage() {
         });
         if (!res.ok) throw new Error((await res.json()).error || 'Stream import failed');
         videoId = (await res.json()).videoId;
-        setProgress(30);
+        setProgress(100);
       }
 
       setUploading(false);
@@ -371,10 +376,7 @@ export default function NewVideoPage() {
               </label>
               {fetchingMeta && (
                 <span className="text-xs flex items-center gap-1" style={{ color: 'var(--dash-text-secondary)' }}>
-                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
+                  <Spinner className="h-3 w-3" color="currentColor" />
                   Fetching…
                 </span>
               )}
@@ -423,16 +425,13 @@ export default function NewVideoPage() {
             <div className="rounded-xl p-4" style={{ background: '#111', border: '1px solid #1a1a1a' }}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium" style={{ color: '#f2ede8' }}>
-                  {mode === 'file' ? 'Uploading video…' : mode === 'youtube' ? 'Submitting YouTube URL…' : 'Starting stream import…'}
+                  {mode !== 'file'
+                    ? mode === 'youtube' ? 'Submitting YouTube URL…' : 'Starting stream import…'
+                    : progress >= 90 ? 'Starting processing…' : 'Uploading video…'}
                 </span>
                 <span className="text-sm font-medium" style={{ color: '#FF3B5C' }}>{progress}%</span>
               </div>
-              <div className="w-full rounded-full h-1.5" style={{ background: '#1a1a1a' }}>
-                <div
-                  className="h-1.5 rounded-full"
-                  style={{ background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)', width: `${progress}%`, transition: 'width 0.3s ease' }}
-                />
-              </div>
+              <ProgressBar value={progress} label="Upload progress" />
               <p className="mt-2 text-xs" style={{ color: 'var(--dash-text-secondary)' }}>
                 Processing will continue in the background — you&apos;ll be redirected automatically.
               </p>

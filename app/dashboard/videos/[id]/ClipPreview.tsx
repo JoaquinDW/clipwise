@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef } from "react"
 import { PlayCircleIcon } from "@heroicons/react/24/outline"
 import { SafeAreaOverlay } from "./ClipEditor"
+import Spinner from "@/app/ui/spinner"
 import { CaptionOverlay } from "./CaptionCanvas"
 import { useClipEditorStore } from "@/lib/store/clip-editor.store"
 import type { CaptionsResult } from "@/lib/ai/captions"
@@ -231,26 +232,7 @@ export default function ClipPreview({
                 </p>
               ) : (
                 <>
-                  <svg
-                    className="animate-spin h-8 w-8"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    style={{ color: "#FF3B5C" }}
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8H4z"
-                    />
-                  </svg>
+                  <Spinner className="h-8 w-8" />
                   <span
                     className="text-sm"
                     style={{ color: "var(--dash-text-secondary)" }}

@@ -17,12 +17,20 @@ import { prismaClientGlobal } from '@/infra/prisma';
 import { VideoStatus } from '@prisma/client';
 import { getSessionUserWithCompany } from '@/lib/auth/session';
 import { getCompanyAccess } from '@/lib/billing/access';
+import { STATUS_LABELS, isProcessing } from '@/lib/video/video-status-ui';
+import VideoListPoller from '../VideoListPoller';
 
-const statusBadge: Record<string, { className: string; label: string }> = {
-  READY: { className: 'dash-badge dash-badge--success', label: 'Ready' },
-  FAILED: { className: 'dash-badge dash-badge--error', label: 'Failed' },
-};
-const pendingBadge = { className: 'dash-badge dash-badge--pending', label: 'Processing' };
+// The overview keeps the coarse three-state badge — it is a glance surface, not
+// a progress surface — but the label now names the actual stage instead of a
+// blanket "Processing".
+function badgeFor(status: string) {
+  if (status === 'READY') return { className: 'dash-badge dash-badge--success', label: 'Ready' };
+  if (status === 'FAILED') return { className: 'dash-badge dash-badge--error', label: 'Failed' };
+  return {
+    className: 'dash-badge dash-badge--pending',
+    label: STATUS_LABELS[status] ?? 'Processing',
+  };
+}
 
 function timeAgo(date: Date) {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -218,6 +226,7 @@ export default async function Page() {
       {/* Recent Videos */}
       {recentVideos.length > 0 && (
         <div className="mb-8">
+          <VideoListPoller hasActiveVideos={recentVideos.some((v) => isProcessing(v.status))} />
           <div className="mb-4 flex items-center justify-between">
             <h2
               className="text-lg font-semibold"
@@ -239,7 +248,7 @@ export default async function Page() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {recentVideos.map((video) => {
-              const badge = statusBadge[video.status] ?? pendingBadge;
+              const badge = badgeFor(video.status);
               return (
                 <Link
                   key={video.id}

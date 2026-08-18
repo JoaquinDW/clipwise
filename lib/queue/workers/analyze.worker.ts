@@ -4,6 +4,7 @@ import { prismaClientGlobal } from '@/infra/prisma';
 import { detectHighlights } from '@/lib/ai/highlights';
 import { scoreWindows, buildExpandedWindows, SHORT_VIDEO_BYPASS_SECONDS } from '@/lib/ai/scoring';
 import { rankCandidates, rankedCandidateToHighlight } from '@/lib/ai/rank-candidates';
+import { setStage } from '@/lib/video/progress';
 import { createRedisConnection, QUEUE_NAME, enqueueClip, type AnalyzeJobData } from '../queue';
 import type { TranscriptionSegment } from '@/lib/ai/transcribe';
 import type { Highlight } from '@/lib/ai/highlights';
@@ -32,10 +33,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     // ── Short video: legacy GPT path (unchanged) ──────────────────────────────
     console.log(`[analyze] Short video (${videoDuration.toFixed(0)}s) — using legacy GPT path`);
 
-    await prismaClientGlobal.video.update({
-      where: { id: videoId },
-      data: { status: 'PROCESSING' },
-    });
+    await setStage(videoId, 'PROCESSING', 'Picking the best moments…');
 
     const result = await detectHighlights(segments, {
       maxHighlights: maxClips,
@@ -51,10 +49,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     // ── Long video: V2.1 Candidate-First pipeline ─────────────────────────────
 
     // Phase 1: Heuristic Scoring
-    await prismaClientGlobal.video.update({
-      where: { id: videoId },
-      data: { status: 'SCORING' },
-    });
+    await setStage(videoId, 'SCORING', 'Scanning the transcript for strong moments…');
     console.log(`[analyze] SCORING phase — ${segments.length} segments, ${videoDuration.toFixed(0)}s video`);
 
     const scoredWindows = scoreWindows(segments, {
@@ -65,6 +60,13 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     });
 
     console.log(`[analyze] ${scoredWindows.length} candidates after heuristic scoring`);
+    await prismaClientGlobal.video.update({
+      where: { id: videoId },
+      data: {
+        stageProgress: 60,
+        stageDetail: `Found ${scoredWindows.length} promising moments — pulling context…`,
+      },
+    });
 
     // Phase 2: Context Expansion
     const expandedWindows = buildExpandedWindows(scoredWindows, segments, 30);
@@ -86,10 +88,11 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
     }
 
     // Phase 4: GPT Ranking
-    await prismaClientGlobal.video.update({
-      where: { id: videoId },
-      data: { status: 'RANKING' },
-    });
+    await setStage(
+      videoId,
+      'RANKING',
+      `Ranking ${expandedWindows.length} candidate moments with AI…`
+    );
     console.log(`[analyze] RANKING phase — sending ${expandedWindows.length} candidates to GPT`);
 
     const rankingResult = await rankCandidates(expandedWindows, {
@@ -98,6 +101,14 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
       maxDuration: 60,
       targetAudience: 'TikTok, Instagram Reels, YouTube Shorts users',
       contentType: 'video content',
+    });
+
+    await prismaClientGlobal.video.update({
+      where: { id: videoId },
+      data: {
+        stageProgress: 80,
+        stageDetail: `Picked the top ${rankingResult.rankedClips.length} moments…`,
+      },
     });
 
     // Update gptScore + rank on Candidate records
@@ -151,10 +162,7 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
   }
 
   // ── Create Clip records & enqueue (unchanged for both paths) ─────────────────
-  await prismaClientGlobal.video.update({
-    where: { id: videoId },
-    data: { status: 'PROCESSING' },
-  });
+  await setStage(videoId, 'PROCESSING', 'Preparing clips…');
 
   // The model can overshoot; the plan limit is the hard cap.
   highlights = highlights.slice(0, maxClips);
@@ -199,6 +207,13 @@ export async function processAnalyze(job: Job<AnalyzeJobData>) {
         captionStyle: captionStyle ?? null,
       },
     })),
+  });
+
+  // The clip rows now carry titles, hooks and scores, so the UI has real cards
+  // to show long before any of them has a video file.
+  await prismaClientGlobal.video.update({
+    where: { id: videoId },
+    data: { stageDetail: `Rendering ${clips.length} clips…` },
   });
 
   // Enqueueing only touches Redis, so it costs no database connections

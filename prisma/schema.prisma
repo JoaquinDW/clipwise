@@ -152,6 +152,11 @@ model Video {
   minutesMetered Boolean      @default(false) // Guard so a retry never double-bills
   status        VideoStatus   @default(UPLOADING)
   errorMessage  String?
+  // Progress *within* the current status, 0-100. Deliberately stage-relative:
+  // the stage -> global band table lives only in lib/video/progress.ts, so a
+  // worker never needs to know where its stage sits in the overall pipeline.
+  stageProgress Int           @default(0)
+  stageDetail   String?       // "Downloading audio — 2.1MB/s · ETA 00:35"
   metadata         Json?         // Additional video metadata
   analysisMetrics  Json?         // { fullTranscriptTokenEstimate, actualTokenEstimate, compressionRatio, candidateCount, durationMs }
   transcription    Transcription?
@@ -195,6 +200,7 @@ model Clip {
   score         Float?      // AI-generated virality score
   status        ClipStatus  @default(PENDING)
   errorMessage  String?
+  progress      Int         @default(0) // 0-100 render progress while GENERATING
   metadata      Json?       // Hook text, highlights, etc.
   parentClipId  String?     // Set on user-edited copies; null = original AI clip
   originalStart Float?      // startTime of parent clip, for ±15s validation

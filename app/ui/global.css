@@ -109,6 +109,28 @@
   }
 }
 
+/* Indeterminate progress: a stage that cannot report a fraction. */
+.progress-bar-sweep {
+  animation: progress-bar-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-bar-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-sweep {
+    animation: none;
+    width: 100% !important;
+    opacity: 0.4;
+  }
+}
+
 /* Clip timeline (CapCut-style trim bar) */
 
 /* Widens the pointer area of a trim handle to 44px without widening the graphic. */

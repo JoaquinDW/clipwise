@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { requireUser } from '@/lib/billing/guard';
+import { composeProgress } from '@/lib/video/progress';
+
+/** The slice of the clip metadata blob this endpoint surfaces. */
+type ClipMetadata = {
+  hookText?: string;
+  cropStrategy?: { reasoning?: string };
+};
 
 export async function GET(
   _request: NextRequest,
@@ -17,15 +24,21 @@ export async function GET(
       id: true,
       companyId: true,
       status: true,
+      stageProgress: true,
+      stageDetail: true,
       errorMessage: true,
       clips: {
         select: {
           id: true,
           title: true,
+          description: true,
           status: true,
+          progress: true,
           storageUrl: true,
+          thumbnailUrl: true,
           score: true,
           duration: true,
+          metadata: true,
         },
         orderBy: { score: 'desc' },
       },
@@ -48,33 +61,41 @@ export async function GET(
   const chunksTotal = video.audioChunks?.length ?? 0;
   const chunksDone = video.audioChunks?.filter((c) => c.status === 'DONE').length ?? 0;
 
-  // Compute overall progress percentage
-  const statusWeight: Record<string, number> = {
-    UPLOADING: 5,
-    UPLOADED: 10,
-    INGESTING: 15,
-    INGESTED: 25,
-    TRANSCRIBING: 40,
-    TRANSCRIBED: 55,
-    SCORING: 58,
-    RANKING: 62,
-    PROCESSING: 65,
-    READY: 100,
-    FAILED: 0,
-  };
+  // While clips render, the truthful sub-progress is how far the clips
+  // themselves have got — including partial credit for the ones mid-encode, so
+  // the bar keeps moving between completions instead of stepping once per clip.
+  const stageProgress =
+    video.status === 'PROCESSING' && totalClips > 0
+      ? Math.round(
+        (video.clips.reduce(
+          (sum, c) => sum + (c.status === 'READY' ? 100 : c.progress),
+          0
+        ) /
+            (totalClips * 100)) *
+            100
+      )
+      : video.stageProgress;
 
-  let progress = statusWeight[video.status] ?? 0;
-  if (video.status === 'PROCESSING' && totalClips > 0) {
-    // Scale from 65 → 100 as clips complete
-    progress = 65 + Math.round((readyClips / totalClips) * 35);
-  }
+  // Unpacked here rather than in the client: `metadata` is an untyped Json blob
+  // and its shape is a worker concern, not the UI's.
+  const clips = video.clips.map(({ metadata, ...clip }) => {
+    const meta = metadata as ClipMetadata | null;
+    return {
+      ...clip,
+      hookText: meta?.hookText ?? null,
+      cropReason: meta?.cropStrategy?.reasoning ?? null,
+    };
+  });
 
   return NextResponse.json({
     videoId: video.id,
     status: video.status,
-    progress,
+    stage: video.status,
+    stageProgress,
+    stageDetail: video.stageDetail,
+    progress: composeProgress(video.status, stageProgress),
     errorMessage: video.errorMessage ?? null,
-    clips: video.clips,
+    clips,
     clipsTotal: totalClips,
     clipsReady: readyClips,
     chunksTotal,

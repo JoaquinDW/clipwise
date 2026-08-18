@@ -4,6 +4,15 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import VideoFilters from './VideoFilters';
 import { VideoCameraIcon } from '@heroicons/react/24/outline';
+import ProgressBar from '@/app/ui/progress-bar';
+import VideoListPoller from '../VideoListPoller';
+import {
+  FALLBACK_STATUS_STYLE,
+  STATUS_LABELS,
+  STATUS_STYLES,
+  isProcessing,
+  stageDescription,
+} from '@/lib/video/video-status-ui';
 
 interface Video {
   id: string;
@@ -19,37 +28,24 @@ interface VideoGridProps {
   videos: Video[];
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  UPLOADING:   'bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50',
-  UPLOADED:    'bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50',
-  INGESTING:   'bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50',
-  INGESTED:    'bg-[rgba(99,102,241,0.15)] text-indigo-400 border border-indigo-900/50',
-  TRANSCRIBING:'bg-[rgba(168,85,247,0.15)] text-purple-400 border border-purple-900/50',
-  TRANSCRIBED: 'bg-[rgba(168,85,247,0.15)] text-purple-400 border border-purple-900/50',
-  PROCESSING:  'bg-[rgba(251,191,36,0.12)] text-yellow-400 border border-yellow-900/50',
-  READY:       'bg-[rgba(34,197,94,0.15)] text-green-400 border border-green-900/50',
-  FAILED:      'bg-[rgba(239,68,68,0.15)] text-red-400 border border-red-900/50',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  UPLOADING: 'Uploading', UPLOADED: 'Uploaded',
-  INGESTING: 'Extracting', INGESTED: 'Audio ready',
-  TRANSCRIBING: 'Transcribing', TRANSCRIBED: 'Transcribed',
-  PROCESSING: 'Processing', READY: 'Ready', FAILED: 'Failed',
-};
-
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] ?? 'bg-[rgba(255,255,255,0.06)] text-[#777]'}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] ?? FALLBACK_STATUS_STYLE}`}>
       {STATUS_LABELS[status] ?? status}
     </span>
   );
 }
 
+type LiveStatus = { status: string; progress: number; stageDetail: string | null };
+
 export default function VideoGrid({ videos }: VideoGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('createdAt-desc');
+  // Live rows from the poller, keyed by video id. Empty until the first tick.
+  const [live, setLive] = useState<Record<string, LiveStatus>>({});
+
+  const hasActiveVideos = videos.some((v) => isProcessing(v.status));
 
   const filteredAndSortedVideos = useMemo(() => {
     let filtered = [...videos];
@@ -90,6 +86,12 @@ export default function VideoGrid({ videos }: VideoGridProps) {
 
   return (
     <>
+      <VideoListPoller
+        hasActiveVideos={hasActiveVideos}
+        onUpdate={(rows) =>
+          setLive(Object.fromEntries(rows.map((r) => [r.id, r])))
+        }
+      />
       <VideoFilters
         onSearchChange={setSearchTerm}
         onStatusFilter={setStatusFilter}
@@ -147,7 +149,7 @@ export default function VideoGrid({ videos }: VideoGridProps) {
                     </div>
                   )}
                   <div className="absolute top-2 right-2">
-                    <StatusBadge status={video.status} />
+                    <StatusBadge status={live[video.id]?.status ?? video.status} />
                   </div>
                 </div>
 
@@ -165,10 +167,34 @@ export default function VideoGrid({ videos }: VideoGridProps) {
                     <span>
                       {video.duration
                         ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}`
-                        : 'Processing...'}
+                        : '—'}
                     </span>
                     <span>{new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(video.createdAt))}</span>
                   </div>
+
+                  {/* A card that is still working says what it is working on,
+                      instead of a flat "Processing..." in the duration slot. */}
+                  {isProcessing(live[video.id]?.status ?? video.status) && (
+                    <div className="mt-2.5">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-xs truncate" style={{ color: 'var(--dash-text-muted)' }}>
+                          {stageDescription(
+                            live[video.id]?.status ?? video.status,
+                            live[video.id]?.stageDetail,
+                          )}
+                        </span>
+                        <span className="text-xs tabular-nums flex-none" style={{ color: 'var(--dash-text-muted)' }}>
+                          {live[video.id]?.progress ?? 0}%
+                        </span>
+                      </div>
+                      <ProgressBar
+                        value={live[video.id]?.progress ?? 0}
+                        indeterminate={!live[video.id]}
+                        size="sm"
+                        label={`Processing ${video.title}`}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </Link>

@@ -2,18 +2,55 @@
 import { Worker, Job } from 'bullmq';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { readFile, unlink, readdir } from 'fs/promises';
+import { readFile, unlink, readdir, open } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { prismaClientGlobal } from '@/infra/prisma';
 import { getStorageClient } from '@/lib/video/storage';
-import { generateThumbnail, getVideoMetadata } from '@/lib/video/processor';
+import { generateThumbnail, getVideoMetadata, extractAudio } from '@/lib/video/processor';
 import { meterVideoDuration } from '@/lib/billing/metering';
-import { ytdlpArgs } from '@/lib/video/ytdlp';
+import { ytdlpArgs, downloadWithProgress, formatDownloadDetail } from '@/lib/video/ytdlp';
+import { makeStageReporter, setStage, subBand } from '@/lib/video/progress';
 import { createRedisConnection, QUEUE_NAME, enqueueTranscribe, enqueueTranscribeChunk, type IngestJobData } from '../queue';
 
 // argv form: user-supplied URLs must never be spliced into a shell string
 const execFileAsync = promisify(execFile);
+
+/**
+ * Stream a URL to disk, reporting 0-1 as bytes arrive.
+ *
+ * `await response.arrayBuffer()` would be shorter, but it holds the whole file
+ * in memory and reports nothing until it is done — for the multi-hundred-MB
+ * uploads this pipeline accepts, that is the single longest silent stretch a
+ * user sits through.
+ */
+async function fetchToFile(
+  url: string,
+  destPath: string,
+  onProgress: (fraction: number) => void
+): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch video: ${response.status}`);
+  if (!response.body) throw new Error('Response has no body to stream');
+
+  const totalBytes = Number(response.headers.get('content-length')) || 0;
+  let received = 0;
+
+  const handle = await open(destPath, 'w');
+  try {
+    // @ts-expect-error — Node's fetch body is an async-iterable web stream
+    for await (const chunk of response.body) {
+      const buffer = Buffer.from(chunk);
+      await handle.write(buffer);
+      received += buffer.length;
+      // Without content-length there is no denominator, so hold at the start of
+      // the band rather than inventing a percentage.
+      if (totalBytes > 0) onProgress(received / totalBytes);
+    }
+  } finally {
+    await handle.close();
+  }
+}
 
 async function processStreamIngest(
   videoId: string,
@@ -21,6 +58,9 @@ async function processStreamIngest(
   source: 'TWITCH' | 'KICK'
 ): Promise<void> {
   const CHUNK_DURATION = parseInt(process.env.STREAM_CHUNK_DURATION || '300', 10);
+  const progress = makeStageReporter(videoId);
+
+  await setStage(videoId, 'INGESTING', 'Reading stream info…');
 
   // Fetch stream metadata (duration, thumbnail) without downloading
   let metadata: { duration: number; thumbnail?: string };
@@ -83,10 +123,13 @@ async function processStreamIngest(
   for (let i = 0; i < chunkRecords.length; i++) {
     const chunk = chunkRecords[i];
     const chunkTmpPath = join(tmpdir(), `stream-chunk-${videoId}-${i}.m4a`);
+    // Each segment owns an equal slice of the stage; the inner percentage from
+    // yt-dlp moves the bar smoothly inside that slice.
+    const segmentStart = (i / chunkCount) * 100;
+    const segmentEnd = ((i + 1) / chunkCount) * 100;
 
     try {
-      await execFileAsync(
-        'yt-dlp',
+      await downloadWithProgress(
         ytdlpArgs(
           '--download-sections', `*${chunk.startTime}-${chunk.endTime}`,
           '--format', 'bestaudio[ext=m4a]/bestaudio',
@@ -95,7 +138,12 @@ async function processStreamIngest(
           '-o', chunkTmpPath,
           sourceUrl,
         ),
-        { maxBuffer: 1024 * 1024 * 200, timeout: 120_000 }
+        (p) =>
+          progress.report(
+            subBand(segmentStart, segmentEnd, p.fraction),
+            formatDownloadDetail(`Downloading segment ${i + 1} of ${chunkCount}`, p)
+          ),
+        { timeoutMs: 120_000 }
       );
 
       const chunkBuffer = await readFile(chunkTmpPath);
@@ -127,6 +175,9 @@ async function processStreamIngest(
     }
   }
 
+  progress.report(100, `All ${chunkCount} segments downloaded`);
+  await progress.flush();
+
   console.log(`[ingest] All ${chunkCount} chunks downloaded and enqueued for ${source} video ${videoId}`);
 }
 
@@ -138,10 +189,12 @@ export async function processIngest(job: Job<IngestJobData>) {
     return processStreamIngest(videoId, sourceUrl, source);
   }
 
-  await prismaClientGlobal.video.update({
-    where: { id: videoId },
-    data: { status: 'INGESTING' },
-  });
+  const progress = makeStageReporter(videoId);
+  await setStage(
+    videoId,
+    'INGESTING',
+    source === 'YOUTUBE' ? 'Reading video info…' : 'Fetching your upload…'
+  );
 
   // Use %(ext)s so yt-dlp picks the real extension (m4a, webm, opus, etc.)
   const audioTemplate = join(tmpdir(), `audio-${videoId}.%(ext)s`);
@@ -164,11 +217,16 @@ export async function processIngest(job: Job<IngestJobData>) {
         console.warn(`[ingest] Could not probe YouTube duration, continuing:`, err?.message);
       }
 
-      // Download only audio stream — much faster and smaller than full video
-      await execFileAsync(
-        'yt-dlp',
+      // Download only audio stream — much faster and smaller than full video.
+      // The download owns 0-90% of the stage; the storage upload that follows
+      // takes the rest.
+      await downloadWithProgress(
         ytdlpArgs('--format', 'bestaudio[ext=m4a]/bestaudio', '--no-playlist', '-o', audioTemplate, sourceUrl),
-        { maxBuffer: 1024 * 1024 * 50 }
+        (p) =>
+          progress.report(
+            subBand(0, 90, p.fraction),
+            formatDownloadDetail('Downloading audio', p)
+          )
       );
 
       // Find the actual downloaded file (extension may differ)
@@ -195,17 +253,19 @@ export async function processIngest(job: Job<IngestJobData>) {
       const video = await prismaClientGlobal.video.findUnique({ where: { id: videoId } });
       if (!video?.storageUrl) throw new Error('Upload video has no storageUrl');
 
-      // Download the uploaded video to temp
-      const videoResponse = await fetch(video.storageUrl);
-      if (!videoResponse.ok) throw new Error(`Failed to fetch video: ${videoResponse.status}`);
-      const videoBuffer = await videoResponse.arrayBuffer();
+      // Download the uploaded video to temp. Streamed rather than buffered so
+      // the user sees bytes moving — an upload big enough to be worth clipping
+      // takes long enough here that a frozen bar reads as a hang.
       const tempVideoPath = join(tmpdir(), `video-${videoId}.mp4`);
-      const { writeFile } = await import('fs/promises');
-      await writeFile(tempVideoPath, Buffer.from(videoBuffer));
+      await fetchToFile(video.storageUrl, tempVideoPath, (fraction) =>
+        progress.report(subBand(0, 60, fraction), 'Fetching your upload…')
+      );
 
       // First point where an upload's real duration is known
+      let uploadDuration: number | undefined;
       try {
         const uploadMeta = await getVideoMetadata(tempVideoPath);
+        uploadDuration = uploadMeta.duration;
         if (uploadMeta.duration) await meterVideoDuration(videoId, uploadMeta.duration);
       } catch (err: any) {
         if (err?.name === 'QuotaExceededError' || err?.name === 'VideoTooLongError') {
@@ -216,7 +276,11 @@ export async function processIngest(job: Job<IngestJobData>) {
       }
 
       // Extract and transcode audio to AAC (works regardless of source codec)
-      await execFileAsync('ffmpeg', ['-i', tempVideoPath, '-vn', '-c:a', 'aac', '-b:a', '128k', audioPath, '-y']);
+      await extractAudio(tempVideoPath, audioPath, {
+        durationSeconds: uploadDuration,
+        onProgress: (fraction) =>
+          progress.report(subBand(60, 90, fraction), 'Extracting audio…'),
+      });
 
       // Generate thumbnail from uploaded video
       const thumbPath = join(tmpdir(), `thumb-${videoId}.jpg`);
@@ -243,6 +307,7 @@ export async function processIngest(job: Job<IngestJobData>) {
     }
 
     // Upload audio to storage
+    progress.report(92, 'Storing audio…');
     const storage = getStorageClient();
     const video = await prismaClientGlobal.video.findUnique({ where: { id: videoId } });
     if (!video) throw new Error('Video not found');
@@ -254,9 +319,17 @@ export async function processIngest(job: Job<IngestJobData>) {
     const audioFile = new File([audioBlob], `audio-${videoId}.${ext}`, { type: mimeType });
     const uploadResult = await (storage as any).uploadAudio(audioFile, video.companyId, videoId);
 
+    // Drain any throttled write before the stage flips, so a stale percentage
+    // from this stage can never land on top of the next one.
+    await progress.flush();
     await prismaClientGlobal.video.update({
       where: { id: videoId },
-      data: { status: 'INGESTED', audioUrl: uploadResult.url },
+      data: {
+        status: 'INGESTED',
+        audioUrl: uploadResult.url,
+        stageProgress: 0,
+        stageDetail: 'Audio ready, starting transcription…',
+      },
     });
 
     console.log(`[ingest] Audio uploaded: ${uploadResult.url}`);

@@ -57,6 +57,66 @@ const INTERMEDIATE_VIDEO_OPTIONS = [
   '-pix_fmt', 'yuv420p',
 ];
 
+/** Reports 0-1 of an encode. Callers throttle; this fires several times a second. */
+export type ProgressCallback = (fraction: number) => void;
+
+/** "00:01:23.45" -> 83.45 seconds. Returns null for ffmpeg's "N/A" placeholder. */
+function parseTimemark(timemark: string | undefined): number | null {
+  if (!timemark) return null;
+  const parts = timemark.split(':');
+  if (parts.length !== 3) return null;
+  const [h, m, s] = parts.map(parseFloat);
+  if (![h, m, s].every(Number.isFinite)) return null;
+  return h * 3600 + m * 60 + s;
+}
+
+/**
+ * Attach a progress handler to an ffmpeg command.
+ *
+ * Deliberately ignores fluent-ffmpeg's own `progress.percent`: it is derived
+ * from the probed input duration, which is wrong for every path in this file —
+ * `complexFilter` graphs, `-ss` seeks and multi-input caption overlays all
+ * leave it either absent or wildly off. The output timemark against the known
+ * clip duration is the only reliable signal.
+ */
+function attachProgress(
+  command: ffmpeg.FfmpegCommand,
+  durationSeconds: number | undefined,
+  onProgress?: ProgressCallback
+): ffmpeg.FfmpegCommand {
+  if (!onProgress || !durationSeconds || durationSeconds <= 0) return command;
+
+  return command.on('progress', (progress) => {
+    const seconds = parseTimemark(progress.timemark);
+    if (seconds === null) return;
+    onProgress(Math.max(0, Math.min(1, seconds / durationSeconds)));
+  });
+}
+
+/**
+ * Extract the audio track as AAC, reporting encode progress.
+ *
+ * Lives here rather than as a raw `ffmpeg` exec in the ingest worker so it can
+ * share the timemark-based progress handling with the render paths.
+ */
+export async function extractAudio(
+  inputPath: string,
+  outputPath: string,
+  options: { durationSeconds?: number; onProgress?: ProgressCallback } = {}
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    attachProgress(ffmpeg(inputPath), options.durationSeconds, options.onProgress)
+      .noVideo()
+      .audioCodec('aac')
+      .audioBitrate('128k')
+      .output(outputPath)
+      .outputOptions(['-y'])
+      .on('end', () => resolve())
+      .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
+      .run();
+  });
+}
+
 /**
  * Escape a filesystem path for use as a value inside a filtergraph.
  * Unescaped colons and backslashes are read as filter syntax.
@@ -226,10 +286,12 @@ export async function cropToVertical(
     position?: 'center' | 'top' | 'bottom'; // Default: center — vertical axis only
     horizontalPosition?: SubjectPosition; // Where the subject sits in a wide source
     captions?: PreparedCaptions | null; // Burn these in the same pass as the crop
+    durationSeconds?: number;
+    onProgress?: ProgressCallback;
   }
 ): Promise<void> {
   let { width = 1080, height = 1920 } = options || {};
-  const { position = 'center', horizontalPosition = 'center', captions } = options || {};
+  const { position = 'center', horizontalPosition = 'center', captions, durationSeconds, onProgress } = options || {};
 
   return new Promise((resolve, reject) => {
     // Get video info first to determine crop position
@@ -273,7 +335,11 @@ export async function cropToVertical(
         `scale=${width}:${height}:flags=lanczos[out];` +
         buildOutputTail('out', 'final', captions, { width, height });
 
-      attachCaptionInput(ffmpeg(inputPath), captions)
+      attachProgress(
+        attachCaptionInput(ffmpeg(inputPath), captions),
+        durationSeconds,
+        onProgress
+      )
         .complexFilter(filterComplex)
         .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
         .output(outputPath)
@@ -330,6 +396,10 @@ export interface SmartCropOptions {
   captions?: PreparedCaptions | null; // Burn these in the same pass as the crop
   /** Called when the requested strategy could not be used. */
   onFallback?: (info: RenderFallback) => void;
+  /** Length of the segment being rendered — required for progress to mean anything. */
+  durationSeconds?: number;
+  /** Called with 0-1 of the encode. */
+  onProgress?: ProgressCallback;
 }
 
 /**
@@ -347,7 +417,7 @@ export async function cropToVerticalSmart(
   options: SmartCropOptions
 ): Promise<void> {
   let { width = 1080, height = 1920 } = options;
-  const { method, subjectPosition, captions, onFallback } = options;
+  const { method, subjectPosition, captions, onFallback, durationSeconds, onProgress } = options;
 
   console.log(`🎬 Smart Crop: Using "${method}" strategy with subject at "${subjectPosition}"`);
 
@@ -362,6 +432,8 @@ export async function cropToVerticalSmart(
       position: 'center',
       horizontalPosition: subjectPosition,
       captions,
+      durationSeconds,
+      onProgress,
     });
   };
 
@@ -381,7 +453,10 @@ export async function cropToVerticalSmart(
 
   // Composite layout takes priority over single-region crop strategies
   if (options.compositeLayout && options.compositeLayout.layoutType !== 'standard') {
-    return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, captions);
+    return cropToVerticalComposite(inputPath, outputPath, options.compositeLayout, sourceWidth, sourceHeight, captions, {
+      durationSeconds,
+      onProgress,
+    });
   }
 
   let filterComplex: string;
@@ -427,7 +502,11 @@ export async function cropToVerticalSmart(
 
   try {
     await new Promise<void>((resolve, reject) => {
-      attachCaptionInput(ffmpeg(inputPath), captions)
+      attachProgress(
+        attachCaptionInput(ffmpeg(inputPath), captions),
+        durationSeconds,
+        onProgress
+      )
         .complexFilter(filterComplex)
         // '0:a?' — an explicit -map drops every other stream, and the '?'
         // keeps silent sources from failing outright
@@ -518,6 +597,8 @@ export async function burnCaptions(
     captionSize?: 'small' | 'medium' | 'large';
     /** Clip length. The raster renderer needs it to size the overlay track. */
     duration?: number;
+    /** Called with 0-1 of the encode. */
+    onProgress?: ProgressCallback;
   }
 ): Promise<void> {
   const source = await probeVideo(inputPath);
@@ -543,7 +624,7 @@ export async function burnCaptions(
 
   try {
     await new Promise<void>((resolve, reject) => {
-      attachCaptionInput(ffmpeg(inputPath), captions)
+      attachProgress(attachCaptionInput(ffmpeg(inputPath), captions), duration, opts?.onProgress)
         .complexFilter(buildOutputTail('0:v', 'final', captions, source))
         .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
         .output(outputPath)
@@ -744,7 +825,8 @@ export async function cropToVerticalComposite(
   layout: CompositeLayoutOptions,
   sourceWidth: number,
   sourceHeight: number,
-  captions?: PreparedCaptions | null
+  captions?: PreparedCaptions | null,
+  progress?: { durationSeconds?: number; onProgress?: ProgressCallback }
 ): Promise<void> {
   const { layoutType, layoutRegions = [], width = 1080, height = 1920 } = layout;
 
@@ -771,7 +853,11 @@ export async function cropToVerticalComposite(
   filterComplex = `${filterComplex};${buildOutputTail('out', 'final', captions, { width, height })}`;
 
   return new Promise((resolve, reject) => {
-    attachCaptionInput(ffmpeg(inputPath), captions)
+    attachProgress(
+      attachCaptionInput(ffmpeg(inputPath), captions),
+      progress?.durationSeconds,
+      progress?.onProgress
+    )
       .complexFilter(filterComplex)
       .outputOptions(['-map', '[final]', '-map', '0:a?', ...PUBLISH_VIDEO_OPTIONS])
       .output(outputPath)
@@ -868,9 +954,16 @@ export async function createClipSmart(
     stylePreset?: string;
     captionPosition?: 'top' | 'center' | 'bottom';
     captionSize?: 'small' | 'medium' | 'large';
+    /**
+     * Called with 0-1 of the crop/encode pass — the only pass that runs when
+     * the caller already cut the segment (`startTime === 0`), which is how the
+     * clip worker always calls this.
+     */
+    onProgress?: ProgressCallback;
   }
 ): Promise<void> {
-  const { cropStrategy, burnCaptions: shouldBurnCaptions = true, stylePreset, captionPosition, captionSize } = options;
+  const { cropStrategy, burnCaptions: shouldBurnCaptions = true, stylePreset, captionPosition, captionSize, onProgress } = options;
+  const clipDuration = endTime - startTime;
 
   const tempDir = os.tmpdir();
   const timestamp = Date.now();
@@ -898,7 +991,7 @@ export async function createClipSmart(
       captions = await prepareCaptions(
         captionsResult!,
         { captionStyle: stylePreset, captionSize, captionPosition },
-        { duration: endTime - startTime, tempDir }
+        { duration: clipDuration, tempDir }
       );
     }
 
@@ -906,6 +999,8 @@ export async function createClipSmart(
     await cropToVerticalSmart(cropInput, outputPath, {
       ...cropStrategy,
       captions,
+      durationSeconds: clipDuration,
+      onProgress,
     });
 
     console.log(`  ✅ Clip created successfully with ${cropStrategy.method} strategy`);

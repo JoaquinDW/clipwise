@@ -11,6 +11,7 @@ import ClipModal from "./ClipModal"
 import ClipEditor from "./ClipEditor"
 import ClipTimeline, { TIMELINE_HEIGHT } from "./ClipTimeline"
 import TranscriptPanel from "./TranscriptPanel"
+import Spinner from "@/app/ui/spinner"
 import { useClipDownload } from "./useClipDownload"
 import { useClipEditorStore } from "@/lib/store/clip-editor.store"
 import { isTrimValid } from "@/lib/video/trim-limits"
@@ -47,6 +48,37 @@ interface ClipsSectionProps {
   videoClipsCount: number
   videoStatus: string
   transcription: Transcription | null
+}
+
+const shimmer =
+  "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
+
+function ClipCardSkeletons() {
+  return (
+    <div className="space-y-1.5" aria-label="Clips are being prepared" aria-busy="true">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className={`${shimmer} relative overflow-hidden rounded-xl p-3 flex items-start gap-3`}
+          style={{
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div
+            className="flex-none rounded-lg bg-white/5"
+            style={{ width: 56, height: 100 }}
+          />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="h-3 w-16 rounded bg-white/10" />
+            <div className="h-4 w-3/4 rounded bg-white/10" />
+            <div className="h-3 w-full rounded bg-white/5" />
+            <div className="h-3 w-2/3 rounded bg-white/5" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function ClipsSection({
@@ -148,14 +180,20 @@ export default function ClipsSection({
 
           <div className="px-3 pb-3 flex-1">
             {videoClipsCount === 0 ? (
-              <div
-                className="text-center py-12 text-sm px-2"
-                style={{ color: "var(--dash-text-secondary)" }}
-              >
-                {videoStatus === "READY"
-                  ? "No clips generated"
-                  : "Clips are being generated…"}
-              </div>
+              videoStatus === "READY" || videoStatus === "FAILED" ? (
+                <div
+                  className="text-center py-12 text-sm px-2"
+                  style={{ color: "var(--dash-text-secondary)" }}
+                >
+                  No clips generated
+                </div>
+              ) : (
+                // The rail sits empty for several minutes while the pipeline
+                // downloads and transcribes. Placeholders in the shape of the
+                // real cards say "clips are coming here" without pretending to
+                // know how many.
+                <ClipCardSkeletons />
+              )
             ) : (
               <ClipModal
                 clips={clips}
@@ -236,17 +274,7 @@ export default function ClipsSection({
                     }}
                   >
                     {phase === "rendering" ? (
-                      <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
+                      <Spinner className="w-3.5 h-3.5" color="currentColor" />
                     ) : (
                       <ArrowDownTrayIcon className="w-3.5 h-3.5" />
                     )}
