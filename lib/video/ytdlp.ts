@@ -9,12 +9,23 @@ import { spawn } from 'child_process';
  * Forbidden`. `--remote-components ejs:github` fetches (and then caches) that
  * script from the yt-dlp release page on first use.
  *
- * Requires a JS runtime on PATH — deno or node. See https://github.com/yt-dlp/yt-dlp/wiki/EJS
+ * Requires a JS runtime on PATH. yt-dlp only enables deno by default, so `--js-runtimes
+ * node` is what actually satisfies it here: node is the one runtime both the worker
+ * container and a dev machine are guaranteed to have. It must be **node >= 22** —
+ * yt-dlp reports node 20 as `(unsupported)` and falls back to the deprecated
+ * no-runtime path. See https://github.com/yt-dlp/yt-dlp/wiki/EJS
  *
  * `--no-update` only silences the "your version is older than 90 days" banner that
  * otherwise pollutes stderr and job error messages.
+ *
+ * None of this saves a stale yt-dlp: the binary must come from the nightly channel.
+ * See the comment in docker/worker/Dockerfile.
  */
-export const YTDLP_COMMON_ARGS = ['--no-update', '--remote-components', 'ejs:github'];
+export const YTDLP_COMMON_ARGS = [
+  '--no-update',
+  '--remote-components', 'ejs:github',
+  '--js-runtimes', 'node',
+];
 
 /** Prepends the required flags to a yt-dlp argv. */
 export function ytdlpArgs(...args: string[]): string[] {
