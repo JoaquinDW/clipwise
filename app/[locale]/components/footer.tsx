@@ -4,7 +4,7 @@ import React from "react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import Image from "next/image"
-import Logo from "../../(landing-page)/public/images/logo.svg"
+import Logo from "../../(landing-page)/public/images/logo-horizontal.png"
 
 export default function Footer() {
   const t = useTranslations("landing.footer")
@@ -23,9 +23,9 @@ export default function Footer() {
                   <Image
                     src={Logo}
                     alt="Momentreel"
-                    width={120}
-                    height={40}
-                    className="h-8 bg-white rounded-full max-w-fit"
+                    width={1288}
+                    height={220}
+                    className="h-8 w-auto"
                   />
                 </Link>
               </div>

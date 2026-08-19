@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
+import Logo from "../public/images/logo-horizontal.png"
 import type { Lang } from "./use-lang"
 
 const i18n = {
@@ -54,18 +56,23 @@ export default function Footer({ lang }: { lang: Lang }) {
         <div className="footer-grid" style={{ marginBottom: 48 }}>
           {/* Brand */}
           <div>
-            <div
-              className="grad-text"
+            <Link
+              href="/"
+              aria-label="Momentreel"
               style={{
-                fontFamily: "var(--font-syne), sans-serif",
-                fontSize: 22,
-                fontWeight: 800,
-                letterSpacing: "-0.01em",
+                display: "inline-flex",
+                alignItems: "center",
                 marginBottom: 12,
               }}
             >
-              Momentreel
-            </div>
+              <Image
+                src={Logo}
+                alt="Momentreel"
+                width={1288}
+                height={220}
+                style={{ height: 30, width: "auto" }}
+              />
+            </Link>
             <p
               style={{
                 fontFamily: "var(--font-dm-sans), sans-serif",

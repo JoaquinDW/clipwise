@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import Logo from '../public/images/logo-horizontal.png';
 import type { Lang } from './use-lang';
 
 const i18n = {
@@ -58,8 +60,8 @@ export default function Header({ lang, isLoggedIn = false }: { lang: Lang; isLog
       }}
     >
       {/* Logo */}
-      <Link href="/" className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em', textDecoration: 'none' }}>
-        Momentreel
+      <Link href="/" aria-label="Momentreel" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <Image src={Logo} alt="Momentreel" width={1288} height={220} priority style={{ height: 30, width: 'auto' }} />
       </Link>
 
       {/* Desktop nav */}

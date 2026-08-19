@@ -27,7 +27,12 @@
       "Bash(sed -i '' 's/for \\(const style of \\\\['\\\\''classic'\\\\'', '\\\\''bold'\\\\''\\\\]\\)/for \\(const style of ['\\\\''classic'\\\\'']\\)/' /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/eaaf8906-e6aa-45c4-93bf-24f3697ef396/scratchpad/e2e.ts)",
       "Bash(sed -i '' 's/method: '\\\\''wide_shot'\\\\''/method: '\\\\''blur_sides'\\\\''/' /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/eaaf8906-e6aa-45c4-93bf-24f3697ef396/scratchpad/e2e.ts)",
       "Bash(npx tsx *)",
-      "Bash(/Users/balthasardeweert/Documents/Projects/clipwise/node_modules/.pnpm/@ffmpeg-installer+ffmpeg@1.1.0/node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg -hide_banner -f lavfi -i color=c=black:s=720x1280:d=1 -i /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/eaaf8906-e6aa-45c4-93bf-24f3697ef396/scratchpad/plate.png -filter_complex '[0:v]setsar=1[b];[1:v][b]scale2ref=w=main_w:h=main_h*0.130208:flags=lanczos[p][r];[p]showinfo[pi];[r][pi]overlay=x=0:y=main_h*0.781250:format=auto[o]' -map [o] -frames:v 1 -y /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/eaaf8906-e6aa-45c4-93bf-24f3697ef396/scratchpad/probe.png)"
+      "Bash(/Users/balthasardeweert/Documents/Projects/clipwise/node_modules/.pnpm/@ffmpeg-installer+ffmpeg@1.1.0/node_modules/@ffmpeg-installer/darwin-arm64/ffmpeg -hide_banner -f lavfi -i color=c=black:s=720x1280:d=1 -i /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/eaaf8906-e6aa-45c4-93bf-24f3697ef396/scratchpad/plate.png -filter_complex '[0:v]setsar=1[b];[1:v][b]scale2ref=w=main_w:h=main_h*0.130208:flags=lanczos[p][r];[p]showinfo[pi];[r][pi]overlay=x=0:y=main_h*0.781250:format=auto[o]' -map [o] -frames:v 1 -y /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/eaaf8906-e6aa-45c4-93bf-24f3697ef396/scratchpad/probe.png)",
+      "Bash(ffmpeg -loglevel info -i newlogo-momentreel.png -vf \"alphaextract,cropdetect=limit=0.05:round=2:reset=1\" -frames:v 1 -f null -)",
+      "Bash(pnpm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"icon.png %{http_code} %{content_type}\\\\n\" http://localhost:3000/icon.png)",
+      "Bash(curl -s -o /dev/null -w \"favicon %{http_code} %{content_type}\\\\n\" http://localhost:3000/favicon.ico)"
     ],
     "additionalDirectories": [
       "/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad"

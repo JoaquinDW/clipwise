@@ -1,5 +1,7 @@
 import { Syne, DM_Sans } from 'next/font/google';
 import Link from 'next/link';
+import Image from 'next/image';
+import Logo from '../(landing-page)/public/images/logo-horizontal.png';
 import { auth, signIn } from '@/auth';
 import { providersList } from '@/infra/providerDetector';
 import { redirect } from 'next/navigation';
@@ -54,10 +56,8 @@ export default async function LoginPage({
 
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32 }}>
         {/* Logo */}
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span className="grad-text" style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 28, fontWeight: 800, letterSpacing: '-0.01em' }}>
-            Momentreel
-          </span>
+        <Link href="/" aria-label="Momentreel" style={{ textDecoration: 'none', display: 'flex' }}>
+          <Image src={Logo} alt="Momentreel" width={1288} height={220} priority style={{ height: 38, width: 'auto' }} />
         </Link>
 
         {/* Card */}

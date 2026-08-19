@@ -6,7 +6,7 @@ import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import MobileMenu from "./mobile-menu"
 import Image from "next/image"
-import Logo from "../../(landing-page)/public/images/logo.svg"
+import Logo from "../../(landing-page)/public/images/logo-horizontal.png"
 
 export default function Header() {
   const t = useTranslations("landing.header")
@@ -65,9 +65,10 @@ export default function Header() {
                 <Image
                   src={Logo}
                   alt="Momentreel"
-                  width={200}
-                  height={200}
-                  className={`bg-transparent w-full transition-all duration-300 ${
+                  width={1288}
+                  height={220}
+                  priority
+                  className={`bg-transparent w-auto transition-all duration-300 ${
                     isScrolled ? "h-7" : "h-8"
                   }`}
                 />
