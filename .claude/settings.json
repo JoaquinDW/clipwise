@@ -32,7 +32,9 @@
       "Bash(pnpm run *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
       "Bash(curl -s -o /dev/null -w \"icon.png %{http_code} %{content_type}\\\\n\" http://localhost:3000/icon.png)",
-      "Bash(curl -s -o /dev/null -w \"favicon %{http_code} %{content_type}\\\\n\" http://localhost:3000/favicon.ico)"
+      "Bash(curl -s -o /dev/null -w \"favicon %{http_code} %{content_type}\\\\n\" http://localhost:3000/favicon.ico)",
+      "Bash(curl -s http://localhost:3001/ -o /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/814c8b80-faa0-48a0-af3b-9e3f99580426/scratchpad/en.html -w 'EN  HTTP %{http_code}  %{size_download} bytes\\\\n')",
+      "Bash(curl -s http://localhost:3001/es -o /private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/814c8b80-faa0-48a0-af3b-9e3f99580426/scratchpad/es.html -w 'ES  HTTP %{http_code}  %{size_download} bytes\\\\n')"
     ],
     "additionalDirectories": [
       "/private/tmp/claude-501/-Users-balthasardeweert-Documents-Projects-clipwise/da15ceb2-fd10-4c1f-8147-ad583c0131bf/scratchpad"

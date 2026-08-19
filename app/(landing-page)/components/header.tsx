@@ -11,9 +11,10 @@ const i18n = {
   es: {
     links: [['Características', '#features'], ['Demo', '#demo'], ['Precios', '#pricing'], ['FAQ', '#faq']] as const,
     signIn: 'Iniciar sesión',
-    cta: 'Empezar gratis →',
+    cta: 'Empezar prueba gratis →',
     ctaHref: '/login',
     dashboard: 'Ir al panel →',
+    menu: 'Menú',
     switchLabel: 'EN',
     switchLocale: '/',
   },
@@ -23,6 +24,7 @@ const i18n = {
     cta: 'Start free trial →',
     ctaHref: '/login',
     dashboard: 'Go to dashboard →',
+    menu: 'Menu',
     switchLabel: 'ES',
     switchLocale: '/es',
   },
@@ -104,7 +106,7 @@ export default function Header({ lang, isLoggedIn = false }: { lang: Lang; isLog
         className="md:hidden"
         onClick={() => setMenuOpen(!menuOpen)}
         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#f2ede8', padding: 8 }}
-        aria-label="Menú"
+        aria-label={t.menu}
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           {menuOpen ? (

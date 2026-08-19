@@ -3,42 +3,45 @@
 import type { Lang } from './use-lang';
 import Reveal from './reveal';
 
+// One glyph per card, in card order: star (picking moments), focus brackets
+// (framing), speech bubble (captions), rotate-back (nothing baked in yet),
+// monitor (the feed), globe (language).
 const icons = [
-  <svg key="0" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z" /><path d="M12 8v4l3 3" /></svg>,
-  <svg key="1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
-  <svg key="2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>,
-  <svg key="3" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
-  <svg key="4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>,
-  <svg key="5" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>,
+  <svg key="0" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
+  <svg key="1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2" /><path d="M16 4h2a2 2 0 0 1 2 2v2" /><path d="M20 16v2a2 2 0 0 1-2 2h-2" /><path d="M8 20H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></svg>,
+  <svg key="2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>,
+  <svg key="3" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 5 2 11 8 11" /><path d="M4.5 15.5a9 9 0 1 0 2.1-9.4L2 11" /></svg>,
+  <svg key="4" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>,
+  <svg key="5" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>,
 ];
 
 const i18n = {
   es: {
-    badge: '✦ Todo lo que necesitas',
-    headline: 'De video largo a',
-    gradPart: 'clip viral',
-    sub: 'Toda la cadena de producción automatizada en una sola plataforma.',
+    badge: '✦ Automático donde es aburrido',
+    headline: 'Automático donde es tedioso.',
+    gradPart: 'Tuyo donde importa.',
+    sub: 'Cada decisión que toma la IA es una que puedes cambiar — y nada se graba en el archivo hasta que tú lo dices.',
     items: [
-      { title: 'Transcripción de precisión', desc: 'Tu video entra, el texto sale con marcas de tiempo palabra por palabra. 94% de precisión en más de 50 idiomas — la base que hace posible todo lo demás.' },
-      { title: 'Detección de momentos IA', desc: 'La IA analiza el video completo y detecta los momentos con más potencial de retención: hooks fuertes, puntos de giro, frases que la gente repite. No los más ruidosos — los más efectivos.' },
-      { title: 'Recorte 9:16 inteligente', desc: 'Sin perder la cara del speaker ni el contexto de la escena. La IA elige entre seguimiento facial, acción dinámica o letterbox desenfocado — el encuadre correcto para cada clip, automáticamente.' },
-      { title: 'Captions automáticos', desc: 'El 85% de los videos se ve sin sonido. Los subtítulos se queman directamente en el clip — estilo, tamaño y posición configurables — para que funcione en cualquier feed.' },
-      { title: 'Multi-plataforma', desc: 'Un video de entrada, cinco destinos de salida. Cada clip sale optimizado para TikTok, YouTube Shorts, Instagram Reels, Twitter/X y Kick — sin reexportar.' },
-      { title: 'Puntuación de viralidad', desc: 'Sabés exactamente qué clips publicar primero. Cada fragmento recibe un score 0–100 basado en engagement potencial, ritmo, claridad y carga emocional.' },
+      { title: 'Momentos, no solo clips', desc: 'La IA lee la transcripción completa y evalúa cada candidato por fuerza del gancho, claridad y si se entiende sin contexto. Te llegan los que vale la pena publicar — no los diez minutos más ruidosos.' },
+      { title: 'Encuadre que sigue a quien habla', desc: 'No es un recuadro fijo en el centro. La cámara sigue a quien está hablando, se mantiene estable ante movimientos pequeños, y corta en vez de barrer cuando cambia el plano — como lo haría un camarógrafo.' },
+      { title: 'Subtítulos que ves antes de decidir', desc: 'Cinco estilos, tres tamaños, tres posiciones. El preview no es una aproximación: es el mismo renderizador que arma el archivo, así que lo que ves es exactamente lo que descargas.' },
+      { title: 'Nada se graba antes de tiempo', desc: 'Los clips quedan sin subtítulos quemados hasta que exportas. Cambias de opinión sobre el estilo o el recorte y exportas de nuevo — sin cola de renderizado, sin perder trabajo.' },
+      { title: 'Hecho para aguantar el feed', desc: 'Se descarga en 1440p y se codifica una sola vez, así el recorte vertical conserva resolución real. Más una guía de zona segura de TikTok, para que tus subtítulos no terminen tapados por la interfaz.' },
+      { title: 'Habla tu idioma', desc: 'Transcrito y subtitulado en el idioma en que grabaste — nunca traducido al inglés primero. Más de 50 idiomas.' },
     ],
   },
   en: {
-    badge: '✦ Everything you need',
-    headline: 'From long video to',
-    gradPart: 'viral clip',
-    sub: 'The entire production chain automated in a single platform.',
+    badge: "✦ Automatic where it's boring",
+    headline: "Hands off where it's tedious.",
+    gradPart: 'Yours where it matters.',
+    sub: 'Every call the AI makes is one you can override — and nothing is baked into the file until you say so.',
     items: [
-      { title: 'Precision Transcription', desc: 'Your video goes in, timestamped text comes out — word by word. 94% accuracy across 50+ languages. The foundation that makes everything else possible.' },
-      { title: 'AI Highlight Detection', desc: 'AI analyzes your full video and finds the moments with the highest retention potential: strong hooks, turning points, the lines people repeat. Not the loudest — the most effective.' },
-      { title: 'Smart 9:16 Crop', desc: "Without losing the speaker's face or the scene's context. The AI chooses between face tracking, dynamic action, or blurred letterbox — the right framing for every clip, automatically." },
-      { title: 'Auto Captions', desc: '85% of videos are watched without sound. Captions are burned directly into each clip — style, size, and position configurable — so it works in any feed.' },
-      { title: 'Multi-platform', desc: 'One video in, five destinations out. Each clip exports optimized for TikTok, YouTube Shorts, Instagram Reels, Twitter/X, and Kick — no re-exporting.' },
-      { title: 'Virality Score', desc: 'Know exactly which clips to post first. Each fragment gets a 0–100 score based on engagement potential, pacing, clarity, and emotional weight.' },
+      { title: 'Moments, not just clips', desc: 'The AI reads the full transcript and scores every candidate on hook strength, clarity, and whether it stands alone without context. You get the ones worth posting — not the loudest ten minutes.' },
+      { title: 'Framing that follows the speaker', desc: 'Not a fixed box in the middle of the frame. The camera tracks whoever is talking, holds steady through small movements, and cuts instead of whip-panning when the shot changes — the way an operator would.' },
+      { title: 'Captions you see before you commit', desc: "Five styles, three sizes, three positions. The preview isn't an approximation — it's the same renderer that builds the file, so what you see is exactly what downloads." },
+      { title: 'Nothing baked in too early', desc: 'Clips stay caption-free until you export. Change your mind about the style or the trim and export again — no re-render queue, no lost work.' },
+      { title: 'Built to survive the feed', desc: "Pulled at 1440p and encoded once, so a vertical crop still has real resolution left. Plus a TikTok safe-area overlay, so your captions don't end up buried under the UI." },
+      { title: 'It speaks your language', desc: 'Transcribed and captioned in whatever language you recorded in — never translated to English first. 50+ languages.' },
     ],
   },
 };
@@ -46,8 +49,10 @@ const i18n = {
 export default function Features({ lang }: { lang: Lang }) {
   const t = i18n[lang];
 
+  // Every other section carries this top rule; Features could skip it while it
+  // sat directly under Before/After, but it now follows Demo.
   return (
-    <section id="features" className="section-pad" style={{ position: 'relative' }}>
+    <section id="features" className="section-pad" style={{ position: 'relative', borderTop: '1px solid #111' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
         <Reveal>
           <div style={{ textAlign: 'center', marginBottom: 72 }}>
@@ -57,7 +62,7 @@ export default function Features({ lang }: { lang: Lang }) {
             <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
               {t.headline} <span className="grad-text">{t.gradPart}</span>
             </h2>
-            <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, color: '#aaa', maxWidth: 480, margin: '0 auto' }}>
+            <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 18, lineHeight: 1.6, color: '#aaa', maxWidth: 620, margin: '0 auto' }}>
               {t.sub}
             </p>
           </div>

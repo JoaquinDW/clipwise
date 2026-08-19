@@ -3,35 +3,38 @@
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react';
 import type { Lang } from './use-lang';
 
+// Answers 3 and 4 replaced a question about how the crop works internally. The
+// two real objections to this category are "will the output be postable?" and
+// "can I fix it if it isn't?", and those are what the product answers.
 const i18n = {
   es: {
     badge: '✦ Preguntas frecuentes',
-    headline: '¿Tienes',
-    gradPart: 'dudas?',
+    headline: 'Las preguntas',
+    gradPart: 'que de verdad nos hacen',
     items: [
-      { question: '¿Qué formatos de video acepta Momentreel?', answer: 'Acepta archivos MP4, MOV y WebM de hasta 500 MB, o directamente URLs de YouTube. El video puede durar hasta 60 minutos.' },
-      { question: '¿Cuánto tiempo tarda en procesar un video?', answer: 'La mayoría de videos de 30-60 minutos se procesan en menos de 5 minutos. La transcripción y la detección de highlights corren en paralelo para máxima velocidad.' },
-      { question: '¿En qué idiomas funciona la transcripción?', answer: 'Soporta más de 50 idiomas, incluyendo español, inglés, francés, alemán, portugués, japonés y muchos más. Los captions se generan en el mismo idioma del video.' },
-      { question: '¿Cómo funciona el recorte inteligente a 9:16?', answer: 'La IA analiza el contenido de la transcripción para determinar la estrategia óptima: seguimiento de cara para talking heads, seguimiento dinámico para demostraciones, letterbox desenfocado para paneles grupales o encuadre estático para pantallas y paisajes.' },
-      { question: '¿Puedo personalizar los captions y el estilo?', answer: 'En los planes Pro y Agency puedes ajustar la fuente, tamaño, color y posición de los subtítulos. En el plan Starter los captions se aplican con el estilo predeterminado de Momentreel.' },
-      { question: '¿Hay un período de prueba gratuito?', answer: 'Sí, todos los planes incluyen 7 días de prueba gratuita. Pedimos tu tarjeta al empezar, pero no cobramos nada hasta que terminan los 7 días. Puedes cancelar cuando quieras desde tu panel de facturación y no se te cobrará.' },
-      { question: '¿Qué pasa si supero mis minutos mensuales?', answer: 'Recibirás un aviso cuando llegues al 80% de tu cuota. Si la superas, el procesamiento se pausará hasta el siguiente ciclo o podrás comprar minutos adicionales desde tu cuenta.' },
-      { question: '¿Los clips generados tienen marca de agua?', answer: 'No. Todos los clips exportados son completamente libres de marca de agua, independientemente del plan que uses.' },
+      { question: '¿Qué puedo subir?', answer: 'MP4, MOV o WebM de hasta 500 MB, o un link de YouTube, Twitch o Kick. Los videos pueden durar hasta 60 minutos en cualquiera de los dos planes.' },
+      { question: '¿Cuánto tarda?', answer: 'Un video de una hora suele estar listo en bastante menos de diez minutos. No tienes que esperar mirando — el panel te muestra en qué etapa va todo el tiempo.' },
+      { question: '¿Los clips van a ser lo bastante buenos para publicar?', answer: 'Esa es la apuesta entera. Cada momento se evalúa por fuerza del gancho, claridad y si se entiende sin el resto del video — y ves esa puntuación antes de publicar nada. Si un clip está cerca pero no del todo, lo ajustas en el editor en vez de empezar de nuevo.' },
+      { question: '¿Puedo cambiar lo que decidió la IA?', answer: 'En todos los clips. Mueves el inicio y el final hasta 15 segundos, cambias el estilo, tamaño y posición de los subtítulos, y lo revisas contra la zona segura de TikTok antes de exportar.' },
+      { question: '¿Funciona en otros idiomas además del inglés?', answer: 'Sí, más de 50. Los clips se transcriben y subtitulan en el idioma en que grabaste. Nunca traducimos al inglés primero.' },
+      { question: '¿Hay prueba gratis?', answer: 'Siete días o 30 minutos procesados, lo que ocurra primero. Pedimos tarjeta por adelantado pero no cobramos nada hasta que termine la prueba. Cancelas desde tu panel de facturación y no se te cobra.' },
+      { question: '¿Qué pasa si supero mis minutos del mes?', answer: 'Te avisamos al 80% de tu cuota. Si la superas, el procesamiento se pausa hasta el siguiente ciclo — o puedes cambiar de plan cuando quieras desde tu panel de facturación.' },
+      { question: '¿Los clips llevan marca de agua?', answer: 'No. Sin marca de agua en ningún plan, tampoco durante la prueba.' },
     ],
   },
   en: {
     badge: '✦ Frequently asked questions',
-    headline: 'Got',
-    gradPart: 'questions?',
+    headline: 'The questions',
+    gradPart: 'people actually ask',
     items: [
-      { question: 'What video formats does Momentreel support?', answer: 'It accepts MP4, MOV, and WebM files up to 500 MB, or directly YouTube URLs. Videos can be up to 60 minutes long.' },
-      { question: 'How long does it take to process a video?', answer: 'Most 30-60 minute videos are processed in under 5 minutes. Transcription and highlight detection run in parallel for maximum speed.' },
-      { question: 'What languages does transcription support?', answer: 'Momentreel supports 50+ languages including English, Spanish, French, German, Portuguese, Japanese, and many more. Captions are generated in the same language as the video.' },
-      { question: 'How does the smart 9:16 crop work?', answer: 'The AI analyzes transcription content to determine the optimal strategy: face tracking for talking heads, dynamic tracking for demos, blurred letterbox for group panels, or static crop for screens and landscapes.' },
-      { question: 'Can I customize captions and style?', answer: 'On Pro and Agency plans you can adjust font, size, color, and position of subtitles. On the Starter plan captions use Momentreel\'s default style.' },
-      { question: 'Is there a free trial?', answer: 'Yes, all plans include a 7-day free trial. We ask for your card up front but charge nothing until the 7 days are up. Cancel any time from your billing panel and you will not be charged.' },
-      { question: 'What happens if I exceed my monthly minutes?', answer: 'You\'ll receive a warning when you reach 80% of your quota. If you exceed it, processing will pause until the next cycle, or you can purchase additional minutes from your account.' },
-      { question: 'Do generated clips have a watermark?', answer: 'No. All exported clips are completely watermark-free regardless of which plan you use.' },
+      { question: 'What can I put in?', answer: 'MP4, MOV, or WebM up to 500 MB, or a link from YouTube, Twitch, or Kick. Videos can be up to 60 minutes long on either plan.' },
+      { question: 'How long does it take?', answer: "An hour-long video is usually done in well under ten minutes. You don't have to sit there — the dashboard shows you exactly what stage it's on the whole way through." },
+      { question: 'Will the clips actually be good enough to post?', answer: "That's the whole bet. Every moment gets scored on hook strength, clarity, and whether it makes sense without the rest of the video — and you see that score before you post anything. If a clip is close but not right, adjust it in the editor instead of starting over." },
+      { question: 'Can I change what the AI decided?', answer: "On every clip. Move the start and end by up to 15 seconds, switch the caption style, size, and position, and preview it against TikTok's safe area before you export." },
+      { question: 'Does it work in languages other than English?', answer: 'Yes — 50+ of them. Clips are transcribed and captioned in the language you recorded in. We never translate to English first.' },
+      { question: 'Is there a free trial?', answer: "Seven days or 30 processed minutes, whichever comes first. We ask for a card up front but charge nothing until the trial ends. Cancel from your billing page and you won't be charged." },
+      { question: 'What if I go over my monthly minutes?', answer: "You'll get a warning at 80% of your quota. Past it, processing pauses until your next cycle — or you can move up a plan any time from your billing page." },
+      { question: 'Do the clips have a watermark?', answer: 'No. No watermark on any plan, including during the trial.' },
     ],
   },
 };

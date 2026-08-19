@@ -8,7 +8,7 @@ import type { Lang } from "./use-lang"
 const i18n = {
   es: {
     tagline:
-      "Convierte tus streams y videos largos en clips virales optimizados para redes sociales — automáticamente.",
+      "Tus mejores momentos, listos para publicar. Momentreel convierte el video que ya hiciste en clips que vale la pena publicar — sin una segunda pasada por el timeline.",
     product: "Producto",
     productLinks: [
       ["Características", "#features"],
@@ -18,7 +18,7 @@ const i18n = {
     ] as const,
     account: "Cuenta",
     accountLinks: [
-      ["Empezar gratis", "/login"],
+      ["Empezar prueba gratis", "/login"],
       ["Iniciar sesión", "/login"],
       ["Dashboard", "/dashboard"],
     ] as const,
@@ -26,7 +26,7 @@ const i18n = {
   },
   en: {
     tagline:
-      "Turn your streams and long videos into viral clips optimized for social media — automatically.",
+      "Your best moments, ready to post. Momentreel turns the video you already made into clips worth publishing — without a second pass through the timeline.",
     product: "Product",
     productLinks: [
       ["Features", "#features"],

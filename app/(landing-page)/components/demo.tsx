@@ -7,59 +7,59 @@ import Reveal from "./reveal"
 const i18n = {
   es: {
     badge: "✦ Cómo funciona",
-    headline: "En 4 pasos,",
-    gradPart: "listo para publicar",
+    headline: "Cuatro pasos.",
+    gradPart: "Ninguno es editar.",
     steps: [
       {
         n: "01",
-        title: "Sube tu video",
-        desc: "Pega un enlace de YouTube o sube un archivo MP4. Máx. 500 MB.",
+        title: "Súbelo",
+        desc: "Pega un link de YouTube, Twitch o Kick, o sube un MP4. Después cierra la pestaña.",
       },
       {
         n: "02",
-        title: "IA transcribe y analiza",
-        desc: "Cada palabra, con timestamps exactos. La IA detecta los momentos con más potencial viral.",
+        title: "Lo vemos por ti",
+        desc: "Cada palabra transcrita con timestamps. Cada momento evaluado según si se sostiene sin el resto del video.",
       },
       {
         n: "03",
-        title: "Clips generados",
-        desc: "Recortados a 9:16, encuadrados de forma inteligente y con subtítulos quemados — sin tocar nada.",
+        title: "Los clips vuelven terminados",
+        desc: "Encuadrados en vertical con quien habla dentro del cuadro, subtítulos ya puestos. Publicables tal cual.",
       },
       {
         n: "04",
-        title: "Descarga y publica",
-        desc: "Clips listos para TikTok, Shorts y Reels. Un clic para descargar todos.",
+        title: "La última palabra es tuya",
+        desc: "Ajusta el inicio, cambia el estilo de subtítulo, revísalo contra la zona segura de TikTok. Y descarga.",
       },
     ],
-    cta: "Probarlo gratis →",
+    cta: "Probarlo con mi video →",
   },
   en: {
     badge: "✦ How it works",
-    headline: "In 4 steps,",
-    gradPart: "ready to publish",
+    headline: "Four steps.",
+    gradPart: "None of them are editing.",
     steps: [
       {
         n: "01",
-        title: "Upload your video",
-        desc: "Paste a YouTube link or upload an MP4 file.",
+        title: "Drop it in",
+        desc: "Paste a YouTube, Twitch, or Kick link, or upload an MP4. Then close the tab.",
       },
       {
         n: "02",
-        title: "AI transcribes & analyzes",
-        desc: "Every word, with precise timestamps. AI spots the moments with the highest viral potential.",
+        title: "We watch it so you don't",
+        desc: "Every word transcribed with timestamps. Every moment scored on whether it holds up without the rest of the video.",
       },
       {
         n: "03",
-        title: "Clips generated",
-        desc: "Trimmed to 9:16, intelligently framed, and captions burned in — no editing needed.",
+        title: "Clips come back finished",
+        desc: "Framed for vertical with the speaker actually in frame, captions already placed. Postable as-is.",
       },
       {
         n: "04",
-        title: "Download & publish",
-        desc: "Clips ready for TikTok, Shorts, and Reels. One click to download all.",
+        title: "You get the final say",
+        desc: "Trim the start, switch the caption style, check it against TikTok's safe area. Then download.",
       },
     ],
-    cta: "Try it free →",
+    cta: "Try it on your video →",
   },
 }
 
@@ -151,7 +151,9 @@ function PhaseInput({ lang }: { lang: Lang }) {
           marginBottom: 24,
         }}
       >
-        {[["Duration", "2:14:33"], ["Size", "847 MB"], ["Format", "MP4"]].map(
+        {/* Inside the real limits: 60 min (maxVideoDurationSeconds) and 500 MB.
+            The old mock showed a 2:14:33 / 847 MB file the product would reject. */}
+        {[["Duration", "58:12"], ["Size", "412 MB"], ["Format", "MP4"]].map(
           ([k, v]) => (
             <div
               key={k}
@@ -198,17 +200,19 @@ function PhaseInput({ lang }: { lang: Lang }) {
 }
 
 function PhaseProcessing({ lang }: { lang: Lang }) {
+  // These mirror the detail strings the pipeline actually writes in
+  // lib/video/progress.ts — the mock shows the real thing, not an invented one.
   const logsEs = [
-    { done: true, text: "Transcripción completada · 5,234 palabras" },
-    { done: true, text: "Analizando momentos virales..." },
-    { done: false, text: "Detectando estrategia de recorte..." },
-    { done: false, text: "Generando clips 9:16..." },
+    { done: true, text: "Descargando audio — 2.1MB/s · ETA 00:35" },
+    { done: true, text: "Transcribiendo — fragmento 3 de 11" },
+    { done: false, text: "Evaluando 20 momentos candidatos con IA…" },
+    { done: false, text: "Renderizando clip 2 de 4" },
   ]
   const logsEn = [
-    { done: true, text: "Transcription complete · 5,234 words" },
-    { done: true, text: "Analyzing viral moments..." },
-    { done: false, text: "Detecting crop strategy..." },
-    { done: false, text: "Generating 9:16 clips..." },
+    { done: true, text: "Downloading audio — 2.1MB/s · ETA 00:35" },
+    { done: true, text: "Transcribing — chunk 3 of 11" },
+    { done: false, text: "Ranking 20 candidate moments with AI…" },
+    { done: false, text: "Rendering clip 2 of 4" },
   ]
   const logs = lang === "es" ? logsEs : logsEn
 
@@ -286,8 +290,8 @@ function PhaseOutput({ lang }: { lang: Lang }) {
       >
         ✓{" "}
         {lang === "es"
-          ? "4 clips generados · listos para publicar"
-          : "4 clips generated · ready to publish"}
+          ? "4 clips listos — revisa y descarga"
+          : "4 clips ready — review and download"}
       </div>
       <div className="mini-phones-row">
         {phones.map((p, i) => (
@@ -309,7 +313,7 @@ function PhaseOutput({ lang }: { lang: Lang }) {
           letterSpacing: "0.02em",
         }}
       >
-        ↓ {lang === "es" ? "Descargar los 4 clips" : "Download all 4 clips"}
+        ↓ {lang === "es" ? "Revisar los 4 clips" : "Review the 4 clips"}
       </div>
     </div>
   )

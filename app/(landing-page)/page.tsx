@@ -10,15 +10,16 @@ import Faq from './components/faq';
 export default function Home() {
   return (
     <>
-      {/* Before → After claims the first scroll: the source-to-clips transform
-          is the product. The branded promo drops below Demo, where it plays the
-          "watch the whole thing" role instead of competing with the hero. */}
+      {/* Promise → "that's me" → proof of the output → how little it costs you
+          → where the control stays yours → see it real → price → objections.
+          Testimonials is the pain section, so it has to land before any of the
+          selling; Before/After is the first proof the promise is real. */}
       <Hero lang="en" />
-      <BeforeAfter lang="en" />
-      <Features lang="en" />
-      <Demo lang="en" />
-      <VideoShowcase lang="en" />
       <Testimonials lang="en" />
+      <BeforeAfter lang="en" />
+      <Demo lang="en" />
+      <Features lang="en" />
+      <VideoShowcase lang="en" />
       <Pricing lang="en" />
       <Faq lang="en" />
     </>

@@ -17,11 +17,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   return (
     <>
       <Hero lang={lang} />
-      <BeforeAfter lang={lang} />
-      <Features lang={lang} />
-      <Demo lang={lang} />
-      <VideoShowcase lang={lang} />
       <Testimonials lang={lang} />
+      <BeforeAfter lang={lang} />
+      <Demo lang={lang} />
+      <Features lang={lang} />
+      <VideoShowcase lang={lang} />
       <Pricing lang={lang} />
       <Faq lang={lang} />
     </>

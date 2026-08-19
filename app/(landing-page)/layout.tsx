@@ -19,8 +19,10 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: 'Momentreel — Viral Clips in Minutes',
-  description: 'Our AI detects the best moments from your streams and long videos, trims them, and optimizes them for TikTok, YouTube Shorts, and more — automatically.',
+  // `absolute` opts out of the root layout's "%s | Momentreel" template, which
+  // would otherwise render this as "Momentreel — … | Momentreel".
+  title: { absolute: 'Momentreel — Your best moments, ready to post' },
+  description: 'Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and hands you the controls before you post.',
 };
 
 export default async function LandingLayout({

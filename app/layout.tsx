@@ -12,10 +12,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
     template: "%s | Momentreel",
-    default: "Momentreel — Long videos in. Viral clips out.",
+    default: "Momentreel — Your best moments, ready to post",
   },
   description:
-    "Momentreel automatically turns your long-form videos into short viral clips for TikTok, YouTube Shorts, and Instagram Reels. Powered by AI — no editing required.",
+    "Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and hands you the controls before you post.",
   keywords: [
     "viral clips",
     "AI video editor",
@@ -32,23 +32,23 @@ export const metadata: Metadata = {
     type: "website",
     url: BASE_URL,
     siteName: "Momentreel",
-    title: "Momentreel — Long videos in. Viral clips out.",
+    title: "Momentreel — Your best moments, ready to post",
     description:
-      "Momentreel automatically turns your long-form videos into short viral clips for TikTok, YouTube Shorts, and Instagram Reels. Powered by AI — no editing required.",
+      "Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and hands you the controls before you post.",
     images: [
       {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Momentreel — AI-powered viral clip generator",
+        alt: "Momentreel — your best moments, ready to post",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Momentreel — Long videos in. Viral clips out.",
+    title: "Momentreel — Your best moments, ready to post",
     description:
-      "Momentreel automatically turns your long-form videos into short viral clips for TikTok, YouTube Shorts, and Instagram Reels. Powered by AI — no editing required.",
+      "Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and hands you the controls before you post.",
     images: ["/opengraph-image.png"],
   },
   icons: {

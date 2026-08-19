@@ -7,34 +7,36 @@ import { useAutoplayOnView } from "./use-autoplay-on-view"
 
 const i18n = {
   es: {
-    badge: "✦ Video largo entra. Clip viral sale.",
-    h1a: "Convierte tu contenido",
-    h1b: "en clips",
-    h1c: "virales",
-    sub: "Cada episodio, stream o video largo tiene momentos virales escondidos. Momentreel los detecta, recorta a 9:16 y agrega los subtítulos — sin tocar el timeline, listo en minutos.",
-    cta: "Empezar gratis →",
+    badge: "✦ Clips con IA que de verdad te ahorran trabajo",
+    h1a: "Ya hiciste",
+    h1b: "el contenido.",
+    h1c: "No lo edites dos veces.",
+    sub: "Sube tu podcast, video o stream. Momentreel encuentra los momentos que vale la pena compartir, los convierte en clips verticales terminados, y te deja ajustar lo que quieras antes de publicar.",
+    cta: "Convertir mi video en clips →",
+    // Cada número es verificable en el código: el cap de clips de Pro, que nada
+    // dibuja un watermark, el fetch a 1440p y MAX_DELTA en lib/video/trim-limits.
     stats: [
-      { value: "94%", label: "Precisión de transcripción" },
-      { value: "<5min", label: "Hasta el primer clip" },
-      { value: "10", label: "Clips por video" },
-      { value: "50+", label: "Idiomas" },
+      { value: "10", label: "Clips por video", count: true },
+      { value: "0", label: "Marcas de agua, en todos los planes" },
+      { value: "1440p", label: "Fuente antes del recorte" },
+      { value: "±15s", label: "De ajuste en cada clip" },
     ],
     clipAlt: "Un clip real de Momentreel: recorte vertical con subtítulos automáticos",
     stillAlt: "Fotograma de un clip generado por Momentreel",
     play: "Reproducir el clip de ejemplo",
   },
   en: {
-    badge: "✦ Long videos in. Viral clips out.",
-    h1a: "Turn your",
-    h1b: "content into",
-    h1c: "viral clips",
-    sub: "Every podcast, stream, or video has viral moments buried inside it. Momentreel finds them, crops to 9:16, and burns captions — no timeline, no editor, done in minutes.",
-    cta: "Start free trial →",
+    badge: "✦ AI clipping that actually saves you work",
+    h1a: "You made",
+    h1b: "the content.",
+    h1c: "Don't edit it twice.",
+    sub: "Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and lets you tweak anything before you post.",
+    cta: "Turn my video into clips →",
     stats: [
-      { value: "94%", label: "Transcription accuracy" },
-      { value: "<5min", label: "Time to first clip" },
-      { value: "10", label: "Clips per video" },
-      { value: "50+", label: "Languages" },
+      { value: "10", label: "Clips per upload", count: true },
+      { value: "0", label: "Watermarks, any plan" },
+      { value: "1440p", label: "Source before the crop" },
+      { value: "±15s", label: "Trim on any clip" },
     ],
     clipAlt: "A real Momentreel clip: vertical crop with auto captions",
     stillAlt: "A frame from a clip Momentreel generated",
@@ -158,12 +160,19 @@ export function PlayOverlay({ label, onClick }: { label: string; onClick: () => 
   )
 }
 
-function StatValue({ value }: { value: string }) {
-  const [display, setDisplay] = useState(() => value.replace(/\d+/, "0"))
+/**
+ * Counts up to a stat, but only where counting means anything.
+ *
+ * `count` is opt-in per stat because the animation is actively misleading on a
+ * spec: "1440p" ticking upward renders "977p" on the way, which reads as a
+ * resolution we don't offer. A quantity may climb; a measurement may not.
+ */
+function StatValue({ value, count = false }: { value: string; count?: boolean }) {
+  const [display, setDisplay] = useState(() => (count ? value.replace(/\d+/, "0") : value))
 
   useEffect(() => {
     const match = value.match(/^([^\d]*)(\d+)(.*)$/)
-    if (!match || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!count || !match || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setDisplay(value)
       return
     }
@@ -180,7 +189,7 @@ function StatValue({ value }: { value: string }) {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [value])
+  }, [value, count])
 
   return <>{display}</>
 }
@@ -265,12 +274,14 @@ function Phone({
         }}
       />
       <div
-        className={score.startsWith("VIRAL") ? "viral-badge" : undefined}
+        // The centre phone is the one carrying the top-scoring clip, so it is
+        // also the one that pulses — no need to sniff the label for a keyword.
+        className={isCenter ? "viral-badge" : undefined}
         style={{
           position: "absolute",
           top: isCenter ? 32 : 12,
           [badgeAlign]: 10,
-          background: score.startsWith("VIRAL") ? "#FF3B5C" : "rgba(255,140,0,0.85)",
+          background: isCenter ? "#FF3B5C" : "rgba(255,140,0,0.85)",
           color: "#fff",
           fontFamily: "var(--font-dm-sans), sans-serif",
           fontSize: 8,
@@ -330,7 +341,7 @@ function PhoneStack({ t }: { t: (typeof i18n)["en"] }) {
       </div>
       <Phone
         media={{ kind: "video", label: t.clipAlt, playLabel: t.play }}
-        score="VIRAL · 94%"
+        score="TOP · 94%"
         isCenter
         style={{ zIndex: 3, position: "relative" }}
       />
@@ -387,6 +398,11 @@ export default function Hero({ lang }: { lang: Lang }) {
                 borderRadius: 100,
                 display: "inline-block",
                 marginBottom: 28,
+                // The root wrapper is overflow-hidden, so anything wider than
+                // the viewport is silently clipped rather than scrolled. This
+                // eyebrow is long enough to hit that at 375px.
+                maxWidth: "100%",
+                lineHeight: 1.5,
               }}
             >
               {t.badge}
@@ -401,7 +417,12 @@ export default function Hero({ lang }: { lang: Lang }) {
               color: "#f2ede8",
               marginBottom: 28,
               letterSpacing: "-0.03em",
-              fontSize: "clamp(44px, 5.5vw, 84px)",
+              // The gradient line is a full sentence now, not a two-word tag, so
+              // it has to be allowed to wrap. Syne 800 runs about 0.83em per
+              // character, so 60px is the largest size that still keeps "the
+              // content." on one line in this column; above it the second line
+              // breaks after "the" and the headline reads as five ragged lines.
+              fontSize: "clamp(32px, 4vw, 60px)",
             }}
           >
             {t.h1a}
@@ -490,7 +511,7 @@ export default function Hero({ lang }: { lang: Lang }) {
                     lineHeight: 1,
                   }}
                 >
-                  <StatValue value={s.value} />
+                  <StatValue value={s.value} count={"count" in s && s.count} />
                 </div>
                 <div
                   style={{

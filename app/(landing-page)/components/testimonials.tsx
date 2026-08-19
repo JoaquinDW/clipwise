@@ -14,39 +14,41 @@ const icons = [
 
 const i18n = {
   es: {
-    badge: '✦ Para quién es',
-    headline: 'No te falta contenido.',
-    gradPart: 'Te falta tiempo para clippearlo.',
+    badge: '✦ Por qué sigue ahí sin publicar',
+    headline: 'Sabes que ahí adentro hay diez momentos buenos.',
+    gradPart: 'Lo que no quieres es volver a verlo entero.',
+    sub: 'El problema no es que clipear sea difícil. Es que hacerlo bien significa una segunda pasada por material que ya viviste una vez.',
     items: [
       {
-        quote: 'Grabaste 3 horas de oro. Ahora está en tu disco porque recortar clips tarda más que grabar el episodio.',
+        quote: 'Tres horas grabadas, nada publicado. No por falta de ganas — sino porque encontrar los cuatro momentos que funcionan significa recorrer el episodio otra vez.',
         role: 'Podcasters y YouTubers',
       },
       {
-        quote: 'Tus mejores momentos pasan en vivo. Para cuando recortaste a 9:16 y quemaste los subtítulos, la ventana del algoritmo ya cerró.',
+        quote: 'El mejor momento pasó en la hora cuatro. Para cuando lo encontraste, lo recortaste y arreglaste los subtítulos, el momento ya se enfrió. El algoritmo también.',
         role: 'Streamers y creadores en vivo',
       },
       {
-        quote: 'Tus clientes quieren 6 clips por video. Tú entregas 2 porque la math no cierra editando a mano. Momentreel cambia el denominador.',
+        quote: 'Ya probaste los clippers automáticos. Te devolvieron quince clips y publicaste dos. Los otros trece te costaron el tiempo que querías ahorrar.',
         role: 'Agencias y editores de video',
       },
     ],
   },
   en: {
-    badge: "✦ Who it's for",
-    headline: "You're not short on content.",
-    gradPart: "You're short on time to clip it.",
+    badge: "✦ Why it's still sitting there",
+    headline: 'You know there are ten good moments in there.',
+    gradPart: "You just don't want to watch it again.",
+    sub: "It's not that clipping is hard. It's that doing it well means a second pass through footage you already lived through once.",
     items: [
       {
-        quote: "You recorded 3 hours of gold. Now it's sitting on your drive because cutting clips takes longer than recording the episode itself.",
+        quote: "Three hours recorded, nothing posted. Not because you're lazy — because finding the four moments that actually land means scrubbing the whole episode again.",
         role: 'Podcasters & YouTubers',
       },
       {
-        quote: "Your best moments happen live. By the time you've clipped, cropped to 9:16, and burned captions — the algorithm window has already closed.",
+        quote: "The best moment happened at hour four. By the time you've found it, cropped it, and fixed the captions, the moment is cold and so is the algorithm.",
         role: 'Streamers & live creators',
       },
       {
-        quote: "Your clients want 6 clips per video. You're quoting 2 because the math doesn't work with manual editing. Momentreel changes the denominator.",
+        quote: "You've tried the auto-clippers. They handed you fifteen clips and you posted two. The other thirteen cost you the time you were trying to save.",
         role: 'Agencies & video editors',
       },
     ],
@@ -67,6 +69,9 @@ export default function Testimonials({ lang }: { lang: Lang }) {
             <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {t.headline} <span className="grad-text">{t.gradPart}</span>
             </h2>
+            <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 17, lineHeight: 1.65, color: '#aaa', maxWidth: 620, margin: '20px auto 0' }}>
+              {t.sub}
+            </p>
           </div>
         </Reveal>
         <div className="grid-3col">

@@ -6,18 +6,18 @@ import Reveal from './reveal';
 
 const i18n = {
   es: {
-    badge: '✦ Míralo en acción',
-    headline: 'Un podcast de 2 horas, hecho clips',
-    gradPart: 'en 24 segundos',
-    sub: 'Esto es Momentreel de principio a fin: detecta el momento, recorta a 9:16 y quema los subtítulos. Sin timeline. Sin editor.',
+    badge: '✦ Míralo de principio a fin',
+    headline: 'Entra un episodio completo.',
+    gradPart: 'Sale este clip.',
+    sub: 'Sin timeline. Sin keyframes. Sin segunda pasada. Esto es lo que devolvió.',
     unmute: 'Activar sonido',
     mute: 'Silenciar',
   },
   en: {
-    badge: '✦ See it in action',
-    headline: 'A 2-hour podcast, clipped',
-    gradPart: 'in 24 seconds',
-    sub: 'This is Momentreel end to end: it finds the moment, crops to 9:16, and burns the captions. No timeline. No editor.',
+    badge: '✦ See it end to end',
+    headline: 'A full episode in.',
+    gradPart: 'This clip out.',
+    sub: 'No timeline. No keyframes. No second pass. This is what came back.',
     unmute: 'Unmute',
     mute: 'Mute',
   },

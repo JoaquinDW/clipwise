@@ -3,41 +3,47 @@
 import Link from 'next/link';
 import type { Lang } from './use-lang';
 import Reveal from './reveal';
-import { PLANS, TRIAL_DAYS } from '@/lib/plans';
+import { PLANS, TRIAL_DAYS, TRIAL_MINUTES } from '@/lib/plans';
 
+const proMaxMinutes = Math.round(PLANS.pro.maxVideoDurationSeconds / 60);
+
+// Every bullet below has to be true in the code. The previous list sold Pro on
+// custom branding, advanced templates and priority processing — none of which
+// exist: there is one queue at concurrency 2, no branding, and no template
+// system beyond the five caption presets. The only real difference between the
+// plans is minutes and clips, so that is what Pro is sold on.
 const i18n = {
   es: {
     badge: '✦ Precios simples',
-    headline: 'Elige tu',
-    gradPart: 'plan',
-    sub: `${TRIAL_DAYS} días de prueba gratis. Cancela cuando quieras.`,
+    headline: 'Dos planes.',
+    gradPart: 'Sin asteriscos.',
+    sub: `${TRIAL_DAYS} días gratis, o ${TRIAL_MINUTES} minutos procesados — lo que ocurra primero. Pedimos tarjeta, no cobramos nada hasta que termine la prueba, cancelas en dos clics.`,
     popularLabel: 'Más popular',
     perMonth: '/mes',
     plans: [
       {
         id: 'starter',
-        desc: 'Para creadores que están empezando.',
+        desc: 'Para creadores que están agarrando ritmo.',
         features: [
           `${PLANS.starter.minutesPerMonth} minutos de video al mes`,
           `Hasta ${PLANS.starter.maxClipsPerVideo} clips por video`,
-          'Clips para TikTok, Reels y Shorts',
-          'Subtítulos automáticos',
-          'Exportación en HD',
+          'Encuadre vertical que sigue a quien habla',
+          '5 estilos de subtítulo, con tamaño y posición ajustables',
+          'Recorta y vuelve a exportar las veces que quieras',
+          'Exportación HD sin marca de agua',
           'Soporte por email',
         ],
         cta: 'Empezar prueba gratis',
       },
       {
         id: 'pro',
-        desc: 'Para creadores en crecimiento constante.',
+        desc: 'El mismo producto. Simplemente se te acaba menos.',
         features: [
           'Todo lo de Starter',
           `${PLANS.pro.minutesPerMonth} minutos de video al mes`,
           `Hasta ${PLANS.pro.maxClipsPerVideo} clips por video`,
-          'Marca personalizada',
-          'Plantillas avanzadas',
-          'Procesamiento prioritario',
-          'Soporte prioritario',
+          'Links de YouTube, Twitch y Kick',
+          `Videos de hasta ${proMaxMinutes} minutos`,
         ],
         cta: 'Empezar prueba gratis',
       },
@@ -45,36 +51,35 @@ const i18n = {
   },
   en: {
     badge: '✦ Simple pricing',
-    headline: 'Choose your',
-    gradPart: 'plan',
-    sub: `${TRIAL_DAYS}-day free trial. Cancel anytime.`,
+    headline: 'Two plans.',
+    gradPart: 'No asterisks.',
+    sub: `${TRIAL_DAYS} days free, or ${TRIAL_MINUTES} processed minutes — whichever comes first. Card required, nothing charged until the trial ends, cancel in two clicks.`,
     popularLabel: 'Most popular',
     perMonth: '/mo',
     plans: [
       {
         id: 'starter',
-        desc: 'For creators just getting started.',
+        desc: 'For creators finding their rhythm.',
         features: [
-          `${PLANS.starter.minutesPerMonth} video minutes per month`,
+          `${PLANS.starter.minutesPerMonth} video minutes a month`,
           `Up to ${PLANS.starter.maxClipsPerVideo} clips per video`,
-          'Clips for TikTok, Reels & Shorts',
-          'Auto-generated subtitles',
-          'HD exports',
+          'Speaker-tracked vertical framing',
+          '5 caption styles, adjustable size and position',
+          'Trim and re-export as often as you want',
+          'Watermark-free HD exports',
           'Email support',
         ],
         cta: 'Start free trial',
       },
       {
         id: 'pro',
-        desc: 'For creators growing consistently.',
+        desc: 'Same product. You just run out less.',
         features: [
           'Everything in Starter',
-          `${PLANS.pro.minutesPerMonth} video minutes per month`,
+          `${PLANS.pro.minutesPerMonth} video minutes a month`,
           `Up to ${PLANS.pro.maxClipsPerVideo} clips per video`,
-          'Custom branding',
-          'Advanced templates',
-          'Priority processing',
-          'Priority support',
+          'YouTube, Twitch and Kick links',
+          `Videos up to ${proMaxMinutes} minutes`,
         ],
         cta: 'Start free trial',
       },
@@ -103,7 +108,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
           <h2 style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: '#f2ede8', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
             {t.headline} <span className="grad-text">{t.gradPart}</span>
           </h2>
-          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#888' }}>{t.sub}</p>
+          <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, lineHeight: 1.6, color: '#9a9a9a', maxWidth: 620, margin: '0 auto' }}>{t.sub}</p>
         </Reveal>
 
         <div
