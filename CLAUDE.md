@@ -54,7 +54,9 @@ npx prisma studio
 # Lint the codebase
 pnpm run lint
 
-# Build for production (runs prisma generate + prisma migrate deploy)
+# Build for production (runs prisma generate; it no longer migrates, so a
+# deploy does not need a reachable database)
+# Apply migrations explicitly when a database is in use: pnpm run db:migrate
 pnpm run build
 
 # Export the pre-launch waitlist emails
