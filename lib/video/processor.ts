@@ -10,7 +10,7 @@
  */
 
 import ffmpeg from 'fluent-ffmpeg';
-import { CaptionsResult } from '../ai/captions';
+import type { CaptionsResult } from '../ai/caption-schema';
 import { buildFaceTrajectory, TRACKING_PROFILES } from './face-track';
 import { ensureCaptionFonts } from '../captions/fonts.node';
 import { prepareCaptions, type PreparedCaptions } from '../captions/render.node';
@@ -19,10 +19,14 @@ import path from 'path';
 import os from 'os';
 
 // Try to set FFmpeg path from @ffmpeg-installer/ffmpeg, fallback to system FFmpeg
+// FFMPEG_PATH wins so the desktop app can point at a binary outside its asar archive.
 try {
-  const { path: ffmpegPath } = require('@ffmpeg-installer/ffmpeg');
+  const ffmpegPath = process.env.FFMPEG_PATH || require('@ffmpeg-installer/ffmpeg').path;
   if (ffmpegPath) {
     ffmpeg.setFfmpegPath(ffmpegPath);
+  }
+  if (process.env.FFPROBE_PATH) {
+    ffmpeg.setFfprobePath(process.env.FFPROBE_PATH);
   }
 } catch (error) {
   // If @ffmpeg-installer/ffmpeg fails, use system FFmpeg

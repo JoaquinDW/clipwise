@@ -12,9 +12,12 @@ import { CAPTION_FONTS, CAPTION_FONT_KEYS, getCaptionFont, type CaptionFontKey }
 /**
  * Fonts ship inside `public/` so the browser and the worker read the same files.
  * `.dockerignore` excludes only `public/promo`, so they land in the image.
+ *
+ * `CAPTION_FONTS_DIR` overrides it for the desktop app, whose working directory
+ * is wherever the OS launched it from and whose fonts live in its resources.
  */
 export function captionFontsDir(): string {
-  return path.join(process.cwd(), 'public', 'fonts', 'captions');
+  return process.env.CAPTION_FONTS_DIR || path.join(process.cwd(), 'public', 'fonts', 'captions');
 }
 
 export function captionFontPath(key: CaptionFontKey): string {

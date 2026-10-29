@@ -56,28 +56,33 @@ export type TrajectoryResult =
 type Tf = typeof import('@tensorflow/tfjs-node');
 type FaceApi = typeof import('@vladmandic/face-api');
 
+/** One face found on a sampled frame, in sampled-frame coordinates. */
+export interface FaceBox {
+  centerX: number;
+  width: number;
+  score: number;
+}
+
+/** Finds the faces on one JPEG-encoded sampled frame. */
+export type FaceDetector = (jpeg: Buffer) => Promise<FaceBox[]>;
+
+/**
+ * How detection is done. The default runs SSD MobileNet on tfjs-node; the
+ * desktop app swaps in a WASM backend because tfjs-node's native binary does
+ * not package cleanly into Electron.
+ */
+let detectorFactory: () => Promise<FaceDetector> = loadNodeDetector;
+let detectorReady: Promise<FaceDetector> | null = null;
+
+export function setFaceDetectorFactory(factory: () => Promise<FaceDetector>): void {
+  detectorFactory = factory;
+  detectorReady = null;
+}
+
 /** Lazily loaded so the worker only pays the model cost when tracking is used. */
-let detectorReady: Promise<{ tf: Tf; faceapi: FaceApi }> | null = null;
-
-async function loadDetector() {
+async function loadDetector(): Promise<FaceDetector> {
   if (!detectorReady) {
-    detectorReady = (async () => {
-      // tfjs-node registers the native backend as a side effect of being imported
-      const tf = await import('@tensorflow/tfjs-node');
-      const faceapi = await import('@vladmandic/face-api');
-      await tf.setBackend('tensorflow');
-      await tf.ready();
-
-      // Weights ship inside the package — nothing is fetched at runtime.
-      // SSD MobileNet rather than TinyFaceDetector: measured on sampled frames,
-      // tiny found the face in 13% of them against SSD's 100%, for 32ms vs 11ms
-      // per frame. A missed frame means the camera holds still while the subject
-      // walks out of the crop, so reliability wins over the 20ms.
-      const pkgDir = path.dirname(require.resolve('@vladmandic/face-api/package.json'));
-      await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(pkgDir, 'model'));
-      console.log('[face-track] Detector ready');
-      return { tf, faceapi };
-    })().catch((err) => {
+    detectorReady = detectorFactory().catch((err) => {
       // Don't cache a failed load — the next clip gets a fresh attempt
       detectorReady = null;
       throw err;
@@ -86,11 +91,42 @@ async function loadDetector() {
   return detectorReady;
 }
 
-interface Detection {
-  centerX: number; // in sampled-frame coordinates
-  width: number;
-  score: number;
+async function loadNodeDetector(): Promise<FaceDetector> {
+  // tfjs-node registers the native backend as a side effect of being imported
+  const tf: Tf = await import('@tensorflow/tfjs-node');
+  const faceapi: FaceApi = await import('@vladmandic/face-api');
+  await tf.setBackend('tensorflow');
+  await tf.ready();
+
+  // Weights ship inside the package — nothing is fetched at runtime.
+  // SSD MobileNet rather than TinyFaceDetector: measured on sampled frames,
+  // tiny found the face in 13% of them against SSD's 100%, for 32ms vs 11ms
+  // per frame. A missed frame means the camera holds still while the subject
+  // walks out of the crop, so reliability wins over the 20ms.
+  const pkgDir = path.dirname(require.resolve('@vladmandic/face-api/package.json'));
+  await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(pkgDir, 'model'));
+  console.log('[face-track] Detector ready');
+
+  const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 });
+  return async (jpeg) => {
+    const tensor = tf.node.decodeImage(jpeg, 3);
+    try {
+      // face-api bundles its own copy of tfjs-core, so its Tensor type is
+      // structurally identical to tfjs-node's but nominally distinct
+      const input = tensor as unknown as Parameters<typeof faceapi.detectAllFaces>[0];
+      const detections = await faceapi.detectAllFaces(input, options);
+      return detections.map((d) => ({
+        centerX: d.box.x + d.box.width / 2,
+        width: d.box.width,
+        score: d.score,
+      }));
+    } finally {
+      tf.dispose(tensor);
+    }
+  };
 }
+
+type Detection = FaceBox;
 
 /**
  * Pick the subject to follow.
@@ -139,31 +175,16 @@ async function detectSubjectPath(
   const frames = (await fs.readdir(workDir)).filter((f) => f.endsWith('.jpg')).sort();
   if (frames.length === 0) throw new Error('Frame sampling produced no frames');
 
-  const { tf, faceapi } = await loadDetector();
-  const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 });
+  const detect = await loadDetector();
 
   const subjectPath: (number | null)[] = [];
   let previousX: number | null = null;
 
   for (const frame of frames) {
-    const buffer = await fs.readFile(path.join(workDir, frame));
-    const tensor = tf.node.decodeImage(buffer, 3);
-    try {
-      // face-api bundles its own copy of tfjs-core, so its Tensor type is
-      // structurally identical to tfjs-node's but nominally distinct
-      const input = tensor as unknown as Parameters<typeof faceapi.detectAllFaces>[0];
-      const detections = await faceapi.detectAllFaces(input, options);
-      const faces: Detection[] = detections.map((d) => ({
-        centerX: d.box.x + d.box.width / 2,
-        width: d.box.width,
-        score: d.score,
-      }));
-      const subject = pickSubject(faces, previousX);
-      if (subject) previousX = subject.centerX;
-      subjectPath.push(subject ? subject.centerX : null);
-    } finally {
-      tf.dispose(tensor);
-    }
+    const faces = await detect(await fs.readFile(path.join(workDir, frame)));
+    const subject = pickSubject(faces, previousX);
+    if (subject) previousX = subject.centerX;
+    subjectPath.push(subject ? subject.centerX : null);
   }
 
   return { path: subjectPath, sampleWidth: SAMPLE_WIDTH };
