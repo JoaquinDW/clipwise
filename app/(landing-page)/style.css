@@ -537,3 +537,25 @@ body::after {
     gap: 40px;
   }
 }
+/* Lifetime pricing: one card, price + ladder on the left and what it buys on
+   the right from 1024px; stacked below that. */
+.pricing-card {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.pricing-included {
+  border-top: 1px solid #1d1d1d;
+  background: rgba(10, 10, 10, 0.35);
+}
+
+@media (min-width: 1024px) {
+  .pricing-card {
+    grid-template-columns: 1.1fr 1fr;
+  }
+
+  .pricing-included {
+    border-top: none;
+    border-left: 1px solid #1d1d1d;
+  }
+}

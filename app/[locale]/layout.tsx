@@ -2,7 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Syne, DM_Sans } from 'next/font/google';
-import { auth } from '@/auth';
+import { getLifetimeOffer } from '@/lib/lifetime-sales';
 import Header from '../(landing-page)/components/header';
 import Footer from '../(landing-page)/components/footer';
 import type { Lang } from '../(landing-page)/components/use-lang';
@@ -54,7 +54,7 @@ export default async function LocaleLayout({
   }
 
   const messages = await getMessages({ locale });
-  const session = await auth();
+  const offer = await getLifetimeOffer();
 
   return (
     <NextIntlClientProvider messages={messages}>
@@ -63,7 +63,7 @@ export default async function LocaleLayout({
         className={`${syne.variable} ${dmSans.variable} flex flex-col min-h-screen overflow-hidden antialiased`}
         style={{ background: '#0a0a0a', color: '#f2ede8' }}
       >
-        <Header lang={locale as Lang} isLoggedIn={!!session?.user} />
+        <Header lang={locale as Lang} priceUsd={offer.open.tier.priceUsd} />
         {children}
         <Footer lang={locale as Lang} />
       </div>

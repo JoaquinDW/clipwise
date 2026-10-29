@@ -2,24 +2,28 @@
 
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react';
 import type { Lang } from './use-lang';
+import { LIFETIME_TIERS } from '@/lib/lifetime-tiers';
 
-// Answers 3 and 4 replaced a question about how the crop works internally. The
-// two real objections to this category are "will the output be postable?" and
-// "can I fix it if it isn't?", and those are what the product answers.
+const [t1, t2, t3] = LIFETIME_TIERS;
+
+// The objections to a desktop, bring-your-own-AI app are different from the
+// cloud ones: what do I need, is my footage uploaded, what does "lifetime"
+// really cover, and why is the price going up.
 const i18n = {
   es: {
     badge: '✦ Preguntas frecuentes',
     headline: 'Las preguntas',
     gradPart: 'que de verdad nos hacen',
     items: [
-      { question: '¿Qué puedo subir?', answer: 'MP4, MOV o WebM de hasta 500 MB, o un link de YouTube, Twitch o Kick. Los videos pueden durar hasta 60 minutos en cualquiera de los dos planes.' },
-      { question: '¿Cuánto tarda?', answer: 'Un video de una hora suele estar listo en bastante menos de diez minutos. No tienes que esperar mirando — el panel te muestra en qué etapa va todo el tiempo.' },
-      { question: '¿Los clips van a ser lo bastante buenos para publicar?', answer: 'Esa es la apuesta entera. Cada momento se evalúa por fuerza del gancho, claridad y si se entiende sin el resto del video — y ves esa puntuación antes de publicar nada. Si un clip está cerca pero no del todo, lo ajustas en el editor en vez de empezar de nuevo.' },
-      { question: '¿Puedo cambiar lo que decidió la IA?', answer: 'En todos los clips. Mueves el inicio y el final hasta 15 segundos, cambias el estilo, tamaño y posición de los subtítulos, y lo revisas contra la zona segura de TikTok antes de exportar.' },
-      { question: '¿Funciona en otros idiomas además del inglés?', answer: 'Sí, más de 50. Los clips se transcriben y subtitulan en el idioma en que grabaste. Nunca traducimos al inglés primero.' },
-      { question: '¿Hay prueba gratis?', answer: 'Siete días o 30 minutos procesados, lo que ocurra primero. Pedimos tarjeta por adelantado pero no cobramos nada hasta que termine la prueba. Cancelas desde tu panel de facturación y no se te cobra.' },
-      { question: '¿Qué pasa si supero mis minutos del mes?', answer: 'Te avisamos al 80% de tu cuota. Si la superas, el procesamiento se pausa hasta el siguiente ciclo — o puedes cambiar de plan cuando quieras desde tu panel de facturación.' },
-      { question: '¿Los clips llevan marca de agua?', answer: 'No. Sin marca de agua en ningún plan, tampoco durante la prueba.' },
+      { question: '¿Qué necesito para usarlo?', answer: 'Una Mac (Apple Silicon o Intel) y un agente que hable MCP: Claude Desktop, Claude Code, Codex o Cursor. La app conecta cada uno con un clic, o con un comando en el caso de Claude Code.' },
+      { question: '¿Tengo que pagar una API de OpenAI o créditos de IA?', answer: 'No. La transcripción corre en tu Mac con whisper.cpp, y la elección de momentos la hace tu agente con la suscripción que ya tienes. Nosotros no hacemos llamadas de IA por ti, por eso podemos vender una licencia de por vida.' },
+      { question: '¿Mis videos se suben a algún lado?', answer: 'No. Se procesan y se guardan en tu equipo. Lo único que sale de la app es una verificación de licencia una vez al día y la búsqueda de actualizaciones. Tu agente sí ve la transcripción, que es lo que necesita para elegir.' },
+      { question: '¿Funciona sin internet?', answer: 'El procesamiento de archivos locales, sí. Para importar links hace falta conexión, claro. Y la licencia aguanta hasta 14 días sin poder verificarse antes de pedirte que te conectes.' },
+      { question: '¿Qué significa "lifetime"?', answer: 'Un solo pago y tienes todas las versiones que saquemos, para siempre. Sin suscripción y sin minutos: procesa todo lo que quieras.' },
+      { question: '¿Por qué el precio sube?', answer: `Las primeras ${t1.seats} licencias cuestan $${t1.priceUsd}, las siguientes ${t2.seats} cuestan $${t2.priceUsd} y después el precio normal es $${t3.priceUsd}. Quien confía antes paga menos, y su precio no cambia nunca después de comprar.` },
+      { question: '¿Y Windows?', answer: 'La app está construida para Mac y Windows, y Windows es lo siguiente que publicamos. La misma licencia te va a servir ahí cuando salga.' },
+      { question: '¿Qué puedo importar?', answer: 'Links de YouTube, Twitch o Kick, o archivos de video como MP4 o MOV. Los links se descargan a 1440p para que el recorte vertical conserve resolución.' },
+      { question: '¿Los clips llevan marca de agua?', answer: 'No. Nunca.' },
     ],
   },
   en: {
@@ -27,14 +31,15 @@ const i18n = {
     headline: 'The questions',
     gradPart: 'people actually ask',
     items: [
-      { question: 'What can I put in?', answer: 'MP4, MOV, or WebM up to 500 MB, or a link from YouTube, Twitch, or Kick. Videos can be up to 60 minutes long on either plan.' },
-      { question: 'How long does it take?', answer: "An hour-long video is usually done in well under ten minutes. You don't have to sit there — the dashboard shows you exactly what stage it's on the whole way through." },
-      { question: 'Will the clips actually be good enough to post?', answer: "That's the whole bet. Every moment gets scored on hook strength, clarity, and whether it makes sense without the rest of the video — and you see that score before you post anything. If a clip is close but not right, adjust it in the editor instead of starting over." },
-      { question: 'Can I change what the AI decided?', answer: "On every clip. Move the start and end by up to 15 seconds, switch the caption style, size, and position, and preview it against TikTok's safe area before you export." },
-      { question: 'Does it work in languages other than English?', answer: 'Yes — 50+ of them. Clips are transcribed and captioned in the language you recorded in. We never translate to English first.' },
-      { question: 'Is there a free trial?', answer: "Seven days or 30 processed minutes, whichever comes first. We ask for a card up front but charge nothing until the trial ends. Cancel from your billing page and you won't be charged." },
-      { question: 'What if I go over my monthly minutes?', answer: "You'll get a warning at 80% of your quota. Past it, processing pauses until your next cycle — or you can move up a plan any time from your billing page." },
-      { question: 'Do the clips have a watermark?', answer: 'No. No watermark on any plan, including during the trial.' },
+      { question: 'What do I need to use it?', answer: 'A Mac (Apple Silicon or Intel) and an agent that speaks MCP: Claude Desktop, Claude Code, Codex or Cursor. The app connects each one in a click, or with one command for Claude Code.' },
+      { question: 'Do I need an OpenAI API key or AI credits?', answer: "No. Transcription runs on your Mac with whisper.cpp, and your agent picks the moments on the subscription you already have. We make no AI calls on your behalf, which is why we can sell a lifetime licence." },
+      { question: 'Are my videos uploaded anywhere?', answer: "No. They're processed and stored on your machine. The only things that leave the app are a licence check once a day and the update check. Your agent does see the transcript, since that's what it picks from." },
+      { question: 'Does it work offline?', answer: 'Processing local files does. Importing links needs a connection, of course. And the licence keeps working for up to 14 days without a successful check before it asks you to go online.' },
+      { question: 'What does "lifetime" mean?', answer: 'One payment and you get every version we ship, forever. No subscription and no minutes: process as much as you like.' },
+      { question: 'Why does the price go up?', answer: `The first ${t1.seats} licences are $${t1.priceUsd}, the next ${t2.seats} are $${t2.priceUsd}, and after that the regular price is $${t3.priceUsd}. Early buyers pay less, and your price never changes once you buy.` },
+      { question: 'What about Windows?', answer: "The app is built for both Mac and Windows, and Windows is the next thing we ship. The same licence will work there when it's out." },
+      { question: 'What can I import?', answer: 'YouTube, Twitch or Kick links, or video files like MP4 and MOV. Links are pulled at 1440p so the vertical crop keeps its resolution.' },
+      { question: 'Do the clips have a watermark?', answer: 'No. Never.' },
     ],
   },
 };

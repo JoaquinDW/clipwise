@@ -9,10 +9,10 @@ import { SHOWCASE_CLIPS, SHOWCASE_STILL_SIZE, SOURCE, type ShowcaseClip } from '
 const i18n = {
   es: {
     badge: '✦ Antes y después',
-    headline: 'Un video que subes,',
+    headline: 'Entra un video,',
     gradPart: 'cuatro clips que sí publicarías',
-    sub: 'Momentreel escucha el video entero, marca los momentos que se sostienen solos y devuelve cada uno encuadrado en vertical con los subtítulos ya puestos. Nada que armar.',
-    sourceTitle: 'Lo que subes',
+    sub: 'Momentreel transcribe el video entero, tu agente marca los momentos que se sostienen solos, y la app devuelve cada uno encuadrado en vertical con los subtítulos ya puestos. Nada que armar.',
+    sourceTitle: 'Lo que le das',
     sourceMeta: 'Video largo · 16:9 · con audio',
     outputTitle: 'Lo que recibes',
     outputMeta: '9:16 · subtítulos puestos · listos para ajustar',
@@ -28,10 +28,10 @@ const i18n = {
   },
   en: {
     badge: '✦ Before and after',
-    headline: 'One upload in,',
+    headline: 'One video in,',
     gradPart: "four clips you'd actually post",
-    sub: 'Momentreel listens to the whole thing, marks the moments that hold attention on their own, and hands each one back framed for vertical with the captions already in place. Nothing to assemble.',
-    sourceTitle: 'What you upload',
+    sub: 'Momentreel transcribes the whole thing, your agent marks the moments that hold attention on their own, and the app hands each one back framed for vertical with the captions already in place. Nothing to assemble.',
+    sourceTitle: 'What you drop in',
     sourceMeta: 'Long video · 16:9 · with audio',
     outputTitle: 'What you get back',
     outputMeta: '9:16 · captions in place · yours to adjust',

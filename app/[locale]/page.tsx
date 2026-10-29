@@ -1,29 +1,10 @@
-import Hero from '../(landing-page)/components/hero';
-import BeforeAfter from '../(landing-page)/components/before-after';
-import VideoShowcase from '../(landing-page)/components/video-showcase';
-import Features from '../(landing-page)/components/features';
-import Demo from '../(landing-page)/components/demo';
-import Testimonials from '../(landing-page)/components/testimonials';
-import Pricing from '../(landing-page)/components/pricing';
-import Faq from '../(landing-page)/components/faq';
+import Landing from '../(landing-page)/components/landing';
 import type { Lang } from '../(landing-page)/components/use-lang';
 
-// Keep this section order in sync with app/(landing-page)/page.tsx — the two
-// render the same components and silently drift otherwise.
+export const revalidate = 300;
+
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const lang = (locale === 'es' ? 'es' : 'en') as Lang;
-
-  return (
-    <>
-      <Hero lang={lang} />
-      <Testimonials lang={lang} />
-      <BeforeAfter lang={lang} />
-      <Demo lang={lang} />
-      <Features lang={lang} />
-      <VideoShowcase lang={lang} />
-      <Pricing lang={lang} />
-      <Faq lang={lang} />
-    </>
-  );
+  return <Landing lang={lang} />;
 }

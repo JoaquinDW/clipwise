@@ -4,39 +4,46 @@ import { useEffect, useState } from "react"
 import type { Lang } from "./use-lang"
 import { HERO_CLIP, HERO_STILLS } from "./clip-assets"
 import { useAutoplayOnView } from "./use-autoplay-on-view"
+import { DOWNLOADS } from "@/lib/downloads"
 
 const i18n = {
   es: {
-    badge: "✦ Clips con IA que de verdad te ahorran trabajo",
-    h1a: "Ya hiciste",
-    h1b: "el contenido.",
-    h1c: "No lo edites dos veces.",
-    sub: "Sube tu podcast, video o stream. Momentreel encuentra los momentos que vale la pena compartir, los convierte en clips verticales terminados, y te deja ajustar lo que quieras antes de publicar.",
-    cta: "Convertir mi video en clips →",
-    // Cada número es verificable en el código: el cap de clips de Pro, que nada
-    // dibuja un watermark, el fetch a 1440p y MAX_DELTA en lib/video/trim-limits.
+    badge: "✦ Nuevo · Momentreel para Mac",
+    h1a: "Tus mejores clips,",
+    h1b: "cortados en tu Mac.",
+    h1c: "Elegidos por tu IA.",
+    sub: "Pega un link o arrastra un video. Momentreel transcribe y corta en tu computadora, y Claude, Codex o Cursor deciden qué momentos merecen ser clip. Sin subir nada, sin créditos, sin suscripción.",
+    cta: (price: number) => `Comprar lifetime · $${price}`,
+    download: "Descargar para Mac",
+    platforms: "macOS · Apple Silicon e Intel — Windows muy pronto",
+    worksWith: "Funciona con",
+    // Cada número es verificable: el video se procesa en local (lib/video +
+    // whisper.cpp), nada dibuja un watermark, el fetch a 1440p y un pago único.
     stats: [
-      { value: "10", label: "Clips por video", count: true },
-      { value: "0", label: "Marcas de agua, en todos los planes" },
+      { value: "0", label: "Videos subidos a un servidor" },
+      { value: "0", label: "Marcas de agua" },
       { value: "1440p", label: "Fuente antes del recorte" },
-      { value: "±15s", label: "De ajuste en cada clip" },
+      { value: "1", label: "Pago, todas las versiones" },
     ],
     clipAlt: "Un clip real de Momentreel: recorte vertical con subtítulos automáticos",
     stillAlt: "Fotograma de un clip generado por Momentreel",
     play: "Reproducir el clip de ejemplo",
   },
   en: {
-    badge: "✦ AI clipping that actually saves you work",
-    h1a: "You made",
-    h1b: "the content.",
-    h1c: "Don't edit it twice.",
-    sub: "Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and lets you tweak anything before you post.",
-    cta: "Turn my video into clips →",
+    badge: "✦ New · Momentreel for Mac",
+    h1a: "Your best moments,",
+    h1b: "cut on your Mac.",
+    h1c: "Picked by your AI.",
+    sub: "Paste a link or drop a video. Momentreel transcribes and cuts on your computer, and Claude, Codex or Cursor decides which moments deserve to be a clip. Nothing uploaded, no credits, no subscription.",
+    cta: (price: number) => `Get lifetime · $${price}`,
+    download: "Download for Mac",
+    platforms: "macOS · Apple Silicon & Intel — Windows coming soon",
+    worksWith: "Works with",
     stats: [
-      { value: "10", label: "Clips per upload", count: true },
-      { value: "0", label: "Watermarks, any plan" },
+      { value: "0", label: "Videos uploaded to a server" },
+      { value: "0", label: "Watermarks" },
       { value: "1440p", label: "Source before the crop" },
-      { value: "±15s", label: "Trim on any clip" },
+      { value: "1", label: "Payment, every version" },
     ],
     clipAlt: "A real Momentreel clip: vertical crop with auto captions",
     stillAlt: "A frame from a clip Momentreel generated",
@@ -44,7 +51,15 @@ const i18n = {
   },
 }
 
-const pills = ["TikTok", "YouTube Shorts", "Instagram Reels", "Twitter/X", "Kick"]
+export const AGENTS = ["Claude Desktop", "Claude Code", "Codex", "Cursor"]
+
+export function AppleGlyph({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="M16.37 12.6c-.02-2.1 1.72-3.12 1.8-3.17-.98-1.43-2.5-1.63-3.05-1.65-1.3-.13-2.53.76-3.19.76-.66 0-1.67-.74-2.75-.72-1.41.02-2.72.82-3.45 2.09-1.47 2.55-.38 6.33 1.06 8.4.7 1.01 1.53 2.15 2.62 2.11 1.05-.04 1.45-.68 2.72-.68 1.27 0 1.63.68 2.74.66 1.13-.02 1.85-1.03 2.54-2.05.8-1.17 1.13-2.3 1.15-2.36-.03-.01-2.2-.85-2.22-3.37zM14.3 6.43c.58-.7.97-1.68.86-2.65-.83.03-1.84.55-2.44 1.25-.53.62-1 1.62-.88 2.57.93.07 1.88-.47 2.46-1.17z" />
+    </svg>
+  )
+}
 
 function OrbBg() {
   return (
@@ -359,7 +374,7 @@ function PhoneStack({ t }: { t: (typeof i18n)["en"] }) {
   )
 }
 
-export default function Hero({ lang }: { lang: Lang }) {
+export default function Hero({ lang, priceUsd }: { lang: Lang; priceUsd: number }) {
   const t = i18n[lang]
   return (
     <section
@@ -417,12 +432,11 @@ export default function Hero({ lang }: { lang: Lang }) {
               color: "#f2ede8",
               marginBottom: 28,
               letterSpacing: "-0.03em",
-              // The gradient line is a full sentence now, not a two-word tag, so
-              // it has to be allowed to wrap. Syne 800 runs about 0.83em per
-              // character, so 60px is the largest size that still keeps "the
-              // content." on one line in this column; above it the second line
-              // breaks after "the" and the headline reads as five ragged lines.
-              fontSize: "clamp(32px, 4vw, 60px)",
+              // Three lines of ~18 characters, each meant to stay on one line.
+              // Syne 800 runs about 0.76em per character, so 42px is the largest
+              // size that fits the hero column; above it every line wraps and
+              // the headline reads as six ragged lines.
+              fontSize: "clamp(30px, 3vw, 42px)",
             }}
           >
             {t.h1a}
@@ -444,20 +458,33 @@ export default function Hero({ lang }: { lang: Lang }) {
           >
             {t.sub}
           </p>
-          <div className="fu d4" style={{ marginBottom: 44 }}>
-            <a href="/login" className="cta-btn">
-              {t.cta}
+          <div className="fu d4" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+            <a href="#pricing" className="cta-btn">
+              {t.cta(priceUsd)} →
+            </a>
+            <a href={DOWNLOADS.mac.url ?? "#pricing"} className="cta-ghost">
+              <AppleGlyph />
+              {t.download}
             </a>
           </div>
-          <div className="fu d5" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {pills.map((tag) => (
+          <p
+            className="fu d4"
+            style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 12, color: "#8a8a8a", marginBottom: 40 }}
+          >
+            {t.platforms}
+          </p>
+          <div className="fu d5" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontFamily: "var(--font-dm-sans), sans-serif", fontSize: 11, color: "#8a8a8a", marginRight: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              {t.worksWith}
+            </span>
+            {AGENTS.map((tag) => (
               <span
                 key={tag}
                 style={{
                   fontFamily: "var(--font-dm-sans), sans-serif",
                   fontSize: 11,
-                  color: "#999",
-                  border: "1px solid #1e1e1e",
+                  color: "#bbb",
+                  border: "1px solid #242424",
                   padding: "5px 13px",
                   borderRadius: 100,
                   letterSpacing: "0.02em",
@@ -511,7 +538,7 @@ export default function Hero({ lang }: { lang: Lang }) {
                     lineHeight: 1,
                   }}
                 >
-                  <StatValue value={s.value} count={"count" in s && s.count} />
+                  <StatValue value={s.value} />
                 </div>
                 <div
                   style={{

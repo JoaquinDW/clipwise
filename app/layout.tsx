@@ -12,10 +12,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
     template: "%s | Momentreel",
-    default: "Momentreel — Your best moments, ready to post",
+    default: "Momentreel for Mac — Short clips, picked by your own AI",
   },
   description:
-    "Drop in your podcast, video, or stream. Momentreel finds the moments worth sharing, turns them into polished vertical clips, and hands you the controls before you post.",
+    "A Mac app that turns long videos into vertical shorts on your own computer. Your agent (Claude, Codex, Cursor) picks the moments over MCP. Nothing uploaded, no credits, one lifetime payment.",
   keywords: [
     "viral clips",
     "AI video editor",
@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     "content creator tools",
     "podcast clips",
     "auto clip generator",
+    "Mac app",
+    "MCP",
+    "lifetime licence",
   ],
   openGraph: {
     type: "website",

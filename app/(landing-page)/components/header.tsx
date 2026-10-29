@@ -6,31 +6,29 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Logo from '../public/images/logo-horizontal.png';
 import type { Lang } from './use-lang';
+import { AppleGlyph } from './hero';
+import { DOWNLOADS } from '@/lib/downloads';
 
 const i18n = {
   es: {
-    links: [['Características', '#features'], ['Demo', '#demo'], ['Precios', '#pricing'], ['FAQ', '#faq']] as const,
-    signIn: 'Iniciar sesión',
-    cta: 'Empezar prueba gratis →',
-    ctaHref: '/login',
-    dashboard: 'Ir al panel →',
+    links: [['Características', '#features'], ['Cómo funciona', '#how-it-works'], ['Precios', '#pricing'], ['FAQ', '#faq']] as const,
+    download: 'Descargar',
+    cta: (price: number) => `Comprar lifetime · $${price}`,
     menu: 'Menú',
     switchLabel: 'EN',
     switchLocale: '/',
   },
   en: {
-    links: [['Features', '#features'], ['Demo', '#demo'], ['Pricing', '#pricing'], ['FAQ', '#faq']] as const,
-    signIn: 'Sign in',
-    cta: 'Start free trial →',
-    ctaHref: '/login',
-    dashboard: 'Go to dashboard →',
+    links: [['Features', '#features'], ['How it works', '#how-it-works'], ['Pricing', '#pricing'], ['FAQ', '#faq']] as const,
+    download: 'Download',
+    cta: (price: number) => `Buy lifetime · $${price}`,
     menu: 'Menu',
     switchLabel: 'ES',
     switchLocale: '/es',
   },
 };
 
-export default function Header({ lang, isLoggedIn = false }: { lang: Lang; isLoggedIn?: boolean }) {
+export default function Header({ lang, priceUsd }: { lang: Lang; priceUsd: number }) {
   const t = i18n[lang];
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
@@ -85,20 +83,13 @@ export default function Header({ lang, isLoggedIn = false }: { lang: Lang; isLog
         >
           {t.switchLabel}
         </button>
-        {isLoggedIn ? (
-          <Link href="/dashboard" className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
-            {t.dashboard}
-          </Link>
-        ) : (
-          <>
-            <Link href="/login" className="nav-link" style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, marginRight: 4 }}>
-              {t.signIn}
-            </Link>
-            <Link href={t.ctaHref} className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
-              {t.cta}
-            </Link>
-          </>
-        )}
+        <a href={DOWNLOADS.mac.url ?? '#pricing'} className="nav-link" style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, marginRight: 4, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <AppleGlyph size={14} />
+          {t.download}
+        </a>
+        <a href="#pricing" className="cta-btn" style={{ padding: '10px 22px', fontSize: 13 }}>
+          {t.cta(priceUsd)}
+        </a>
       </div>
 
       {/* Mobile menu button */}
@@ -132,20 +123,13 @@ export default function Header({ lang, isLoggedIn = false }: { lang: Lang; isLog
               {label}
             </a>
           ))}
-          {!isLoggedIn && (
-            <Link href="/login" onClick={() => setMenuOpen(false)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#888', textDecoration: 'none' }}>
-              {t.signIn}
-            </Link>
-          )}
+          <a href={DOWNLOADS.mac.url ?? '#pricing'} onClick={() => setMenuOpen(false)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, color: '#888', textDecoration: 'none' }}>
+            {t.download}
+          </a>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
-            <Link
-              href={isLoggedIn ? '/dashboard' : t.ctaHref}
-              onClick={() => setMenuOpen(false)}
-              className="cta-btn"
-              style={{ alignSelf: 'flex-start' }}
-            >
-              {isLoggedIn ? t.dashboard : t.cta}
-            </Link>
+            <a href="#pricing" onClick={() => setMenuOpen(false)} className="cta-btn" style={{ alignSelf: 'flex-start' }}>
+              {t.cta(priceUsd)}
+            </a>
             <button onClick={() => router.push(t.switchLocale)} style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 6, border: '1px solid #242424', background: 'transparent', color: '#444', cursor: 'pointer' }}>
               {t.switchLabel}
             </button>

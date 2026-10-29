@@ -1,107 +1,95 @@
 'use client';
 
-import Link from 'next/link';
 import type { Lang } from './use-lang';
 import Reveal from './reveal';
-import { PLANS, TRIAL_DAYS, TRIAL_MINUTES } from '@/lib/plans';
+import WaitlistForm from './waitlist-form';
+import type { LifetimeOffer } from '@/lib/lifetime-sales';
 
-const proMaxMinutes = Math.round(PLANS.pro.maxVideoDurationSeconds / 60);
-
-// Every bullet below has to be true in the code. The previous list sold Pro on
-// custom branding, advanced templates and priority processing — none of which
-// exist: there is one queue at concurrency 2, no branding, and no template
-// system beyond the five caption presets. The only real difference between the
-// plans is minutes and clips, so that is what Pro is sold on.
+// Every bullet has to be true of the desktop app. "Windows when it ships" is a
+// promise, not a feature: the build is configured (desktop/electron-builder.yml)
+// and the licence API does not know about platforms, so the same key works.
 const i18n = {
   es: {
-    badge: '✦ Precios simples',
-    headline: 'Dos planes.',
-    gradPart: 'Sin asteriscos.',
-    sub: `${TRIAL_DAYS} días gratis, o ${TRIAL_MINUTES} minutos procesados — lo que ocurra primero. Pedimos tarjeta, no cobramos nada hasta que termine la prueba, cancelas en dos clics.`,
-    popularLabel: 'Más popular',
-    perMonth: '/mes',
-    plans: [
-      {
-        id: 'starter',
-        desc: 'Para creadores que están agarrando ritmo.',
-        features: [
-          `${PLANS.starter.minutesPerMonth} minutos de video al mes`,
-          `Hasta ${PLANS.starter.maxClipsPerVideo} clips por video`,
-          'Encuadre vertical que sigue a quien habla',
-          '5 estilos de subtítulo, con tamaño y posición ajustables',
-          'Recorta y vuelve a exportar las veces que quieras',
-          'Exportación HD sin marca de agua',
-          'Soporte por email',
-        ],
-        cta: 'Empezar prueba gratis',
-      },
-      {
-        id: 'pro',
-        desc: 'El mismo producto. Simplemente se te acaba menos.',
-        features: [
-          'Todo lo de Starter',
-          `${PLANS.pro.minutesPerMonth} minutos de video al mes`,
-          `Hasta ${PLANS.pro.maxClipsPerVideo} clips por video`,
-          'Links de YouTube, Twitch y Kick',
-          `Videos de hasta ${proMaxMinutes} minutos`,
-        ],
-        cta: 'Empezar prueba gratis',
-      },
+    badge: '✦ Licencia de por vida',
+    headline: 'Pagas una vez.',
+    gradPart: 'Te quedas con todas las versiones.',
+    sub: 'Sin suscripción, sin minutos, sin créditos. El precio sube por tramos a medida que se venden licencias: quien llega antes paga menos, y su precio no cambia nunca.',
+    oneTime: 'pago único',
+    leftAt: (n: number, price: number) => `Quedan ${n} licencias a $${price}`,
+    thenPrice: (price: number) => `después $${price}`,
+    soldOut: 'Todas las licencias de este tramo están vendidas.',
+    ladderTitle: 'Cómo sube el precio',
+    tierLabel: (seats: number | null, i: number) => (seats === null ? 'Precio normal' : i === 0 ? `Primeras ${seats}` : `Siguientes ${seats}`),
+    tierSold: 'Agotado',
+    tierNow: 'Ahora',
+    included: 'Incluye',
+    features: [
+      'Todas las versiones futuras, para siempre',
+      'Procesamiento ilimitado: sin minutos ni créditos',
+      'Servidor MCP para Claude, Codex y Cursor',
+      'Encuadre que sigue a quien habla y subtítulos automáticos',
+      'Imports de YouTube, Twitch y Kick, o archivos locales',
+      'Sin marca de agua',
+      'Mac hoy; Windows incluido cuando salga',
     ],
+    cta: (price: number) => `Comprar lifetime · $${price}`,
+    secure: 'Pago seguro · recibes tu clave de licencia por email al instante',
+    soonTitle: 'Las ventas abren muy pronto.',
+    soonBody: (price: number) => `Deja tu email y te avisamos antes que a nadie, con el precio de $${price}.`,
+    compare: 'Los clippers en la nube cobran todos los meses y te miden los minutos. Esto es un pago.',
   },
   en: {
-    badge: '✦ Simple pricing',
-    headline: 'Two plans.',
-    gradPart: 'No asterisks.',
-    sub: `${TRIAL_DAYS} days free, or ${TRIAL_MINUTES} processed minutes — whichever comes first. Card required, nothing charged until the trial ends, cancel in two clicks.`,
-    popularLabel: 'Most popular',
-    perMonth: '/mo',
-    plans: [
-      {
-        id: 'starter',
-        desc: 'For creators finding their rhythm.',
-        features: [
-          `${PLANS.starter.minutesPerMonth} video minutes a month`,
-          `Up to ${PLANS.starter.maxClipsPerVideo} clips per video`,
-          'Speaker-tracked vertical framing',
-          '5 caption styles, adjustable size and position',
-          'Trim and re-export as often as you want',
-          'Watermark-free HD exports',
-          'Email support',
-        ],
-        cta: 'Start free trial',
-      },
-      {
-        id: 'pro',
-        desc: 'Same product. You just run out less.',
-        features: [
-          'Everything in Starter',
-          `${PLANS.pro.minutesPerMonth} video minutes a month`,
-          `Up to ${PLANS.pro.maxClipsPerVideo} clips per video`,
-          'YouTube, Twitch and Kick links',
-          `Videos up to ${proMaxMinutes} minutes`,
-        ],
-        cta: 'Start free trial',
-      },
+    badge: '✦ Lifetime licence',
+    headline: 'Pay once.',
+    gradPart: 'Keep every version.',
+    sub: 'No subscription, no minutes, no credits. The price steps up as licences sell: the earlier you are, the less you pay, and your price never changes.',
+    oneTime: 'one-time payment',
+    leftAt: (n: number, price: number) => `${n} licences left at $${price}`,
+    thenPrice: (price: number) => `then $${price}`,
+    soldOut: 'Every licence in this tier is sold.',
+    ladderTitle: 'How the price steps up',
+    tierLabel: (seats: number | null, i: number) => (seats === null ? 'Regular price' : i === 0 ? `First ${seats}` : `Next ${seats}`),
+    tierSold: 'Sold out',
+    tierNow: 'Now',
+    included: "What's included",
+    features: [
+      'Every future version, forever',
+      'Unlimited processing: no minutes, no credits',
+      'MCP server for Claude, Codex and Cursor',
+      'Speaker-tracking framing and automatic captions',
+      'YouTube, Twitch and Kick imports, or local files',
+      'No watermark',
+      'Mac today; Windows included when it ships',
     ],
+    cta: (price: number) => `Get lifetime · $${price}`,
+    secure: 'Secure checkout · your licence key arrives by email instantly',
+    soonTitle: 'Sales open very soon.',
+    soonBody: (price: number) => `Leave your email and you'll hear first, at the $${price} price.`,
+    compare: 'Cloud clippers bill you every month and meter your minutes. This is one payment.',
   },
 };
 
 function Check() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: 3 }}>
       <path d="M2.5 7L6 10.5L11.5 3.5" stroke="#FF3B5C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-export default function Pricing({ lang }: { lang: Lang }) {
+export default function Pricing({ lang, offer }: { lang: Lang; offer: LifetimeOffer }) {
   const t = i18n[lang];
+  const { open, tiers, regularPriceUsd, checkoutReady } = offer;
+  const price = open.tier.priceUsd;
+  const discounted = price < regularPriceUsd;
+  const seats = open.tier.seats;
+  const sold = seats !== null && open.remaining !== null ? seats - open.remaining : 0;
+  const fill = seats ? Math.min(100, Math.max(4, (sold / seats) * 100)) : 0;
 
   return (
     <section id="pricing" className="section-pad" style={{ borderTop: '1px solid #111' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-        <Reveal style={{ textAlign: 'center', marginBottom: 72 }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+        <Reveal style={{ textAlign: 'center', marginBottom: 64 }}>
           <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', color: '#FF3B5C', textTransform: 'uppercase', border: '1px solid rgba(255,59,92,0.25)', padding: '5px 16px', borderRadius: 100, display: 'inline-block', marginBottom: 24 }}>
             {t.badge}
           </span>
@@ -111,55 +99,118 @@ export default function Pricing({ lang }: { lang: Lang }) {
           <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 16, lineHeight: 1.6, color: '#9a9a9a', maxWidth: 620, margin: '0 auto' }}>{t.sub}</p>
         </Reveal>
 
-        <div
-          className="grid-2col"
-          style={{ alignItems: 'start', maxWidth: 760, margin: '0 auto', gap: 20 }}
-        >
-          {t.plans.map(copy => {
-            const plan = PLANS[copy.id as keyof typeof PLANS];
-            const popular = plan.id === 'pro';
-
-            return (
-              <div
-                key={plan.id}
-                style={{
-                  background: popular ? 'linear-gradient(180deg, rgba(255,59,92,0.06) 0%, #111 40%)' : '#111',
-                  border: popular ? '1px solid rgba(255,59,92,0.3)' : '1px solid #1a1a1a',
-                  borderRadius: 16,
-                  padding: '32px 28px',
-                  position: 'relative',
-                }}
-              >
-                {popular && (
-                  <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #FF3B5C, #FF8C00)', color: '#fff', fontFamily: 'var(--font-syne), sans-serif', fontSize: 11, fontWeight: 800, padding: '4px 14px', borderRadius: 100, whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>
-                    {t.popularLabel}
-                  </div>
+        <Reveal>
+          <div
+            className="pricing-card"
+            style={{
+              background: 'linear-gradient(180deg, rgba(255,59,92,0.07) 0%, #111 45%)',
+              border: '1px solid rgba(255,59,92,0.3)',
+              borderRadius: 20,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Price, scarcity and the way in */}
+            <div style={{ padding: '36px 32px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+                <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 64, fontWeight: 800, background: 'linear-gradient(135deg,#FF3B5C,#FF8C00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>
+                  ${price}
+                </span>
+                {discounted && (
+                  <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 26, fontWeight: 700, color: '#555', textDecoration: 'line-through' }}>${regularPriceUsd}</span>
                 )}
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#888', marginBottom: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{plan.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
-                    <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 44, fontWeight: 800, background: 'linear-gradient(135deg,#FF3B5C,#FF8C00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1 }}>
-                      ${plan.priceMonthly}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#777' }}>{t.perMonth}</span>
-                  </div>
-                  <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888', lineHeight: 1.5 }}>{copy.desc}</p>
-                </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {copy.features.map(f => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Check />
-                      <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#888' }}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link href={`/login?plan=${plan.id}`} className={popular ? 'cta-btn' : 'cta-ghost'} style={{ width: '100%', justifyContent: 'center', display: 'inline-flex' }}>
-                  {copy.cta}
-                </Link>
+                <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#8a8a8a' }}>{t.oneTime}</span>
               </div>
-            );
-          })}
-        </div>
+
+              {seats !== null && open.remaining !== null && (
+                <div style={{ margin: '22px 0 28px' }}>
+                  {open.remaining > 0 ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, marginBottom: 10 }}>
+                      <span style={{ color: '#f2ede8', fontWeight: 500 }}>{t.leftAt(open.remaining, price)}</span>
+                      {open.next && <span style={{ color: '#8a8a8a' }}>{t.thenPrice(open.next.priceUsd)}</span>}
+                    </div>
+                  ) : (
+                    <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#f2ede8', marginBottom: 10 }}>{t.soldOut}</p>
+                  )}
+                  <div
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={seats}
+                    aria-valuenow={sold}
+                    style={{ height: 8, borderRadius: 100, background: '#1d1d1d', overflow: 'hidden' }}
+                  >
+                    <div style={{ width: `${fill}%`, height: '100%', borderRadius: 100, background: 'linear-gradient(90deg,#FF3B5C,#FF8C00)' }} />
+                  </div>
+                </div>
+              )}
+
+              {checkoutReady ? (
+                <>
+                  <a href="/api/lifetime/checkout" className="cta-btn" style={{ width: '100%', justifyContent: 'center', display: 'inline-flex', marginTop: seats === null ? 24 : 0 }}>
+                    {t.cta(price)} →
+                  </a>
+                  <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 12, color: '#8a8a8a', textAlign: 'center', marginTop: 12 }}>{t.secure}</p>
+                </>
+              ) : (
+                <div style={{ marginTop: seats === null ? 24 : 0 }}>
+                  <p style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 17, fontWeight: 700, color: '#f2ede8', marginBottom: 6 }}>{t.soonTitle}</p>
+                  <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 14, color: '#9a9a9a', marginBottom: 14 }}>{t.soonBody(price)}</p>
+                  <WaitlistForm lang={lang} />
+                </div>
+              )}
+
+              {/* The ladder, so the next price is a fact on the page and not a threat */}
+              <div style={{ marginTop: 32 }}>
+                <div style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#777', marginBottom: 12 }}>{t.ladderTitle}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {tiers.map((tier, i) => {
+                    const isOpen = i === open.index;
+                    const isSold = i < open.index || (isOpen && open.remaining === 0);
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          borderRadius: 10,
+                          border: isOpen ? '1px solid rgba(255,59,92,0.35)' : '1px solid #1d1d1d',
+                          background: isOpen ? 'rgba(255,59,92,0.06)' : 'transparent',
+                          fontFamily: 'var(--font-dm-sans), sans-serif',
+                          fontSize: 14,
+                          color: isSold ? '#555' : isOpen ? '#f2ede8' : '#9a9a9a',
+                        }}
+                      >
+                        <span style={{ textDecoration: isSold ? 'line-through' : 'none' }}>{t.tierLabel(tier.seats, i)}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {isSold && <span style={{ fontSize: 11, color: '#666' }}>{t.tierSold}</span>}
+                          {isOpen && !isSold && (
+                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: '#fff', background: 'linear-gradient(135deg,#FF3B5C,#FF8C00)', padding: '2px 8px', borderRadius: 100, textTransform: 'uppercase' }}>{t.tierNow}</span>
+                          )}
+                          <span style={{ fontFamily: 'var(--font-syne), sans-serif', fontWeight: 700, textDecoration: isSold ? 'line-through' : 'none' }}>${tier.priceUsd}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* What one payment buys */}
+            <div className="pricing-included" style={{ padding: '36px 32px' }}>
+              <div style={{ fontFamily: 'var(--font-syne), sans-serif', fontSize: 14, fontWeight: 700, color: '#888', marginBottom: 20, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{t.included}</div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {t.features.map((f) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <Check />
+                    <span style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 15, color: '#c8c8c8', lineHeight: 1.5 }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <p style={{ fontFamily: 'var(--font-dm-sans), sans-serif', fontSize: 13, color: '#8a8a8a', lineHeight: 1.6, marginTop: 28, paddingTop: 20, borderTop: '1px solid #1d1d1d' }}>{t.compare}</p>
+            </div>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

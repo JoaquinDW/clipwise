@@ -4,48 +4,54 @@ import Link from "next/link"
 import Image from "next/image"
 import Logo from "../public/images/logo-horizontal.png"
 import type { Lang } from "./use-lang"
+import { DOWNLOADS } from "@/lib/downloads"
 
 const i18n = {
   es: {
     tagline:
-      "Tus mejores momentos, listos para publicar. Momentreel convierte el video que ya hiciste en clips que vale la pena publicar — sin una segunda pasada por el timeline.",
+      "Tus mejores momentos, recortados en tu Mac y elegidos por tu propia IA. Un pago, todas las versiones.",
     product: "Producto",
     productLinks: [
       ["Características", "#features"],
-      ["Cómo funciona", "#demo"],
+      ["Cómo funciona", "#how-it-works"],
       ["Precios", "#pricing"],
       ["FAQ", "#faq"],
     ] as const,
-    account: "Cuenta",
-    accountLinks: [
-      ["Empezar prueba gratis", "/login"],
-      ["Iniciar sesión", "/login"],
-      ["Dashboard", "/dashboard"],
-    ] as const,
+    account: "La app",
+    macLabel: "Descargar para Mac",
+    windowsLabel: "Windows",
+    windowsSoon: "Windows · muy pronto",
+    buyLabel: "Comprar lifetime",
     copyright: "© 2026 Momentreel. Todos los derechos reservados.",
   },
   en: {
     tagline:
-      "Your best moments, ready to post. Momentreel turns the video you already made into clips worth publishing — without a second pass through the timeline.",
+      "Your best moments, cut on your Mac and picked by your own AI. One payment, every version.",
     product: "Product",
     productLinks: [
       ["Features", "#features"],
-      ["How it works", "#demo"],
+      ["How it works", "#how-it-works"],
       ["Pricing", "#pricing"],
       ["FAQ", "#faq"],
     ] as const,
-    account: "Account",
-    accountLinks: [
-      ["Start free trial", "/login"],
-      ["Sign in", "/login"],
-      ["Dashboard", "/dashboard"],
-    ] as const,
+    account: "Get the app",
+    macLabel: "Download for Mac",
+    windowsLabel: "Download for Windows",
+    windowsSoon: "Windows · coming soon",
+    buyLabel: "Buy lifetime",
     copyright: "© 2026 Momentreel. All rights reserved.",
   },
 }
 
 export default function Footer({ lang }: { lang: Lang }) {
   const t = i18n[lang]
+  const appLinks: { label: string; href: string | null }[] = [
+    { label: t.macLabel, href: DOWNLOADS.mac.url },
+    DOWNLOADS.windows.available
+      ? { label: t.windowsLabel, href: DOWNLOADS.windows.url }
+      : { label: t.windowsSoon, href: null },
+    { label: t.buyLabel, href: "#pricing" },
+  ]
 
   return (
     <footer
@@ -127,7 +133,7 @@ export default function Footer({ lang }: { lang: Lang }) {
             </ul>
           </div>
 
-          {/* Account */}
+          {/* The app */}
           <div>
             <div
               style={{
@@ -151,18 +157,30 @@ export default function Footer({ lang }: { lang: Lang }) {
                 gap: 10,
               }}
             >
-              {t.accountLinks.map(([label, href]) => (
+              {appLinks.map(({ label, href }) => (
                 <li key={label}>
-                  <Link
-                    href={href}
-                    className="footer-link"
-                    style={{
-                      fontFamily: "var(--font-dm-sans), sans-serif",
-                      fontSize: 14,
-                    }}
-                  >
-                    {label}
-                  </Link>
+                  {href ? (
+                    <a
+                      href={href}
+                      className="footer-link"
+                      style={{
+                        fontFamily: "var(--font-dm-sans), sans-serif",
+                        fontSize: 14,
+                      }}
+                    >
+                      {label}
+                    </a>
+                  ) : (
+                    <span
+                      style={{
+                        fontFamily: "var(--font-dm-sans), sans-serif",
+                        fontSize: 14,
+                        color: "#555",
+                      }}
+                    >
+                      {label}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
