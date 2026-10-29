@@ -15,6 +15,7 @@ import {
   HighlightSchema,
   LayoutRegionSchema,
   LayoutTypeSchema,
+  type Highlight,
 } from './highlight-schema';
 
 // Re-exported so existing imports keep working; the schemas live in a module
