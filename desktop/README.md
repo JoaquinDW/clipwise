@@ -44,7 +44,7 @@ and the highlight and caption schemas. What the desktop replaces:
 
 ```bash
 cd desktop
-pnpm install
+pnpm install        # also downloads the Electron binary (pnpm.onlyBuiltDependencies)
 pnpm test           # unit tests
 pnpm typecheck
 pnpm dev            # build and open the Electron app
