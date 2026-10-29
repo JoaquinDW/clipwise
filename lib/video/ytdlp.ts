@@ -27,9 +27,39 @@ export const YTDLP_COMMON_ARGS = [
   '--js-runtimes', 'node',
 ];
 
-/** Prepends the required flags to a yt-dlp argv. */
+/**
+ * The yt-dlp binary to run. The desktop app ships its own copy and points this
+ * at it; everywhere else it is whatever `yt-dlp` resolves to on PATH.
+ */
+export function ytdlpBinary(): string {
+  return process.env.YTDLP_PATH || 'yt-dlp';
+}
+
+/**
+ * Environment for a yt-dlp child. When the JS runtime handed to yt-dlp is this
+ * very Electron binary (the desktop app has no node to offer), it only behaves
+ * as node with ELECTRON_RUN_AS_NODE set — and yt-dlp passes its env through.
+ */
+export function ytdlpEnv(): NodeJS.ProcessEnv {
+  if (process.env.YTDLP_JS_RUNTIMES && process.versions.electron) {
+    return { ...process.env, ELECTRON_RUN_AS_NODE: '1' };
+  }
+  return process.env;
+}
+
+/**
+ * Prepends the required flags to a yt-dlp argv.
+ *
+ * `YTDLP_JS_RUNTIMES` replaces the `node` runtime spec: a desktop install has no
+ * node on PATH, so it passes its own Electron binary as `node:<path>`. Read per
+ * call rather than at import so it can be set after this module loads.
+ */
 export function ytdlpArgs(...args: string[]): string[] {
-  return [...YTDLP_COMMON_ARGS, ...args];
+  const runtimes = process.env.YTDLP_JS_RUNTIMES;
+  const common = runtimes
+    ? YTDLP_COMMON_ARGS.map((arg, i) => (YTDLP_COMMON_ARGS[i - 1] === '--js-runtimes' ? runtimes : arg))
+    : YTDLP_COMMON_ARGS;
+  return [...common, ...args];
 }
 
 export type DownloadProgress = {
@@ -71,8 +101,9 @@ export function downloadWithProgress(
   options: { timeoutMs?: number } = {}
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const child = spawn('yt-dlp', [...PROGRESS_ARGS, ...args], {
+    const child = spawn(ytdlpBinary(), [...PROGRESS_ARGS, ...args], {
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: ytdlpEnv(),
     });
 
     let stdoutBuffer = '';

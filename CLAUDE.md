@@ -233,6 +233,10 @@ Crop strategy is stored in `Clip.metadata.cropStrategy` with reasoning for analy
 - **Domain-driven design** consistent with existing codebase patterns
 - **Status-based workflows** for tracking video processing stages
 
+### Desktop app (pivot in progress)
+
+The product is moving from the cloud SaaS to a desktop app in [desktop/](desktop/): an Electron app that runs the pipeline on the user's machine (yt-dlp, whisper.cpp, FFmpeg) and exposes a local MCP server, so the user's own agent (Claude, Codex, Cursor) picks the clips and no OpenAI calls are made on our side. It imports the shared pipeline from `lib/` (`@/lib/...`) rather than copying it, so changes to `lib/video`, `lib/captions`, `lib/ai/scoring.ts` and the schemas in `lib/ai/highlight-schema.ts` / `lib/ai/caption-schema.ts` affect both. Keep those modules free of `ai` SDK imports. Sold as a lifetime licence through a seller-neutral licence API; see [desktop/README.md](desktop/README.md).
+
 ### Environment Variables
 
 Critical environment variables (see [.env.example](.env.example)):
